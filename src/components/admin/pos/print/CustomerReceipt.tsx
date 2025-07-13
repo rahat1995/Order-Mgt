@@ -25,28 +25,28 @@ export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) =
         {order.orderType && <p>Type: <span className="uppercase font-semibold">{order.orderType}</span></p>}
       </div>
       <div className="border-t border-solid border-black my-2" />
-      <table className="w-full">
+      <table className="w-full table-auto border-collapse border border-solid border-black">
         <thead>
           <tr className="border-b-2 border-solid border-black">
-            <th className="text-left pb-1 pr-1">Sl.</th>
-            <th className="text-left w-2/5 pb-1">Item</th>
-            <th className="text-center pb-1">Qty</th>
-            <th className="text-right pb-1">Rate</th>
-            <th className="text-right pb-1 pl-1">Total</th>
+            <th className="text-left p-1 border-r border-solid border-black">Sl.</th>
+            <th className="text-left p-1 w-2/5 border-r border-solid border-black">Item</th>
+            <th className="text-center p-1 border-r border-solid border-black">Qty</th>
+            <th className="text-right p-1 border-r border-solid border-black">Rate</th>
+            <th className="text-right p-1">Total</th>
           </tr>
         </thead>
         <tbody>
           {order.items.map((item, index) => (
             <tr key={item.id} className="border-b border-solid border-black/50">
-              <td className="text-left align-top pt-1 pr-1">{index + 1}.</td>
-              <td className="text-left align-top pt-1">
+              <td className="text-left align-top p-1 border-r border-solid border-black/50">{index + 1}.</td>
+              <td className="text-left align-top p-1 border-r border-solid border-black/50">
                 {item.name}
                 {item.variant && <div className="pl-2 text-gray-700">- {item.variant.name}</div>}
                 {item.addons?.map(addon => <div key={addon.id} className="pl-2 text-gray-700">+ {addon.name}</div>)}
               </td>
-              <td className="text-center align-top pt-1">{item.quantity % 1 !== 0 ? item.quantity.toFixed(2) : item.quantity}</td>
-              <td className="text-right align-top pt-1">৳{item.unitPrice.toFixed(2)}</td>
-              <td className="text-right align-top pt-1 pl-1">৳{item.subtotal.toFixed(2)}</td>
+              <td className="text-center align-top p-1 border-r border-solid border-black/50">{item.quantity % 1 !== 0 ? item.quantity.toFixed(2) : item.quantity}</td>
+              <td className="text-right align-top p-1 border-r border-solid border-black/50">৳{item.unitPrice.toFixed(2)}</td>
+              <td className="text-right align-top p-1">৳{item.subtotal.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
