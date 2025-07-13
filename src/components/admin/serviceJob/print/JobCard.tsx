@@ -29,8 +29,11 @@ const formatDate = (isoString: string) => {
 export const JobCard = ({ job, customer, organization, issueType, serviceType }: JobCardProps) => {
     const { settings } = useSettings();
     const [qrUrl, setQrUrl] = useState('');
+    // Use a state to track if the component has mounted to prevent issues with server-side rendering
+    const [hasMounted, setHasMounted] = useState(false);
 
     useEffect(() => {
+        setHasMounted(true);
         if (typeof window !== 'undefined') {
             setQrUrl(`${window.location.origin}/status/${job.id}`);
         }
@@ -92,13 +95,13 @@ export const JobCard = ({ job, customer, organization, issueType, serviceType }:
                         <h3 className="text-lg font-semibold border-b pb-2 mb-3">Service Tracking</h3>
                         <div className="flex flex-col items-center justify-center gap-4">
                             <div className="p-2 bg-white border rounded-md">
-                                {qrUrl ? <QRCode value={qrUrl} size={128} /> : <div className="h-[128px] w-[128px] bg-gray-200 animate-pulse" />}
+                                {hasMounted && qrUrl ? <QRCode value={qrUrl} size={128} /> : <div className="h-[128px] w-[128px] bg-gray-200 animate-pulse" />}
                             </div>
                             <p className="text-xs text-gray-600">Scan this QR code with your phone to track the real-time status of your service request.</p>
                         </div>
                     </div>
                     <div>
-                         <Barcode value={job.jobNumber} height={60} width={2} fontSize={16} />
+                         {hasMounted && <Barcode value={job.jobNumber} height={60} width={2} fontSize={16} />}
                     </div>
                 </div>
             </main>
