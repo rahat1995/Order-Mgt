@@ -28,31 +28,26 @@ export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) =
       <table className="w-full">
         <thead>
           <tr className="border-b-2 border-dashed border-black">
+            <th className="text-left pb-1 pr-1">Sl.</th>
             <th className="text-left w-2/5 pb-1">Item</th>
             <th className="text-center pb-1">Qty</th>
-            <th className="text-right pb-1">Price</th>
-            <th className="text-right pb-1">Total</th>
+            <th className="text-right pb-1">Rate</th>
+            <th className="text-right pb-1 pl-1">Total</th>
           </tr>
         </thead>
         <tbody>
           {order.items.map((item, index) => (
-            <React.Fragment key={item.id}>
-               <tr className="pt-1">
-                <td className="text-left align-top pt-1">{item.name}</td>
-                <td className="text-center align-top pt-1">{item.quantity % 1 !== 0 ? item.quantity.toFixed(2) : item.quantity}</td>
-                <td className="text-right align-top pt-1">৳{item.unitPrice.toFixed(2)}</td>
-                <td className="text-right align-top pt-1">৳{item.subtotal.toFixed(2)}</td>
-              </tr>
-              {item.variant && <tr><td colSpan={4} className="pl-2 text-left text-gray-700"> - {item.variant.name}</td></tr>}
-              {item.addons?.map(addon => <tr key={addon.id}><td colSpan={4} className="pl-2 text-left text-gray-700"> + {addon.name}</td></tr>)}
-              {index < order.items.length - 1 && (
-                <tr>
-                  <td colSpan={4}>
-                    <div className="border-t border-dashed border-black my-1"></div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
+            <tr key={item.id} className="border-b border-dashed border-black/50">
+              <td className="text-left align-top pt-1 pr-1">{index + 1}.</td>
+              <td className="text-left align-top pt-1">
+                {item.name}
+                {item.variant && <div className="pl-2 text-gray-700">- {item.variant.name}</div>}
+                {item.addons?.map(addon => <div key={addon.id} className="pl-2 text-gray-700">+ {addon.name}</div>)}
+              </td>
+              <td className="text-center align-top pt-1">{item.quantity % 1 !== 0 ? item.quantity.toFixed(2) : item.quantity}</td>
+              <td className="text-right align-top pt-1">৳{item.unitPrice.toFixed(2)}</td>
+              <td className="text-right align-top pt-1 pl-1">৳{item.subtotal.toFixed(2)}</td>
+            </tr>
           ))}
         </tbody>
       </table>
