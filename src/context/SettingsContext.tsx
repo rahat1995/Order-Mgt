@@ -1,13 +1,8 @@
 
-
-
-
-
-
 'use client';
 
 import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue } from '@/types';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const defaultSettings: AppSettings = {
@@ -203,78 +198,110 @@ interface SettingsContextType {
   addSupplierPayment: (payment: Omit<SupplierPayment, 'id'>) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
 
-export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const [isLoaded, setIsLoaded] = useState(false);
+const PRIMARY_KEY = 'appSettings';
+const BACKUP_KEY = 'appSettings_backup';
 
-  useEffect(() => {
+export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  const [settings, setSettingsState] = React.useState<AppSettings>(defaultSettings);
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  // Load settings from localStorage on initial render
+  React.useEffect(() => {
+    let storedSettings: AppSettings | null = null;
     try {
-      const storedSettings = localStorage.getItem('appSettings');
-      if (storedSettings) {
-        const parsedSettings = JSON.parse(storedSettings);
-        const mergedSettings = {
-          ...defaultSettings,
-          ...parsedSettings,
-          organization: { ...defaultSettings.organization, ...parsedSettings.organization },
-          modules: { ...defaultSettings.modules, ...parsedSettings.modules },
-          posSettings: { ...defaultSettings.posSettings, ...parsedSettings.posSettings },
-          serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...parsedSettings.serviceJobSettings },
-          challanSettings: { ...defaultSettings.challanSettings, ...parsedSettings.challanSettings },
-          floors: parsedSettings.floors || defaultSettings.floors,
-          tables: parsedSettings.tables || defaultSettings.tables,
-          reservations: parsedSettings.reservations || defaultSettings.reservations,
-          menuCategories: parsedSettings.menuCategories || defaultSettings.menuCategories,
-          menuItems: (parsedSettings.menuItems || []).map((item: any) => ({ ...item, variants: item.variants || [], addOns: item.addOns || [] })),
-          orders: parsedSettings.orders || defaultSettings.orders,
-          customers: parsedSettings.customers || defaultSettings.customers,
-          customerGroups: parsedSettings.customerGroups || defaultSettings.customerGroups,
-          vouchers: parsedSettings.vouchers || defaultSettings.vouchers,
-          collections: parsedSettings.collections || defaultSettings.collections,
-          serviceIssues: parsedSettings.serviceIssues || defaultSettings.serviceIssues,
-          serviceTypes: parsedSettings.serviceTypes || defaultSettings.serviceTypes,
-          serviceItemCategories: parsedSettings.serviceItemCategories || defaultSettings.serviceItemCategories,
-          serviceItems: parsedSettings.serviceItems || defaultSettings.serviceItems,
-          serviceJobs: parsedSettings.serviceJobs || defaultSettings.serviceJobs,
-          productCategories: parsedSettings.productCategories || defaultSettings.productCategories,
-          products: parsedSettings.products || defaultSettings.products,
-          inventoryItems: parsedSettings.inventoryItems || defaultSettings.inventoryItems,
-          challans: parsedSettings.challans || defaultSettings.challans,
-          invProductCategories: parsedSettings.invProductCategories || defaultSettings.invProductCategories,
-          invProducts: (parsedSettings.invProducts || []).map((p: InventoryProduct) => ({ ...p, compositeItems: p.compositeItems || [] })),
-          invBrands: parsedSettings.invBrands || defaultSettings.invBrands,
-          invModels: parsedSettings.invModels || defaultSettings.invModels,
-          attributes: parsedSettings.attributes || defaultSettings.attributes,
-          attributeValues: parsedSettings.attributeValues || defaultSettings.attributeValues,
-          suppliers: parsedSettings.suppliers || defaultSettings.suppliers,
-          expenseCategories: parsedSettings.expenseCategories || defaultSettings.expenseCategories,
-          supplierBills: parsedSettings.supplierBills || defaultSettings.supplierBills,
-          supplierPayments: parsedSettings.supplierPayments || defaultSettings.supplierPayments,
-          lastOrderNumberForDate: parsedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
-          lastServiceJobNumberForDate: parsedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
-          lastChallanNumberForDate: parsedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
-        };
-        setSettings(mergedSettings);
+      const primaryData = localStorage.getItem(PRIMARY_KEY);
+      if (primaryData) {
+        storedSettings = JSON.parse(primaryData);
       } else {
-        setSettings(defaultSettings);
+        const backupData = localStorage.getItem(BACKUP_KEY);
+        if (backupData) {
+          console.warn("Primary settings not found, restoring from backup.");
+          storedSettings = JSON.parse(backupData);
+          localStorage.setItem(PRIMARY_KEY, backupData); // Restore primary from backup
+        }
       }
     } catch (error) {
-      console.error("Failed to parse settings from localStorage", error);
-      setSettings(defaultSettings);
+      console.error("Failed to parse primary settings, attempting to use backup.", error);
+      try {
+        const backupData = localStorage.getItem(BACKUP_KEY);
+        if (backupData) {
+          storedSettings = JSON.parse(backupData);
+          localStorage.setItem(PRIMARY_KEY, backupData); // Restore primary from backup
+        }
+      } catch (backupError) {
+        console.error("Failed to parse backup settings as well. Using default settings.", backupError);
+      }
+    }
+
+    if (storedSettings) {
+      const mergedSettings = {
+        ...defaultSettings,
+        ...storedSettings,
+        organization: { ...defaultSettings.organization, ...storedSettings.organization },
+        modules: { ...defaultSettings.modules, ...storedSettings.modules },
+        posSettings: { ...defaultSettings.posSettings, ...storedSettings.posSettings },
+        serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...storedSettings.serviceJobSettings },
+        challanSettings: { ...defaultSettings.challanSettings, ...storedSettings.challanSettings },
+        floors: storedSettings.floors || defaultSettings.floors,
+        tables: storedSettings.tables || defaultSettings.tables,
+        reservations: storedSettings.reservations || defaultSettings.reservations,
+        menuCategories: storedSettings.menuCategories || defaultSettings.menuCategories,
+        menuItems: (storedSettings.menuItems || []).map((item: any) => ({ ...item, variants: item.variants || [], addOns: item.addOns || [] })),
+        orders: storedSettings.orders || defaultSettings.orders,
+        customers: storedSettings.customers || defaultSettings.customers,
+        customerGroups: storedSettings.customerGroups || defaultSettings.customerGroups,
+        vouchers: storedSettings.vouchers || defaultSettings.vouchers,
+        collections: storedSettings.collections || defaultSettings.collections,
+        serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
+        serviceTypes: storedSettings.serviceTypes || defaultSettings.serviceTypes,
+        serviceItemCategories: storedSettings.serviceItemCategories || defaultSettings.serviceItemCategories,
+        serviceItems: storedSettings.serviceItems || defaultSettings.serviceItems,
+        serviceJobs: storedSettings.serviceJobs || defaultSettings.serviceJobs,
+        productCategories: storedSettings.productCategories || defaultSettings.productCategories,
+        products: storedSettings.products || defaultSettings.products,
+        inventoryItems: storedSettings.inventoryItems || defaultSettings.inventoryItems,
+        challans: storedSettings.challans || defaultSettings.challans,
+        invProductCategories: storedSettings.invProductCategories || defaultSettings.invProductCategories,
+        invProducts: (storedSettings.invProducts || []).map((p: InventoryProduct) => ({ ...p, compositeItems: p.compositeItems || [] })),
+        invBrands: storedSettings.invBrands || defaultSettings.invBrands,
+        invModels: storedSettings.invModels || defaultSettings.invModels,
+        attributes: storedSettings.attributes || defaultSettings.attributes,
+        attributeValues: storedSettings.attributeValues || defaultSettings.attributeValues,
+        suppliers: storedSettings.suppliers || defaultSettings.suppliers,
+        expenseCategories: storedSettings.expenseCategories || defaultSettings.expenseCategories,
+        supplierBills: storedSettings.supplierBills || defaultSettings.supplierBills,
+        supplierPayments: storedSettings.supplierPayments || defaultSettings.supplierPayments,
+        lastOrderNumberForDate: storedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
+        lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
+        lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
+      };
+      setSettingsState(mergedSettings);
+    } else {
+      setSettingsState(defaultSettings);
     }
     setIsLoaded(true);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
+  const setSettings = React.useCallback((updater: React.SetStateAction<AppSettings>) => {
+    setSettingsState(prevSettings => {
+      const newSettings = typeof updater === 'function' ? updater(prevSettings) : updater;
+      
       try {
-        localStorage.setItem('appSettings', JSON.stringify(settings));
+        const settingsString = JSON.stringify(newSettings);
+        // First, write to backup. If this fails, we don't touch the primary.
+        localStorage.setItem(BACKUP_KEY, settingsString);
+        // If backup is successful, write to primary.
+        localStorage.setItem(PRIMARY_KEY, settingsString);
       } catch (error) {
         console.error("Failed to save settings to localStorage", error);
+        // Optionally, show a user-facing error message here
       }
-    }
-  }, [settings, isLoaded]);
+      
+      return newSettings;
+    });
+  }, []);
 
   const setOrganizationInfo = (info: OrganizationInfo) => setSettings(prev => ({ ...prev, organization: info }));
   const setModuleSettings = (moduleInfo: ModuleSettings) => setSettings(prev => ({ ...prev, modules: moduleInfo }));
@@ -622,7 +649,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useSettings = () => {
-  const context = useContext(SettingsContext);
+  const context = React.useContext(SettingsContext);
   if (context === undefined) throw new Error('useSettings must be used within a SettingsProvider');
   return context;
 };
