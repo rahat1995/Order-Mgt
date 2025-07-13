@@ -1,8 +1,6 @@
 
 
-
-
-
+export type Theme = 'slate' | 'stone';
 
 export interface Floor {
   id: string;
@@ -353,6 +351,7 @@ export interface InventoryProduct {
 
 export interface AppSettings {
   organization: OrganizationInfo;
+  theme: Theme;
   modules: ModuleSettings;
   posSettings: PosSettings;
   serviceJobSettings: ServiceJobSettings;

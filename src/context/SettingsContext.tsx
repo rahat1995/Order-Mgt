@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +15,7 @@ const defaultSettings: AppSettings = {
     contactPerson: 'John Doe',
     receiptFooter: 'Thank you for your visit! Please come again.',
   },
+  theme: 'slate',
   modules: {
     pos: true,
     customerManagement: true,
@@ -106,6 +107,7 @@ interface SettingsContextType {
   isLoaded: boolean;
   setOrganizationInfo: (info: OrganizationInfo) => void;
   setModuleSettings: (settings: ModuleSettings) => void;
+  setTheme: (theme: Theme) => void;
   setPosSettings: (settings: PosSettings) => void;
   setServiceJobSettings: (settings: ServiceJobSettings) => void;
   setChallanSettings: (settings: ChallanSettings) => void;
@@ -240,6 +242,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         ...defaultSettings,
         ...storedSettings,
         organization: { ...defaultSettings.organization, ...storedSettings.organization },
+        theme: storedSettings.theme || defaultSettings.theme,
         modules: { ...defaultSettings.modules, ...storedSettings.modules },
         posSettings: { ...defaultSettings.posSettings, ...storedSettings.posSettings },
         serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...storedSettings.serviceJobSettings },
@@ -305,6 +308,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
   const setOrganizationInfo = (info: OrganizationInfo) => setSettings(prev => ({ ...prev, organization: info }));
   const setModuleSettings = (moduleInfo: ModuleSettings) => setSettings(prev => ({ ...prev, modules: moduleInfo }));
+  const setTheme = (theme: Theme) => setSettings(prev => ({ ...prev, theme }));
   const setPosSettings = (posSettings: PosSettings) => setSettings(prev => ({ ...prev, posSettings }));
   const setServiceJobSettings = (serviceJobSettings: ServiceJobSettings) => setSettings(prev => ({ ...prev, serviceJobSettings }));
   const setChallanSettings = (challanSettings: ChallanSettings) => setSettings(prev => ({ ...prev, challanSettings }));
@@ -638,7 +642,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
 
   const contextValue = {
-    settings, isLoaded, setOrganizationInfo, setModuleSettings, setPosSettings, setServiceJobSettings, setChallanSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
+    settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
     addInvProductCategory, updateInvProductCategory, deleteInvProductCategory, addBrand, updateBrand, deleteBrand, addModel, updateModel, deleteModel,
     addInvProduct, updateInvProduct, deleteInvProduct,
     addAttribute, updateAttribute, deleteAttribute,
