@@ -13,8 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type { Table, Floor } from '@/types';
 import { cn } from '@/lib/utils';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useDrag, useDrop } from 'react-dnd';
 
 const GRID_SIZE = 20;
 const GRID_WIDTH_CELLS = 40;
@@ -153,7 +152,6 @@ export function TableLayoutClient() {
   const sidebarTables = tables.filter(t => t.floorId === selectedFloorId && (t.x < 0 || t.y < 0));
 
   return (
-    <DndProvider backend={HTML5Backend}>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -264,6 +262,5 @@ export function TableLayoutClient() {
           </form>
         </DialogContent>
       </Dialog>
-    </DndProvider>
   );
 }
