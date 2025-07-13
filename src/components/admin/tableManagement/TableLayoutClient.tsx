@@ -7,130 +7,81 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Landmark, Plus, Square, Trash, Utensils } from 'lucide-react';
+import { Landmark, Plus, Square, Trash, Utensils, X, Move, Eraser } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type { Table, Floor } from '@/types';
 import { cn } from '@/lib/utils';
-import { useDrag, useDrop } from 'react-dnd';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+
 
 const GRID_SIZE = 20;
 const GRID_WIDTH_CELLS = 40;
 const GRID_HEIGHT_CELLS = 30;
 
-const ItemTypes = {
-  TABLE: 'table',
-  LANDMARK: 'landmark',
+const landmarkIcons = {
+    Landmark,
+    Utensils,
+    Square,
 };
+type LandmarkIconName = keyof typeof landmarkIcons;
+const landmarkIconNames = Object.keys(landmarkIcons) as LandmarkIconName[];
 
-const landmarkOptions = [
-    { name: 'Entrance', icon: Landmark },
-    { name: 'Kitchen', icon: Utensils },
-    { name: 'Restroom', icon: Landmark },
-    { name: 'Bar', icon: Utensils },
-    { name: 'Counter', icon: Landmark },
-];
-
-const DraggableItem = ({ item, type }: { item: Table, type: 'sidebar' | 'grid' }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.TABLE,
-    item: { id: item.id, type: ItemTypes.TABLE },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }), [item.id]);
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        left: type === 'grid' ? `${item.x * GRID_SIZE}px` : undefined,
-        top: type === 'grid' ? `${item.y * GRID_SIZE}px` : undefined,
-      }}
-      className={cn(
-        "flex items-center justify-center p-2 rounded-md cursor-grab transition-all",
-        type === 'sidebar' ? "border bg-card hover:bg-muted" : "absolute bg-primary text-primary-foreground shadow-lg",
-        item.shape === 'round' ? 'rounded-full w-16 h-16' : 'w-20 h-12',
-      )}
-    >
-      <span className="font-bold text-sm">{item.name}</span>
-    </div>
-  );
-};
-
-const DraggableLandmark = ({ landmark, type }: { landmark: Table, type: 'sidebar' | 'grid' }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.LANDMARK,
-    item: { id: landmark.id, type: ItemTypes.LANDMARK },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }), [landmark.id]);
-  
-  const Icon = landmarkOptions.find(opt => opt.name === landmark.name)?.icon || Square;
-
-  return (
-    <div
-      ref={drag}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        left: type === 'grid' ? `${landmark.x * GRID_SIZE}px` : undefined,
-        top: type === 'grid' ? `${landmark.y * GRID_SIZE}px` : undefined,
-      }}
-      className={cn(
-        "flex flex-col items-center justify-center p-2 rounded-md cursor-grab transition-all text-muted-foreground",
-        type === 'sidebar' ? "border bg-card hover:bg-muted" : "absolute bg-secondary text-secondary-foreground shadow-md",
-        "w-24 h-16"
-      )}
-    >
-      <Icon className="h-6 w-6 mb-1" />
-      <span className="font-semibold text-xs">{landmark.name}</span>
-    </div>
-  );
-};
 
 export function TableLayoutClient() {
-  const { settings, updateTable, addTable, deleteTable, isLoaded } = useSettings();
+  const { settings, updateTable, addTable, deleteTable, addFloor, isLoaded } = useSettings();
   const { floors, tables } = settings;
   
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(floors.length > 0 ? floors[0].id : null);
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
-  const lastAddedRef = useRef<string | null>(null);
+  const [landmarkDialogOpen, setLandmarkDialogOpen] = useState(false);
+  const [floorDialogOpen, setFloorDialogOpen] = useState(false);
+
+  const [movingItem, setMovingItem] = useState<Table | null>(null);
+
+  const lastAddedFloorId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (lastAddedRef.current) {
-      const table = tables.find(t => t.id === lastAddedRef.current);
-      if (table && table.floorId === selectedFloorId) {
-        // This is a new table on the current floor, but not yet placed.
-        // It will appear in the sidebar.
-      }
-      lastAddedRef.current = null;
+    if (isLoaded && floors.length > 0 && !selectedFloorId) {
+        setSelectedFloorId(floors[0].id);
     }
-  }, [tables, selectedFloorId]);
+  }, [isLoaded, floors, selectedFloorId]);
 
-  const handleDrop = (item: { id: string, type: string }, monitor: any) => {
-    const delta = monitor.getDifferenceFromInitialOffset();
-    const currentTable = tables.find(t => t.id === item.id);
+  useEffect(() => {
+    if (lastAddedFloorId.current) {
+      setSelectedFloorId(lastAddedFloorId.current);
+      lastAddedFloorId.current = null;
+    }
+  }, [floors]);
+
+
+  const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!movingItem) return;
+
+    const gridRect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - gridRect.left;
+    const y = e.clientY - gridRect.top;
+
+    let newX = Math.floor(x / GRID_SIZE);
+    let newY = Math.floor(y / GRID_SIZE);
+
+    const itemWidth = movingItem.itemType === 'landmark' ? 6 : (movingItem.shape === 'round' ? 4 : 5);
+    const itemHeight = movingItem.itemType === 'landmark' ? 4 : (movingItem.shape === 'round' ? 4 : 3);
+
+    newX = Math.max(0, Math.min(newX, GRID_WIDTH_CELLS - itemWidth));
+    newY = Math.max(0, Math.min(newY, GRID_HEIGHT_CELLS - itemHeight));
     
-    if (!currentTable) return;
-    
-    let newX = Math.round((currentTable.x * GRID_SIZE + delta.x) / GRID_SIZE);
-    let newY = Math.round((currentTable.y * GRID_SIZE + delta.y) / GRID_SIZE);
-    
-    newX = Math.max(0, Math.min(newX, GRID_WIDTH_CELLS - (currentTable.shape === 'round' ? 4 : 5)));
-    newY = Math.max(0, Math.min(newY, GRID_HEIGHT_CELLS - (currentTable.shape === 'round' ? 4 : 3)));
-    
-    updateTable({ ...currentTable, x: newX, y: newY, floorId: selectedFloorId! });
+    updateTable({ ...movingItem, x: newX, y: newY, floorId: selectedFloorId! });
+    setMovingItem(null);
   };
-  
-  const [, drop] = useDrop(() => ({
-    accept: [ItemTypes.TABLE, ItemTypes.LANDMARK],
-    drop: (item, monitor) => handleDrop(item, monitor),
-  }));
+
+  const handleItemClick = (item: Table) => {
+    if (movingItem?.id === item.id) {
+      setMovingItem(null); // Deselect if clicking the same item
+    } else {
+      setMovingItem(item); // Select item to move
+    }
+  };
 
   const handleTableFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -139,40 +90,81 @@ export function TableLayoutClient() {
     const shape = formData.get('shape') as 'rectangle' | 'round';
     if (!name || !selectedFloorId) return;
 
-    const newTable = addTable({ name, shape, floorId: selectedFloorId });
-    lastAddedRef.current = newTable.id;
+    addTable({ name, shape, floorId: selectedFloorId, itemType: 'table' });
     setTableDialogOpen(false);
   };
+
+  const handleLandmarkFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const icon = formData.get('icon') as LandmarkIconName;
+    if (!name || !icon || !selectedFloorId) return;
+
+    addTable({ name, shape: 'rectangle', floorId: selectedFloorId, itemType: 'landmark', icon });
+    setLandmarkDialogOpen(false);
+  }
   
-  const handleDeleteFromGrid = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this table? This cannot be undone.")) {
+  const handleDeleteItem = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this item? This cannot be undone.")) {
         deleteTable(id);
     }
   }
 
-  const floorTables = tables.filter(t => t.floorId === selectedFloorId && t.x >= 0 && t.y >= 0);
-  const sidebarTables = tables.filter(t => t.floorId === selectedFloorId && (t.x < 0 || t.y < 0));
+  const handleFloorFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    if (!name) return;
+    const newFloor = addFloor({ name });
+    lastAddedFloorId.current = newFloor.id;
+    setFloorDialogOpen(false);
+  }
+  
+  const returnToSidebar = (item: Table) => {
+      updateTable({ ...item, x: -1, y: -1 });
+      setMovingItem(null);
+  }
+
+  const floorItems = tables.filter(t => t.floorId === selectedFloorId && t.x >= 0 && t.y >= 0);
+  const sidebarItems = tables.filter(t => t.floorId === selectedFloorId && (t.x < 0 || t.y < 0));
+
+  const sidebarTables = sidebarItems.filter(i => i.itemType === 'table');
+  const sidebarLandmarks = sidebarItems.filter(i => i.itemType === 'landmark');
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
-             <Select value={selectedFloorId || ''} onValueChange={setSelectedFloorId}>
-                <SelectTrigger className="w-[250px]">
-                    <SelectValue placeholder="Select a floor" />
-                </SelectTrigger>
-                <SelectContent>
-                    {floors.map(floor => (
-                        <SelectItem key={floor.id} value={floor.id}>{floor.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+             <div className="flex items-center gap-2">
+                <Select value={selectedFloorId || ''} onValueChange={setSelectedFloorId}>
+                    <SelectTrigger className="w-[250px]">
+                        <SelectValue placeholder="Select a floor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {floors.map(floor => (
+                            <SelectItem key={floor.id} value={floor.id}>{floor.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={() => setFloorDialogOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+             </div>
           </CardHeader>
           <CardContent>
+            {movingItem && (
+                <div className="p-2 mb-4 text-center bg-blue-100 border border-blue-300 rounded-md text-blue-800 flex items-center justify-center">
+                    <p>Placing: <span className="font-bold">{movingItem.name}</span>. Click on the grid to place it.</p>
+                </div>
+            )}
             <div
-              ref={drop}
-              className="relative bg-muted/30 rounded-lg overflow-hidden border"
+              onClick={handleGridClick}
+              className={cn(
+                "relative bg-muted/30 rounded-lg overflow-hidden border",
+                movingItem && "cursor-copy"
+              )}
               style={{ width: `${GRID_WIDTH_CELLS * GRID_SIZE}px`, height: `${GRID_HEIGHT_CELLS * GRID_SIZE}px` }}
             >
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -183,11 +175,37 @@ export function TableLayoutClient() {
                 </defs>
                 <rect width="100%" height="100%" fill="url(#smallGrid)" />
               </svg>
-              {floorTables.map(item => (
-                item.itemType === 'landmark' 
-                  ? <DraggableLandmark key={item.id} landmark={item} type="grid" />
-                  : <DraggableItem key={item.id} item={item} type="grid" />
-              ))}
+              {floorItems.map(item => {
+                const Icon = item.icon ? landmarkIcons[item.icon] : Square;
+                return (
+                    <div
+                        key={item.id}
+                        onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
+                        style={{
+                            left: `${item.x * GRID_SIZE}px`,
+                            top: `${item.y * GRID_SIZE}px`,
+                            width: item.itemType === 'landmark' ? '120px' : (item.shape === 'round' ? '80px' : '100px'),
+                            height: item.itemType === 'landmark' ? '80px' : (item.shape === 'round' ? '80px' : '60px'),
+                        }}
+                        className={cn(
+                            "absolute flex items-center justify-center p-2 cursor-pointer transition-all shadow-lg",
+                            item.shape === 'round' ? 'rounded-full' : 'rounded-md',
+                            item.itemType === 'table' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground flex-col',
+                            movingItem?.id === item.id && "ring-4 ring-offset-2 ring-blue-500"
+                        )}
+                    >
+                        {item.itemType === 'landmark' && <Icon className="h-6 w-6 mb-1" />}
+                        <span className="font-bold text-sm">{item.name}</span>
+
+                        {/* Action buttons on hover */}
+                         <div className="absolute -top-3 -right-3 flex opacity-0 hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="destructive" className="h-7 w-7 rounded-full z-10" onClick={(e) => {e.stopPropagation(); returnToSidebar(item); }}>
+                                <Eraser className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -195,7 +213,7 @@ export function TableLayoutClient() {
         <Card className="lg:col-span-1 self-start sticky top-6">
           <CardHeader>
             <CardTitle>Layout Items</CardTitle>
-            <CardDescription>Drag items onto the floor plan.</CardDescription>
+            <CardDescription>Click an item to select it, then click on the grid to place it.</CardDescription>
           </CardHeader>
           <CardContent>
              <Tabs defaultValue="tables">
@@ -210,8 +228,17 @@ export function TableLayoutClient() {
                     <div className="space-y-2 pt-2 border-t max-h-96 overflow-y-auto">
                         {sidebarTables.map(table => (
                             <div key={table.id} className="flex items-center gap-2">
-                                <DraggableItem item={table} type="sidebar" />
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteFromGrid(table.id)}>
+                                <div 
+                                    onClick={() => handleItemClick(table)}
+                                    className={cn(
+                                        "flex-grow flex items-center justify-center p-2 rounded-md cursor-pointer border bg-card hover:bg-muted",
+                                        table.shape === 'round' ? 'rounded-full h-16' : 'h-12',
+                                        movingItem?.id === table.id && 'ring-2 ring-blue-500'
+                                    )}
+                                >
+                                    <span className="font-bold text-sm">{table.name}</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteItem(table.id)}>
                                     <Trash className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -220,10 +247,31 @@ export function TableLayoutClient() {
                     </div>
                 </TabsContent>
                 <TabsContent value="landmarks" className="mt-4 space-y-2">
-                     <div className="space-y-2 pt-2 max-h-96 overflow-y-auto">
-                        {landmarkOptions.map(landmark => (
-                             <DraggableLandmark key={landmark.name} landmark={{id: landmark.name, name: landmark.name, itemType: 'landmark', floorId: selectedFloorId!, x: -1, y: -1, shape: 'rectangle'}} type="sidebar" />
-                        ))}
+                     <Button onClick={() => setLandmarkDialogOpen(true)} className="w-full">
+                        <Plus className="mr-2 h-4 w-4" /> Add New Landmark
+                    </Button>
+                     <div className="space-y-2 pt-2 border-t max-h-96 overflow-y-auto">
+                        {sidebarLandmarks.map(landmark => {
+                            const Icon = landmark.icon ? landmarkIcons[landmark.icon] : Square;
+                            return(
+                                <div key={landmark.id} className="flex items-center gap-2">
+                                    <div
+                                        onClick={() => handleItemClick(landmark)}
+                                        className={cn(
+                                            "flex-grow flex flex-col items-center justify-center p-2 rounded-md cursor-pointer border bg-card hover:bg-muted h-20",
+                                            movingItem?.id === landmark.id && 'ring-2 ring-blue-500'
+                                        )}
+                                    >
+                                        <Icon className="h-6 w-6 mb-1 text-muted-foreground" />
+                                        <span className="font-semibold text-xs">{landmark.name}</span>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteItem(landmark.id)}>
+                                        <Trash className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                         {sidebarLandmarks.length === 0 && <p className="text-sm text-center text-muted-foreground p-4">No unplaced landmarks.</p>}
                     </div>
                 </TabsContent>
             </Tabs>
@@ -259,6 +307,63 @@ export function TableLayoutClient() {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setTableDialogOpen(false)}>Cancel</Button>
               <Button type="submit">Create Table</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={landmarkDialogOpen} onOpenChange={setLandmarkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Landmark</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleLandmarkFormSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Landmark Name</Label>
+                <Input id="name" name="name" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="icon">Icon</Label>
+                <Select name="icon" defaultValue={landmarkIconNames[0]}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                        {landmarkIconNames.map(iconName => {
+                            const Icon = landmarkIcons[iconName];
+                            return (
+                                <SelectItem key={iconName} value={iconName}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon className="h-4 w-4" />
+                                        <span>{iconName}</span>
+                                    </div>
+                                </SelectItem>
+                            )
+                        })}
+                    </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setLandmarkDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">Create Landmark</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={floorDialogOpen} onOpenChange={setFloorDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add New Floor</DialogTitle></DialogHeader>
+          <form onSubmit={handleFloorFormSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Floor Name</Label>
+                <Input id="name" name="name" required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setFloorDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">Create Floor</Button>
             </DialogFooter>
           </form>
         </DialogContent>

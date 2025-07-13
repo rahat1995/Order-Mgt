@@ -3,6 +3,7 @@
 
 
 
+
 export interface Floor {
   id: string;
   name: string;
@@ -16,6 +17,7 @@ export interface Table {
   x: number; // grid position
   y: number; // grid position
   itemType: 'table' | 'landmark';
+  icon?: 'Landmark' | 'Utensils' | 'Square';
 }
 
 export interface Reservation {

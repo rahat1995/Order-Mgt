@@ -110,10 +110,10 @@ interface SettingsContextType {
   setServiceJobSettings: (settings: ServiceJobSettings) => void;
   setChallanSettings: (settings: ChallanSettings) => void;
   // Table Management
-  addFloor: (floor: Omit<Floor, 'id'>) => void;
+  addFloor: (floor: Omit<Floor, 'id'>) => Floor;
   updateFloor: (floor: Floor) => void;
   deleteFloor: (floorId: string) => void;
-  addTable: (table: Omit<Table, 'id' | 'x' | 'y' | 'itemType'>) => Table;
+  addTable: (table: Omit<Table, 'id' | 'x' | 'y'>) => Table;
   updateTable: (table: Table) => void;
   deleteTable: (tableId: string) => void;
   addReservation: (reservation: Omit<Reservation, 'id'>) => void;
@@ -310,23 +310,25 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const setChallanSettings = (challanSettings: ChallanSettings) => setSettings(prev => ({ ...prev, challanSettings }));
   
   // Table Management
-  const addFloor = (floor: Omit<Floor, 'id'>) => setSettings(prev => ({ ...prev, floors: [...prev.floors, { ...floor, id: uuidv4() }] }));
+  const addFloor = (floor: Omit<Floor, 'id'>): Floor => {
+    const newFloor = { ...floor, id: uuidv4() };
+    setSettings(prev => ({ ...prev, floors: [...prev.floors, newFloor] }));
+    return newFloor;
+  };
   const updateFloor = (updatedFloor: Floor) => setSettings(prev => ({ ...prev, floors: prev.floors.map(f => f.id === updatedFloor.id ? updatedFloor : f) }));
   const deleteFloor = (floorId: string) => {
     if (confirm('Are you sure you want to delete this floor? All its tables and layout configurations will also be removed.')) {
       setSettings(prev => ({ ...prev, floors: prev.floors.filter(f => f.id !== floorId), tables: prev.tables.filter(t => t.floorId !== floorId) }));
     }
   };
-  const addTable = (table: Omit<Table, 'id' | 'x' | 'y' | 'itemType'>): Table => {
-    const newTable = { ...table, id: uuidv4(), x: -1, y: -1, itemType: 'table' as 'table' };
+  const addTable = (table: Omit<Table, 'id' | 'x' | 'y'>): Table => {
+    const newTable = { ...table, id: uuidv4(), x: -1, y: -1 };
     setSettings(prev => ({ ...prev, tables: [...prev.tables, newTable] }));
     return newTable;
   };
   const updateTable = (updatedTable: Table) => setSettings(prev => ({ ...prev, tables: prev.tables.map(t => t.id === updatedTable.id ? updatedTable : t) }));
   const deleteTable = (tableId: string) => {
-    if (confirm('Are you sure?')) {
-      setSettings(prev => ({ ...prev, tables: prev.tables.filter(t => t.id !== tableId), reservations: prev.reservations.filter(r => r.tableId !== tableId) }));
-    }
+    setSettings(prev => ({ ...prev, tables: prev.tables.filter(t => t.id !== tableId), reservations: prev.reservations.filter(r => r.tableId !== tableId) }));
   };
   const addReservation = (reservation: Omit<Reservation, 'id'>) => setSettings(prev => ({ ...prev, reservations: [...prev.reservations, { ...reservation, id: uuidv4() }] }));
   const deleteReservation = (reservationId: string) => {
