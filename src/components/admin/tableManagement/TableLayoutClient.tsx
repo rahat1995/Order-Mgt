@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import type { Table, Floor } from '@/types';
 import { cn } from '@/lib/utils';
 import { useDrag, useDrop } from 'react-dnd';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 const GRID_SIZE = 20;
 const GRID_WIDTH_CELLS = 40;
@@ -152,6 +154,7 @@ export function TableLayoutClient() {
   const sidebarTables = tables.filter(t => t.floorId === selectedFloorId && (t.x < 0 || t.y < 0));
 
   return (
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -172,7 +175,6 @@ export function TableLayoutClient() {
               className="relative bg-muted/30 rounded-lg overflow-hidden border"
               style={{ width: `${GRID_WIDTH_CELLS * GRID_SIZE}px`, height: `${GRID_HEIGHT_CELLS * GRID_SIZE}px` }}
             >
-              {/* Grid background */}
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <pattern id="smallGrid" width={GRID_SIZE} height={GRID_SIZE} patternUnits="userSpaceOnUse">
@@ -181,7 +183,6 @@ export function TableLayoutClient() {
                 </defs>
                 <rect width="100%" height="100%" fill="url(#smallGrid)" />
               </svg>
-              {/* Placed items */}
               {floorTables.map(item => (
                 item.itemType === 'landmark' 
                   ? <DraggableLandmark key={item.id} landmark={item} type="grid" />
@@ -262,5 +263,6 @@ export function TableLayoutClient() {
           </form>
         </DialogContent>
       </Dialog>
+    </>
   );
 }
