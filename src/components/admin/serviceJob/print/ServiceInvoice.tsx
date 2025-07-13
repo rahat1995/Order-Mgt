@@ -1,11 +1,13 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { Order, Customer, OrganizationInfo, ServiceJob, ServiceIssue, ServiceType } from '@/types';
 import { Package } from 'lucide-react';
 import { amountToWords } from '@/lib/amountInWords';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import QRCode from 'react-qr-code';
+import Barcode from 'react-barcode';
 
 interface ServiceInvoiceProps {
   job: ServiceJob;
@@ -27,6 +29,7 @@ const formatDate = (isoString: string) => {
 
 export const ServiceInvoice = ({ job, order, customer, organization, issueType, serviceType }: ServiceInvoiceProps) => {
   const amountDue = order.total - (order.amountTendered || 0);
+  const qrUrl = typeof window !== 'undefined' ? `${window.location.origin}/status/${job.id}` : '';
 
   return (
     <div className="bg-white text-black font-sans w-[210mm] min-h-[297mm] mx-auto p-12 print:p-6 print:shadow-none print:m-0">
@@ -99,25 +102,38 @@ export const ServiceInvoice = ({ job, order, customer, organization, issueType, 
         </Table>
       </main>
 
-      {/* Totals Section */}
-      <section className="mt-8 flex justify-end">
-        <div className="w-1/2 space-y-3">
-          <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal:</span><span className="font-medium">৳{order.subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-gray-600">Discount:</span><span className="font-medium">-৳{order.discountAmount.toFixed(2)}</span></div>
-          <div className="flex justify-between text-lg font-bold border-t pt-2"><span className="text-gray-800">Grand Total:</span><span className="text-gray-800">৳{order.total.toFixed(2)}</span></div>
-          <div className="flex justify-between text-sm border-t mt-2 pt-2"><span className="text-gray-600">Amount Paid:</span><span className="font-medium">৳{(order.amountTendered || 0).toFixed(2)}</span></div>
-          <div className={`flex justify-between text-base font-semibold border-t pt-2 ${amountDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
-            <span>{amountDue > 0 ? "Amount Due:" : "Change:"}</span>
-            <span>৳{Math.abs(amountDue).toFixed(2)}</span>
-          </div>
+       {/* Right Column: QR Code */}
+      <div className="mt-8 flex justify-between items-start">
+        <div className="w-3/5">
+             <section className="pt-4"><p className="text-sm"><strong>In Words:</strong> {amountToWords(order.total)}</p></section>
         </div>
-      </section>
-
-      {/* Amount in words section */}
-      <section className="mt-4 pt-4 border-t"><p className="text-sm"><strong>In Words:</strong> {amountToWords(order.total)}</p></section>
+        <div className="w-2/5 flex flex-col items-end gap-4">
+             {/* Totals Section */}
+            <div className="w-full space-y-3">
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal:</span><span className="font-medium">৳{order.subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Discount:</span><span className="font-medium">-৳{order.discountAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between text-lg font-bold border-t pt-2"><span className="text-gray-800">Grand Total:</span><span className="text-gray-800">৳{order.total.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm border-t mt-2 pt-2"><span className="text-gray-600">Amount Paid:</span><span className="font-medium">৳{(order.amountTendered || 0).toFixed(2)}</span></div>
+              <div className={`flex justify-between text-base font-semibold border-t pt-2 ${amountDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <span>{amountDue > 0 ? "Amount Due:" : "Change:"}</span>
+                <span>৳{Math.abs(amountDue).toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="text-center">
+                 <div className="p-1 bg-white border rounded-md inline-block">
+                    <QRCode value={qrUrl} size={80} />
+                 </div>
+                 <p className="text-xs text-gray-500 mt-1">Scan to track status</p>
+                 <div className="mt-2">
+                    <Barcode value={job.jobNumber} height={40} width={1.5} fontSize={12} />
+                 </div>
+            </div>
+        </div>
+      </div>
+      
 
       {/* Footer */}
-      <footer className="mt-24 pt-8 grid grid-cols-2 gap-8 text-center absolute bottom-12 w-[calc(100%-6rem)]">
+      <footer className="mt-16 pt-8 grid grid-cols-2 gap-8 text-center absolute bottom-12 w-[calc(100%-6rem)]">
         <div><div className="border-t-2 border-gray-400 pt-2"><p>Authorized Signature</p></div></div>
         <div><div className="border-t-2 border-gray-400 pt-2"><p>Customer Signature</p></div></div>
       </footer>
