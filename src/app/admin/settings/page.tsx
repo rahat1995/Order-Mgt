@@ -1,8 +1,9 @@
+
 'use client';
 
 import { OrganizationInfoForm } from '@/components/admin/OrganizationInfoForm';
 import { ModuleManagementForm } from '@/components/admin/ModuleManagementForm';
-import { ThemeSelector }d' src/components/admin/ThemeSelector';
+import { ThemeSelector } from '@/components/admin/ThemeSelector';
 
 export default function SettingsPage() {
   return (
