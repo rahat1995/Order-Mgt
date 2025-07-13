@@ -54,7 +54,7 @@ export function CreateServiceJobClient() {
         printInNewWindow(jobCardRef, `Job Card - ${jobToPrint.jobNumber}`);
         setJobToPrint(null);
         router.push('/admin/modules/serviceJob/all');
-      }, 100);
+      }, 200); // Increased delay
       return () => clearTimeout(timer);
     }
   }, [jobToPrint, router]);

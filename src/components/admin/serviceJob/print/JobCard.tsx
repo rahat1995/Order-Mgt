@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { ServiceJob, Customer, OrganizationInfo, ServiceIssue, ServiceType } from '@/types';
 import { useSettings } from '@/context/SettingsContext';
 import Barcode from 'react-barcode';
@@ -28,13 +28,9 @@ const formatDate = (isoString: string) => {
 
 export const JobCard = ({ job, customer, organization, issueType, serviceType }: JobCardProps) => {
     const { settings } = useSettings();
-    const [qrUrl, setQrUrl] = useState('');
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setQrUrl(`${window.location.origin}/status/${job.id}`);
-        }
-    }, [job.id]);
+    
+    // Generate QR URL directly if in a browser environment.
+    const qrUrl = typeof window !== 'undefined' ? `${window.location.origin}/status/${job.id}` : '';
 
     const terms = settings.serviceJobSettings.termsAndConditions.split('\n');
 
