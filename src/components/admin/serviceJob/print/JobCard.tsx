@@ -29,10 +29,8 @@ const formatDate = (isoString: string) => {
 export const JobCard = ({ job, customer, organization, issueType, serviceType }: JobCardProps) => {
     const { settings } = useSettings();
     const [qrUrl, setQrUrl] = useState('');
-    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
         if (typeof window !== 'undefined') {
             setQrUrl(`${window.location.origin}/status/${job.id}`);
         }
@@ -94,13 +92,13 @@ export const JobCard = ({ job, customer, organization, issueType, serviceType }:
                         <h3 className="text-lg font-semibold border-b pb-2 mb-3">Service Tracking</h3>
                         <div className="flex flex-col items-center justify-center gap-4">
                             <div className="p-2 bg-white border rounded-md">
-                                {isClient && qrUrl ? <QRCode value={qrUrl} size={128} /> : <div className="h-[128px] w-[128px] bg-gray-200" />}
+                                {qrUrl ? <QRCode value={qrUrl} size={128} /> : <div className="h-[128px] w-[128px] bg-gray-200" />}
                             </div>
                             <p className="text-xs text-gray-600">Scan this QR code with your phone to track the real-time status of your service request.</p>
                         </div>
                     </div>
                     <div>
-                         {isClient && <Barcode value={job.jobNumber} height={60} width={2} fontSize={16} />}
+                         <Barcode value={job.jobNumber} height={60} width={2} fontSize={16} />
                     </div>
                 </div>
             </main>
