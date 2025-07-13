@@ -24,10 +24,10 @@ export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) =
         {order.customerMobile && <p>Mobile: {order.customerMobile}</p>}
         {order.orderType && <p>Type: <span className="uppercase font-semibold">{order.orderType}</span></p>}
       </div>
-      <div className="border-t border-dashed border-black my-2" />
+      <div className="border-t border-solid border-black my-2" />
       <table className="w-full">
         <thead>
-          <tr className="border-b-2 border-dashed border-black">
+          <tr className="border-b-2 border-solid border-black">
             <th className="text-left pb-1 pr-1">Sl.</th>
             <th className="text-left w-2/5 pb-1">Item</th>
             <th className="text-center pb-1">Qty</th>
@@ -37,7 +37,7 @@ export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) =
         </thead>
         <tbody>
           {order.items.map((item, index) => (
-            <tr key={item.id} className="border-b border-dashed border-black/50">
+            <tr key={item.id} className="border-b border-solid border-black/50">
               <td className="text-left align-top pt-1 pr-1">{index + 1}.</td>
               <td className="text-left align-top pt-1">
                 {item.name}
@@ -51,20 +51,20 @@ export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) =
           ))}
         </tbody>
       </table>
-      <div className="border-t border-dashed border-black my-2" />
+      <div className="border-t border-solid border-black my-2" />
       <div className="space-y-1">
         <div className="flex justify-between"><p>Subtotal:</p> <p>৳{order.subtotal.toFixed(2)}</p></div>
         {order.discountAmount > 0 && <div className="flex justify-between"><p>Discount:</p> <p>-৳{order.discountAmount.toFixed(2)}</p></div>}
         <div className="flex justify-between font-bold text-sm"><p>GRAND TOTAL:</p> <p>৳{order.total.toFixed(2)}</p></div>
-        <div className="border-t border-dashed border-black my-1" />
+        <div className="border-t border-solid border-black my-1" />
         {order.amountTendered && <div className="flex justify-between"><p>Tendered:</p> <p>৳{order.amountTendered.toFixed(2)}</p></div>}
         {order.changeDue && <div className="flex justify-between"><p>Change:</p> <p>৳{order.changeDue.toFixed(2)}</p></div>}
       </div>
-      <div className="border-t border-dashed border-black my-2" />
+      <div className="border-t border-solid border-black my-2" />
       <div className="pt-1 text-xs">
         <p><span className="font-semibold">In Words:</span> {amountToWords(order.total)}</p>
       </div>
-      <div className="border-t border-dashed border-black my-2" />
+      <div className="border-t border-solid border-black my-2" />
       {organization.receiptFooter && <p className="text-center mt-4">{organization.receiptFooter}</p>}
     </div>
   );
