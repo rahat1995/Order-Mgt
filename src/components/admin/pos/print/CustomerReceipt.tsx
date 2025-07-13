@@ -1,0 +1,76 @@
+
+'use client';
+
+import React from 'react';
+import type { Order, OrganizationInfo } from '@/types';
+import { amountToWords } from '@/lib/amountInWords';
+
+interface CustomerReceiptProps {
+  order: Order;
+  organization: OrganizationInfo;
+}
+
+export const CustomerReceipt = ({ order, organization }: CustomerReceiptProps) => {
+  return (
+    <div className="p-4 bg-white text-black font-mono text-xs w-[300px]">
+      <div className="text-center mb-4">
+        <h1 className="text-base font-bold uppercase">{organization.name}</h1>
+        <p>{organization.address}</p>
+        <p>Ph: {organization.mobile}</p>
+      </div>
+      <div className="mb-2">
+        <p>Order No: {order.orderNumber}</p>
+        <p>Customer: {order.customerName}</p>
+        {order.customerMobile && <p>Mobile: {order.customerMobile}</p>}
+        {order.orderType && <p>Type: <span className="uppercase font-semibold">{order.orderType}</span></p>}
+      </div>
+      <div className="border-t border-dashed border-black my-2" />
+      <table className="w-full">
+        <thead>
+          <tr className="border-b-2 border-dashed border-black">
+            <th className="text-left w-2/5 pb-1">Item</th>
+            <th className="text-center pb-1">Qty</th>
+            <th className="text-right pb-1">Price</th>
+            <th className="text-right pb-1">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {order.items.map((item, index) => (
+            <React.Fragment key={item.id}>
+               <tr className="pt-1">
+                <td className="text-left align-top pt-1">{item.name}</td>
+                <td className="text-center align-top pt-1">{item.quantity % 1 !== 0 ? item.quantity.toFixed(2) : item.quantity}</td>
+                <td className="text-right align-top pt-1">৳{item.unitPrice.toFixed(2)}</td>
+                <td className="text-right align-top pt-1">৳{item.subtotal.toFixed(2)}</td>
+              </tr>
+              {item.variant && <tr><td colSpan={4} className="pl-2 text-left text-gray-700"> - {item.variant.name}</td></tr>}
+              {item.addons?.map(addon => <tr key={addon.id}><td colSpan={4} className="pl-2 text-left text-gray-700"> + {addon.name}</td></tr>)}
+              {index < order.items.length - 1 && (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="border-t border-dashed border-black my-1"></div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+      <div className="border-t border-dashed border-black my-2" />
+      <div className="space-y-1">
+        <div className="flex justify-between"><p>Subtotal:</p> <p>৳{order.subtotal.toFixed(2)}</p></div>
+        {order.discountAmount > 0 && <div className="flex justify-between"><p>Discount:</p> <p>-৳{order.discountAmount.toFixed(2)}</p></div>}
+        <div className="flex justify-between font-bold text-sm"><p>GRAND TOTAL:</p> <p>৳{order.total.toFixed(2)}</p></div>
+        <div className="border-t border-dashed border-black my-1" />
+        {order.amountTendered && <div className="flex justify-between"><p>Tendered:</p> <p>৳{order.amountTendered.toFixed(2)}</p></div>}
+        {order.changeDue && <div className="flex justify-between"><p>Change:</p> <p>৳{order.changeDue.toFixed(2)}</p></div>}
+      </div>
+      <div className="border-t border-dashed border-black my-2" />
+      <div className="pt-1 text-xs">
+        <p><span className="font-semibold">In Words:</span> {amountToWords(order.total)}</p>
+      </div>
+      <div className="border-t border-dashed border-black my-2" />
+      {organization.receiptFooter && <p className="text-center mt-4">{organization.receiptFooter}</p>}
+    </div>
+  );
+};
