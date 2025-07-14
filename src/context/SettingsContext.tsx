@@ -666,6 +666,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       const newBill = { ...bill, id: uuidv4(), paymentStatus: paymentStatus };
       setSettings(prev => ({ ...prev, supplierBills: [...prev.supplierBills, newBill]}));
   };
+
   const addSupplierPayment = (payment: Omit<SupplierPayment, 'id'>) => {
       setSettings(prev => {
         const newSettings = {...prev};
@@ -675,7 +676,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             newSettings.supplierBills = newSettings.supplierBills.map(bill => {
                 if (bill.id === payment.billId) {
                     const newPaidAmount = bill.paidAmount + payment.amount;
-                    const newPaymentStatus = newPaidAmount >= bill.totalAmount ? 'paid' : 'partially-paid';
+                    const newPaymentStatus = newPaidAmount >= bill.totalAmount ? 'paid' : (newPaidAmount > 0 ? 'partially-paid' : 'unpaid');
                     return { ...bill, paidAmount: newPaidAmount, paymentStatus: newPaymentStatus };
                 }
                 return bill;
