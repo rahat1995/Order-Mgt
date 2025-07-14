@@ -34,6 +34,8 @@ export function EmployeeManagementClient() {
     const employeeData: Omit<Employee, 'id'> = {
       name: formData.get('name') as string,
       mobile: formData.get('mobile') as string,
+      username: formData.get('username') as string,
+      password: formData.get('password') as string,
       email: formData.get('email') as string,
       address: formData.get('address') as string,
       designationId: formData.get('designationId') as string,
@@ -41,8 +43,8 @@ export function EmployeeManagementClient() {
       salary: parseFloat(formData.get('salary') as string),
     };
 
-    if (!employeeData.name || !employeeData.mobile || !employeeData.designationId || !employeeData.joiningDate || isNaN(employeeData.salary)) {
-        alert("Please fill all required fields.");
+    if (!employeeData.name || !employeeData.mobile || !employeeData.designationId || !employeeData.joiningDate || isNaN(employeeData.salary) || !employeeData.username || !employeeData.password) {
+        alert("Please fill all required fields, including username and password.");
         return;
     }
 
@@ -80,6 +82,7 @@ export function EmployeeManagementClient() {
               <p className="text-sm text-muted-foreground">{employee.email}</p>
               <p className="text-sm text-muted-foreground">{employee.address}</p>
               <div className="mt-2 pt-2 border-t">
+                  <p className="text-sm">Username: <span className="font-mono">{employee.username}</span></p>
                   <p className="text-sm">Salary: ৳{employee.salary.toFixed(2)}</p>
                   <p className="text-sm">Joined: {new Date(employee.joiningDate).toLocaleDateString()}</p>
               </div>
@@ -119,6 +122,14 @@ export function EmployeeManagementClient() {
                 <div className="space-y-2">
                   <Label htmlFor="mobile">Mobile Number</Label>
                   <Input id="mobile" name="mobile" defaultValue={editingEmployee?.mobile} required />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" name="username" defaultValue={editingEmployee?.username} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" name="password" type="password" defaultValue={editingEmployee?.password} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>

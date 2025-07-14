@@ -1,6 +1,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -359,6 +360,8 @@ export interface Employee {
   id: string;
   name: string;
   mobile: string;
+  username: string;
+  password: string;
   email?: string;
   address?: string;
   designationId: string;

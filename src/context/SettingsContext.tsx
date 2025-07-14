@@ -30,7 +30,7 @@ const defaultSettings: AppSettings = {
     tableManagement: true,
     costManagement: true,
     accounting: true,
-    hrManagement: false,
+    hrManagement: true,
     userAccessControl: true,
   },
   posSettings: {
