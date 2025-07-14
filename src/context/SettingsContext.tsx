@@ -206,6 +206,7 @@ interface SettingsContextType {
   deleteRawMaterial: (materialId: string) => void;
   addSupplierBill: (bill: Omit<SupplierBill, 'id' | 'paymentStatus'>) => void;
   addSupplierPayment: (payment: Omit<SupplierPayment, 'id'>) => void;
+  addBulkSupplierPayments: (payments: { supplierId: string, amount: number }[]) => void;
   // HR Management
   addDesignation: (designation: Omit<Designation, 'id'>) => void;
   updateDesignation: (designation: Designation) => void;
@@ -685,6 +686,22 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         return newSettings;
       });
   };
+
+  const addBulkSupplierPayments = (payments: { supplierId: string, amount: number }[]) => {
+      setSettings(prev => {
+        const newPayments: SupplierPayment[] = payments.map(p => ({
+            id: uuidv4(),
+            supplierId: p.supplierId,
+            amount: p.amount,
+            date: new Date().toISOString(),
+            notes: 'Bulk payment from Excel upload.',
+        }));
+        return {
+          ...prev,
+          supplierPayments: [...prev.supplierPayments, ...newPayments],
+        };
+      });
+  };
   
   // HR Management
   const addDesignation = (designation: Omit<Designation, 'id'>) => setSettings(prev => ({ ...prev, designations: [...prev.designations, { ...designation, id: uuidv4() }] }));
@@ -711,7 +728,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAttribute, updateAttribute, deleteAttribute,
     addAttributeValue, updateAttributeValue, deleteAttributeValue,
     addSupplier, updateSupplier, deleteSupplier,
-    addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment,
+    addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee
   };
 
