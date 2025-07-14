@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export function SupplierPaymentClient() {
   const { settings, addSupplierPayment, isLoaded } = useSettings();
-  const { suppliers, supplierBills } = settings;
+  const { suppliers, supplierBills, supplierPayments } = settings;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,13 +34,25 @@ export function SupplierPaymentClient() {
     return supplierBills.filter(bill => bill.supplierId === selectedSupplierId && bill.paymentStatus !== 'paid');
   }, [selectedSupplierId, supplierBills]);
   
+  const currentDueAmount = useMemo(() => {
+      if (!selectedSupplierId) return 0;
+
+      const totalBilled = supplierBills
+        .filter(bill => bill.supplierId === selectedSupplierId)
+        .reduce((sum, bill) => sum + bill.totalAmount, 0);
+
+      const totalPaid = supplierPayments
+        .filter(payment => payment.supplierId === selectedSupplierId)
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      
+      return totalBilled - totalPaid;
+
+  }, [selectedSupplierId, supplierBills, supplierPayments]);
+
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
     setSelectedBillId('');
-    // Use Next.js router to update URL without a full page refresh
-    const newSearchParams = new URLSearchParams(window.location.search);
-    newSearchParams.set('supplierId', supplierId);
-    router.replace(`?${newSearchParams.toString()}`, { scroll: false });
+    router.push(`/admin/modules/costManagement/payments?supplierId=${supplierId}`, { scroll: false });
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,8 +104,17 @@ export function SupplierPaymentClient() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="billId">Apply to Bill (Optional)</Label>
+            {selectedSupplierId && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-destructive">Current Due</p>
+                    <p className="text-2xl font-bold text-destructive">৳{currentDueAmount.toFixed(2)}</p>
+                  </div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+              <Label htmlFor="billId">Apply to Specific Bill (Optional)</Label>
               <Select name="billId" value={selectedBillId} onValueChange={setSelectedBillId} disabled={unpaidBills.length === 0}>
                 <SelectTrigger>
                   <SelectValue placeholder={unpaidBills.length > 0 ? "Select an unpaid bill..." : "No unpaid bills for supplier"} />
@@ -107,7 +128,6 @@ export function SupplierPaymentClient() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Payment Amount</Label>
