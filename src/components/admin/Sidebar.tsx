@@ -34,7 +34,9 @@ import {
   BarChart3,
   ClipboardList,
   ListCollapse,
-  ListPlus
+  ListPlus,
+  UserPlus,
+  Briefcase
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -85,8 +87,13 @@ const moduleLinks = [
         { href: '/admin/modules/costManagement/categories', label: 'Categories', icon: BarChart3 },
       ]
     },
+    { key: 'hrManagement', label: 'HR Management', icon: Users, href: '/admin/modules/hrManagement',
+      subLinks: [
+        { href: '/admin/modules/hrManagement/employees', label: 'Employees', icon: UserPlus },
+        { href: '/admin/modules/hrManagement/designations', label: 'Designations', icon: Briefcase },
+      ]
+    },
     { key: 'accounting', label: 'Accounting', icon: BookUser, href: '/admin/modules/accounting' },
-    { key: 'hrManagement', label: 'HR Management', icon: Users, href: '/admin/modules/hrManagement' },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 

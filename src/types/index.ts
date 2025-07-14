@@ -1,5 +1,6 @@
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -348,6 +349,23 @@ export interface InventoryProduct {
     compositeItems?: CompositeItem[];
 }
 
+// HR Management
+export interface Designation {
+  id: string;
+  name: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  mobile: string;
+  email?: string;
+  address?: string;
+  designationId: string;
+  joiningDate: string; // ISO Date string
+  salary: number;
+}
+
 
 export interface AppSettings {
   organization: OrganizationInfo;
@@ -388,6 +406,9 @@ export interface AppSettings {
   expenseCategories: ExpenseCategory[];
   supplierBills: SupplierBill[];
   supplierPayments: SupplierPayment[];
+  // HR Management
+  designations: Designation[];
+  employees: Employee[];
   
   lastOrderNumberForDate: {
     date: string; // YYYY-MM-DD

@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -77,10 +77,14 @@ const defaultSettings: AppSettings = {
   invModels: [],
   attributes: [],
   attributeValues: [],
+  // Cost Management
   suppliers: [],
   expenseCategories: [],
   supplierBills: [],
   supplierPayments: [],
+  // HR Management
+  designations: [],
+  employees: [],
   lastOrderNumberForDate: {
     date: '',
     serial: 0,
@@ -198,6 +202,13 @@ interface SettingsContextType {
   deleteExpenseCategory: (categoryId: string) => void;
   addSupplierBill: (bill: Omit<SupplierBill, 'id' | 'paymentStatus'>) => void;
   addSupplierPayment: (payment: Omit<SupplierPayment, 'id'>) => void;
+  // HR Management
+  addDesignation: (designation: Omit<Designation, 'id'>) => void;
+  updateDesignation: (designation: Designation) => void;
+  deleteDesignation: (designationId: string) => void;
+  addEmployee: (employee: Omit<Employee, 'id'>) => void;
+  updateEmployee: (employee: Employee) => void;
+  deleteEmployee: (employeeId: string) => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -276,6 +287,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         expenseCategories: storedSettings.expenseCategories || defaultSettings.expenseCategories,
         supplierBills: storedSettings.supplierBills || defaultSettings.supplierBills,
         supplierPayments: storedSettings.supplierPayments || defaultSettings.supplierPayments,
+        designations: storedSettings.designations || defaultSettings.designations,
+        employees: storedSettings.employees || defaultSettings.employees,
         lastOrderNumberForDate: storedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
         lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
         lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
@@ -639,6 +652,23 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       setSettings(prev => ({ ...prev, supplierPayments: [...prev.supplierPayments, {...payment, id: uuidv4()}] }));
       // Here you would add logic to update the paymentStatus of related bills
   };
+  
+  // HR Management
+  const addDesignation = (designation: Omit<Designation, 'id'>) => setSettings(prev => ({ ...prev, designations: [...prev.designations, { ...designation, id: uuidv4() }] }));
+  const updateDesignation = (updatedDesignation: Designation) => setSettings(prev => ({ ...prev, designations: prev.designations.map(d => d.id === updatedDesignation.id ? updatedDesignation : d) }));
+  const deleteDesignation = (designationId: string) => {
+      if(confirm('Are you sure?')) {
+          setSettings(prev => ({ ...prev, designations: prev.designations.filter(d => d.id !== designationId) }));
+      }
+  };
+  const addEmployee = (employee: Omit<Employee, 'id'>) => setSettings(prev => ({ ...prev, employees: [...prev.employees, { ...employee, id: uuidv4() }] }));
+  const updateEmployee = (updatedEmployee: Employee) => setSettings(prev => ({ ...prev, employees: prev.employees.map(e => e.id === updatedEmployee.id ? updatedEmployee : e)}));
+  const deleteEmployee = (employeeId: string) => {
+      if(confirm('Are you sure?')) {
+          setSettings(prev => ({ ...prev, employees: prev.employees.filter(e => e.id !== employeeId) }));
+      }
+  };
+
 
 
   const contextValue = {
@@ -649,6 +679,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAttributeValue, updateAttributeValue, deleteAttributeValue,
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addSupplierBill, addSupplierPayment,
+    addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
