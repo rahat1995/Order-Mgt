@@ -18,8 +18,8 @@ import type { RawMaterial, BillItem, Supplier } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function LogExpenseClient() {
-  const { settings, addSupplierBill, addSupplier, isLoaded } = useSettings();
-  const { suppliers, rawMaterials } = settings;
+  const { settings, addSupplierBill, addSupplier, addRawMaterial, isLoaded } = useSettings();
+  const { suppliers, rawMaterials, expenseCategories } = settings;
 
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [billNumber, setBillNumber] = useState('');
@@ -30,6 +30,7 @@ export function LogExpenseClient() {
   
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
   
   const prevSupplierCountRef = useRef(suppliers.length);
 
@@ -76,6 +77,18 @@ export function LogExpenseClient() {
     addSupplier(supplierData);
     setSupplierDialogOpen(false);
   };
+
+  const handleMaterialSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const unit = formData.get('unit') as string;
+    const categoryId = formData.get('categoryId') as string;
+
+    if (!name || !unit || !categoryId) return;
+    addRawMaterial({ name, unit, categoryId });
+    setMaterialDialogOpen(false);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,7 +185,12 @@ export function LogExpenseClient() {
                         </PopoverTrigger>
                         <PopoverContent className="w-[250px] p-0">
                             <Command>
-                                <CommandInput placeholder="Search material..." />
+                                <div className="flex items-center border-b px-3">
+                                    <CommandInput placeholder="Search material..." className="flex-1 h-10 border-0 outline-none ring-0 focus-visible:ring-0"/>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { setMaterialDialogOpen(true); setPopoverOpen(false); }}>
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
                                 <CommandList>
                                 <CommandEmpty>No material found.</CommandEmpty>
                                 <CommandGroup>
@@ -284,6 +302,41 @@ export function LogExpenseClient() {
           </form>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Raw Material</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleMaterialSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Material Name</Label>
+                <Input id="name" name="name" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">Category</Label>
+                <Select name="categoryId" required>
+                    <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                    <SelectContent>
+                        {expenseCategories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="unit">Unit</Label>
+                <Input id="unit" name="unit" placeholder="e.g., Kg, Pcs, Litre" required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMaterialDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">Create Material</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
