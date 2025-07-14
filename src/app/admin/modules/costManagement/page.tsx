@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, Truck, ClipboardList, BarChart3, LineChart, ShoppingBasket, CreditCard } from 'lucide-react';
+import { DollarSign, Truck, ClipboardList, BarChart3, LineChart, ShoppingBasket, CreditCard, List } from 'lucide-react';
 
 const costSubModules = [
   {
@@ -23,6 +23,13 @@ const costSubModules = [
     icon: ClipboardList,
     title: 'Record Expense Bill',
     description: 'Record all business expenses and supplier bills.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/costManagement/allBills',
+    icon: List,
+    title: 'All Recorded Bills',
+    description: 'View history of all recorded supplier bills.',
     enabled: true,
   },
   {

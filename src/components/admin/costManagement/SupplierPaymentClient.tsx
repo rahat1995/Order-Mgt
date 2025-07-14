@@ -37,7 +37,9 @@ export function SupplierPaymentClient() {
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
     setSelectedBillId('');
-    router.push(`/admin/modules/costManagement/payments?supplierId=${supplierId}`, { scroll: false });
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('supplierId', supplierId);
+    window.history.pushState({}, '', newUrl);
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -64,7 +66,9 @@ export function SupplierPaymentClient() {
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setSelectedBillId('');
-    router.push('/admin/modules/costManagement/payments');
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('supplierId');
+    window.history.pushState({}, '', newUrl);
   };
 
   if (!isLoaded) {
