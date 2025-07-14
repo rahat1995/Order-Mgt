@@ -105,14 +105,15 @@ export function AllBillsClient() {
               {sortedBills.length > 0 ? (
                 sortedBills.map(bill => {
                     const supplier = suppliers.find(c => c.id === bill.supplierId);
-                    const dueAmount = bill.totalAmount - bill.paidAmount;
+                    const paidAmount = bill.paidAmount || 0;
+                    const dueAmount = bill.totalAmount - paidAmount;
                     return (
                       <TableRow key={bill.id}>
                         <TableCell>{new Date(bill.date).toLocaleDateString()}</TableCell>
                         <TableCell className="font-medium">{bill.billNumber || 'N/A'}</TableCell>
                         <TableCell>{supplier?.name || 'N/A'}</TableCell>
                         <TableCell>৳{bill.totalAmount.toFixed(2)}</TableCell>
-                        <TableCell>৳{bill.paidAmount.toFixed(2)}</TableCell>
+                        <TableCell>৳{paidAmount.toFixed(2)}</TableCell>
                         <TableCell className={cn(dueAmount > 0 && 'text-destructive font-semibold')}>৳{dueAmount.toFixed(2)}</TableCell>
                         <TableCell><BillStatusBadge status={bill.paymentStatus} /></TableCell>
                         <TableCell className="text-right">
