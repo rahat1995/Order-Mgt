@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Download, Upload } from 'lucide-react';
 import type { Supplier } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
+import * as XLSX from 'xlsx';
+
 
 export function SupplierManagementClient() {
   const { settings, addSupplier, updateSupplier, deleteSupplier, isLoaded } = useSettings();
@@ -50,6 +52,64 @@ export function SupplierManagementClient() {
     }
     handleCloseDialog();
   };
+  
+  const handleDownloadFormat = () => {
+    const headers = ["name", "mobile", "contactPerson", "email", "address"];
+    const exampleData = [
+      { name: "Global Food Supplies", mobile: "9876543210", contactPerson: "Mr. Sharma", email: "sharma@globalfood.com", address: "123 Supply Chain Rd, Mumbai" },
+    ];
+    const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Suppliers");
+    XLSX.writeFile(wb, "supplier_import_format.xlsx");
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+        let itemsAdded = 0;
+        let errors: string[] = [];
+
+        json.forEach((row, index) => {
+          const { name, mobile, contactPerson, email, address } = row;
+
+          if (!name || !mobile) {
+            errors.push(`Row ${index + 2}: Missing required fields (name, mobile).`);
+            return;
+          }
+          
+          addSupplier({
+            name,
+            mobile: String(mobile),
+            contactPerson,
+            email,
+            address,
+          });
+          itemsAdded++;
+        });
+
+        alert(`${itemsAdded} suppliers added successfully.${errors.length > 0 ? `\n\nErrors:\n${errors.join('\n')}` : ''}`);
+
+      } catch (error) {
+        console.error("Error processing file:", error);
+        alert("Failed to process the uploaded file. Please ensure it is a valid Excel file.");
+      } finally {
+        event.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
 
   if (!isLoaded) {
     return <div>Loading suppliers...</div>;
@@ -57,7 +117,16 @@ export function SupplierManagementClient() {
 
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+         <Button onClick={handleDownloadFormat} variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" /> Download Format
+         </Button>
+         <Button asChild variant="outline" size="sm">
+            <Label className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Upload Suppliers
+                <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
+            </Label>
+         </Button>
         <Button onClick={() => handleOpenDialog(null)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Supplier
