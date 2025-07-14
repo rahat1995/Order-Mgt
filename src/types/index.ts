@@ -1,4 +1,5 @@
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -49,6 +50,7 @@ export interface ModuleSettings {
   userAccessControl: boolean;
   salesReport: boolean;
   customerManagement: boolean;
+  customerLedger: boolean;
   productManagement: boolean;
   pendingBillReport: boolean;
 }

@@ -51,6 +51,7 @@ const mainNavLinks = [
 const moduleLinks = [
     { key: 'pos', label: 'POS', icon: ShoppingCart, href: '/admin/modules/pos' },
     { key: 'customerManagement', label: 'Customers', icon: Users, href: '/admin/modules/customerManagement' },
+    { key: 'customerLedger', label: 'Customer Ledger', icon: ClipboardList, href: '/admin/modules/customerLedger' },
     { key: 'salesReport', label: 'Sales Report', icon: LineChart, href: '/admin/modules/salesReport' },
     { key: 'dueReport', label: 'Due Report', icon: UserX, href: '/admin/modules/dueReport' },
     { key: 'pendingBillReport', label: 'Pending Bills', icon: FileClock, href: '/admin/modules/pendingBillReport' },
@@ -145,7 +146,7 @@ export function Sidebar() {
             <h3 className="px-3 py-2 text-xs font-semibold text-muted-foreground/80 uppercase">Modules</h3>
             {moduleLinks.map((link) => {
                 const moduleKey = link.key as keyof typeof settings.modules;
-                if (!settings.modules[moduleKey]) return null;
+                if (moduleKey && !settings.modules[moduleKey]) return null;
 
                 if (link.subLinks) {
                   return (

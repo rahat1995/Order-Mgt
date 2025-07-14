@@ -19,6 +19,7 @@ const defaultSettings: AppSettings = {
   modules: {
     pos: true,
     customerManagement: true,
+    customerLedger: true,
     salesReport: true,
     dueReport: true,
     pendingBillReport: true,

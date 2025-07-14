@@ -8,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock } from 'lucide-react';
+import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList } from 'lucide-react';
 
 const modulesData = [
   { key: 'pos', label: 'POS', icon: ShoppingCart, description: 'Menu, order entry, and voucher management.' },
   { key: 'customerManagement', label: 'Customer Management', icon: Users, description: 'Manage loyal customers and groups.' },
+  { key: 'customerLedger', label: 'Customer Ledger', icon: ClipboardList, description: 'View detailed transaction history for customers.' },
   { key: 'salesReport', label: 'Sales Report', icon: LineChart, description: 'Analyze sales data and performance.' },
   { key: 'dueReport', label: 'Due Report', icon: UserX, description: 'View customers with outstanding dues.' },
   { key: 'pendingBillReport', label: 'Pending Bills', icon: FileClock, description: 'View unbilled challans and service jobs.' },
