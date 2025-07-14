@@ -37,7 +37,8 @@ import {
   ListPlus,
   UserPlus,
   Briefcase,
-  ShoppingBasket
+  ShoppingBasket,
+  CreditCard
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -85,7 +86,9 @@ const moduleLinks = [
       subLinks: [
         { href: '/admin/modules/costManagement/suppliers', label: 'Suppliers', icon: Truck },
         { href: '/admin/modules/costManagement/items', label: 'Raw Materials', icon: ShoppingBasket },
-        { href: '/admin/modules/costManagement/expenses', label: 'Log Expense', icon: ClipboardList },
+        { href: '/admin/modules/costManagement/expenses', label: 'Record Bill', icon: ClipboardList },
+        { href: '/admin/modules/costManagement/payments', label: 'Supplier Payments', icon: CreditCard },
+        { href: '/admin/modules/costManagement/supplierDueReport', label: 'Due Report', icon: LineChart },
         { href: '/admin/modules/costManagement/categories', label: 'Categories', icon: BarChart3 },
       ]
     },

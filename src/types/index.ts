@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -312,6 +307,7 @@ export interface SupplierBill {
     supplierId: string;
     items: BillItem[];
     totalAmount: number;
+    paidAmount: number;
     date: string; // ISO Date string
     billNumber?: string;
     notes?: string;

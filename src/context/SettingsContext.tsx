@@ -194,7 +194,7 @@ interface SettingsContextType {
   updateAttributeValue: (value: AttributeValue) => void;
   deleteAttributeValue: (valueId: string) => void;
   // Supplier
-  addSupplier: (supplier: Omit<Supplier, 'id'>) => void;
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => Customer;
   updateSupplier: (supplier: Supplier) => void;
   deleteSupplier: (supplierId: string) => void;
   // Cost Management
@@ -633,7 +633,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const deleteAttributeValue = (valueId: string) => setSettings(prev => ({ ...prev, attributeValues: prev.attributeValues.filter(v => v.id !== valueId) }));
 
   // Supplier Management
-  const addSupplier = (supplier: Omit<Supplier, 'id'>) => setSettings(prev => ({ ...prev, suppliers: [...prev.suppliers, { ...supplier, id: uuidv4() }] }));
+  const addSupplier = (supplier: Omit<Supplier, 'id'>): Customer => {
+      const newSupplier = { ...supplier, id: uuidv4() };
+      setSettings(prev => ({ ...prev, suppliers: [...prev.suppliers, newSupplier] }));
+      return newSupplier as any; // Cast for compatibility with shared function signature
+  }
   const updateSupplier = (updatedSupplier: Supplier) => setSettings(prev => ({ ...prev, suppliers: prev.suppliers.map(s => s.id === updatedSupplier.id ? updatedSupplier : s)}));
   const deleteSupplier = (supplierId: string) => {
     if (confirm('Are you sure?')) {
@@ -658,12 +662,27 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   }
 
   const addSupplierBill = (bill: Omit<SupplierBill, 'id' | 'paymentStatus'>) => {
-      const newBill = { ...bill, id: uuidv4(), paymentStatus: 'unpaid' as const };
+      const paymentStatus = bill.paidAmount >= bill.totalAmount ? 'paid' : (bill.paidAmount > 0 ? 'partially-paid' : 'unpaid');
+      const newBill = { ...bill, id: uuidv4(), paymentStatus: paymentStatus };
       setSettings(prev => ({ ...prev, supplierBills: [...prev.supplierBills, newBill]}));
   };
   const addSupplierPayment = (payment: Omit<SupplierPayment, 'id'>) => {
-      setSettings(prev => ({ ...prev, supplierPayments: [...prev.supplierPayments, {...payment, id: uuidv4()}] }));
-      // Here you would add logic to update the paymentStatus of related bills
+      setSettings(prev => {
+        const newSettings = {...prev};
+        newSettings.supplierPayments = [...newSettings.supplierPayments, {...payment, id: uuidv4()}];
+        
+        if (payment.billId) {
+            newSettings.supplierBills = newSettings.supplierBills.map(bill => {
+                if (bill.id === payment.billId) {
+                    const newPaidAmount = bill.paidAmount + payment.amount;
+                    const newPaymentStatus = newPaidAmount >= bill.totalAmount ? 'paid' : 'partially-paid';
+                    return { ...bill, paidAmount: newPaidAmount, paymentStatus: newPaymentStatus };
+                }
+                return bill;
+            });
+        }
+        return newSettings;
+      });
   };
   
   // HR Management
