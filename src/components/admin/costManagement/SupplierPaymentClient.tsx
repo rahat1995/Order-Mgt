@@ -38,10 +38,9 @@ export function SupplierPaymentClient() {
     setSelectedSupplierId(supplierId);
     setSelectedBillId('');
     // Use Next.js router to update URL without a full page refresh
-    const currentPath = window.location.pathname;
     const newSearchParams = new URLSearchParams(window.location.search);
     newSearchParams.set('supplierId', supplierId);
-    router.push(`${currentPath}?${newSearchParams.toString()}`, { scroll: false });
+    router.replace(`?${newSearchParams.toString()}`, { scroll: false });
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,7 +67,7 @@ export function SupplierPaymentClient() {
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setSelectedBillId('');
-    router.push('/admin/modules/costManagement/payments', { scroll: false });
+    router.replace('/admin/modules/costManagement/payments', { scroll: false });
   };
 
   if (!isLoaded) {
