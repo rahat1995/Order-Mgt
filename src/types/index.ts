@@ -3,6 +3,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -294,6 +295,7 @@ export interface RawMaterial {
     id: string;
     name: string;
     unit: string; // e.g., Kg, Pcs, Litre
+    categoryId?: string;
 }
 
 export interface BillItem {
