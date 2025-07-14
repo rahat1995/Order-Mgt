@@ -31,13 +31,15 @@ export function SupplierDueReportClient() {
         if (!supplierDataMap.has(bill.supplierId)) return;
         const data = supplierDataMap.get(bill.supplierId)!;
         data.totalBilled += bill.totalAmount;
-        data.totalPaid += bill.paidAmount;
+        data.totalPaid += bill.paidAmount || 0;
     });
 
     supplierPayments.forEach(payment => {
         if (!supplierDataMap.has(payment.supplierId)) return;
         const data = supplierDataMap.get(payment.supplierId)!;
-        data.totalPaid += payment.amount;
+        if (!payment.billId) { // Only add general payments, bill-specific payments are covered in bill.paidAmount
+            data.totalPaid += payment.amount;
+        }
     });
 
     return suppliers

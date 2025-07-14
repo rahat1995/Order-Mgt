@@ -37,9 +37,11 @@ export function SupplierPaymentClient() {
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
     setSelectedBillId('');
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('supplierId', supplierId);
-    window.history.pushState({}, '', newUrl);
+    // Use Next.js router to update URL without a full page refresh
+    const currentPath = window.location.pathname;
+    const newSearchParams = new URLSearchParams(window.location.search);
+    newSearchParams.set('supplierId', supplierId);
+    router.push(`${currentPath}?${newSearchParams.toString()}`, { scroll: false });
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,9 +68,7 @@ export function SupplierPaymentClient() {
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setSelectedBillId('');
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete('supplierId');
-    window.history.pushState({}, '', newUrl);
+    router.push('/admin/modules/costManagement/payments', { scroll: false });
   };
 
   if (!isLoaded) {
@@ -102,7 +102,7 @@ export function SupplierPaymentClient() {
                 <SelectContent>
                   {unpaidBills.map(bill => (
                     <SelectItem key={bill.id} value={bill.id}>
-                      Bill #{bill.billNumber || bill.id.slice(0, 8)} - Due: ৳{(bill.totalAmount - bill.paidAmount).toFixed(2)}
+                      Bill #{bill.billNumber || bill.id.slice(0, 8)} - Due: ৳{(bill.totalAmount - (bill.paidAmount || 0)).toFixed(2)}
                     </SelectItem>
                   ))}
                 </SelectContent>
