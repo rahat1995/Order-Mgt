@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -80,6 +80,7 @@ const defaultSettings: AppSettings = {
   // Cost Management
   suppliers: [],
   expenseCategories: [],
+  rawMaterials: [],
   supplierBills: [],
   supplierPayments: [],
   // HR Management
@@ -200,6 +201,9 @@ interface SettingsContextType {
   addExpenseCategory: (category: Omit<ExpenseCategory, 'id'>) => void;
   updateExpenseCategory: (category: ExpenseCategory) => void;
   deleteExpenseCategory: (categoryId: string) => void;
+  addRawMaterial: (material: Omit<RawMaterial, 'id'>) => void;
+  updateRawMaterial: (material: RawMaterial) => void;
+  deleteRawMaterial: (materialId: string) => void;
   addSupplierBill: (bill: Omit<SupplierBill, 'id' | 'paymentStatus'>) => void;
   addSupplierPayment: (payment: Omit<SupplierPayment, 'id'>) => void;
   // HR Management
@@ -285,6 +289,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         attributeValues: storedSettings.attributeValues || defaultSettings.attributeValues,
         suppliers: storedSettings.suppliers || defaultSettings.suppliers,
         expenseCategories: storedSettings.expenseCategories || defaultSettings.expenseCategories,
+        rawMaterials: storedSettings.rawMaterials || defaultSettings.rawMaterials,
         supplierBills: storedSettings.supplierBills || defaultSettings.supplierBills,
         supplierPayments: storedSettings.supplierPayments || defaultSettings.supplierPayments,
         designations: storedSettings.designations || defaultSettings.designations,
@@ -644,6 +649,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setSettings(prev => ({...prev, expenseCategories: prev.expenseCategories.filter(c => c.id !== categoryId) }));
     }
   }
+  const addRawMaterial = (material: Omit<RawMaterial, 'id'>) => setSettings(prev => ({ ...prev, rawMaterials: [...prev.rawMaterials, { ...material, id: uuidv4() }] }));
+  const updateRawMaterial = (updatedMaterial: RawMaterial) => setSettings(prev => ({ ...prev, rawMaterials: prev.rawMaterials.map(m => m.id === updatedMaterial.id ? updatedMaterial : m)}));
+  const deleteRawMaterial = (materialId: string) => {
+    if (confirm('Are you sure?')) {
+        setSettings(prev => ({...prev, rawMaterials: prev.rawMaterials.filter(m => m.id !== materialId) }));
+    }
+  }
+
   const addSupplierBill = (bill: Omit<SupplierBill, 'id' | 'paymentStatus'>) => {
       const newBill = { ...bill, id: uuidv4(), paymentStatus: 'unpaid' as const };
       setSettings(prev => ({ ...prev, supplierBills: [...prev.supplierBills, newBill]}));
@@ -678,7 +691,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAttribute, updateAttribute, deleteAttribute,
     addAttributeValue, updateAttributeValue, deleteAttributeValue,
     addSupplier, updateSupplier, deleteSupplier,
-    addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addSupplierBill, addSupplierPayment,
+    addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee
   };
 

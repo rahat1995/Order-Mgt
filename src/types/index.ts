@@ -2,6 +2,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -289,12 +290,27 @@ export interface ExpenseCategory {
     name: string;
 }
 
+export interface RawMaterial {
+    id: string;
+    name: string;
+    unit: string; // e.g., Kg, Pcs, Litre
+}
+
+export interface BillItem {
+    id: string;
+    rawMaterialId: string;
+    name: string;
+    unit: string;
+    quantity: number;
+    cost: number;
+}
+
 export interface SupplierBill {
     id: string;
-    categoryId: string;
-    amount: number;
+    supplierId: string;
+    items: BillItem[];
+    totalAmount: number;
     date: string; // ISO Date string
-    supplierId?: string; // Optional for general expenses
     billNumber?: string;
     notes?: string;
     paymentStatus: 'unpaid' | 'partially-paid' | 'paid';
@@ -407,6 +423,7 @@ export interface AppSettings {
   // Cost Management
   suppliers: Supplier[];
   expenseCategories: ExpenseCategory[];
+  rawMaterials: RawMaterial[];
   supplierBills: SupplierBill[];
   supplierPayments: SupplierPayment[];
   // HR Management

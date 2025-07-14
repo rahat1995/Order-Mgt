@@ -36,7 +36,8 @@ import {
   ListCollapse,
   ListPlus,
   UserPlus,
-  Briefcase
+  Briefcase,
+  ShoppingBasket
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -83,6 +84,7 @@ const moduleLinks = [
     { key: 'costManagement', label: 'Cost Management', icon: DollarSign, href: '/admin/modules/costManagement',
       subLinks: [
         { href: '/admin/modules/costManagement/suppliers', label: 'Suppliers', icon: Truck },
+        { href: '/admin/modules/costManagement/items', label: 'Raw Materials', icon: ShoppingBasket },
         { href: '/admin/modules/costManagement/expenses', label: 'Log Expense', icon: ClipboardList },
         { href: '/admin/modules/costManagement/categories', label: 'Categories', icon: BarChart3 },
       ]

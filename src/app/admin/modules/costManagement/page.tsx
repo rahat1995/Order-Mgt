@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, Truck, ClipboardList, BarChart3, LineChart } from 'lucide-react';
+import { DollarSign, Truck, ClipboardList, BarChart3, LineChart, ShoppingBasket } from 'lucide-react';
 
 const costSubModules = [
   {
@@ -9,6 +9,13 @@ const costSubModules = [
     icon: Truck,
     title: 'Supplier Management',
     description: 'Manage all your vendors and suppliers.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/costManagement/items',
+    icon: ShoppingBasket,
+    title: 'Raw Materials',
+    description: 'Manage all purchasable raw materials and ingredients.',
     enabled: true,
   },
   {

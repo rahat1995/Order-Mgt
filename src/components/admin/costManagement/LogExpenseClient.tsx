@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,104 +9,225 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronsUpDown, XCircle } from 'lucide-react';
+import type { RawMaterial, BillItem } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export function LogExpenseClient() {
   const { settings, addSupplierBill, isLoaded } = useSettings();
-  const { suppliers, expenseCategories } = settings;
+  const { suppliers, rawMaterials } = settings;
 
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
-  const [amount, setAmount] = useState('');
   const [billNumber, setBillNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [billItems, setBillItems] = useState<BillItem[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const totalAmount = useMemo(() => {
+    return billItems.reduce((acc, item) => acc + item.quantity * item.cost, 0);
+  }, [billItems]);
+
+  const handleAddItem = (material: RawMaterial) => {
+    setPopoverOpen(false);
+    const newItem: BillItem = {
+      id: uuidv4(),
+      rawMaterialId: material.id,
+      name: material.name,
+      unit: material.unit,
+      quantity: 1,
+      cost: 0,
+    };
+    setBillItems(prev => [...prev, newItem]);
+  };
+
+  const handleItemChange = (id: string, field: 'quantity' | 'cost', value: number) => {
+    setBillItems(prev => prev.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleRemoveItem = (id: string) => {
+    setBillItems(prev => prev.filter(item => item.id !== id));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedCategoryId || !amount) {
-        alert("Expense Category and Amount are required.");
-        return;
+    if (!selectedSupplierId) {
+      alert("Please select a supplier.");
+      return;
+    }
+
+    if (billItems.length === 0) {
+      alert("Please add at least one item to the bill.");
+      return;
+    }
+
+    if (billItems.some(item => item.quantity <= 0 || item.cost <= 0)) {
+      alert("Please ensure all items have a valid quantity and cost.");
+      return;
     }
 
     addSupplierBill({
-        categoryId: selectedCategoryId,
-        amount: parseFloat(amount),
-        date: expenseDate,
-        supplierId: selectedSupplierId === 'none' ? undefined : selectedSupplierId,
-        billNumber: billNumber || undefined,
-        notes: notes || undefined,
+      supplierId: selectedSupplierId,
+      items: billItems,
+      totalAmount: totalAmount,
+      date: expenseDate,
+      billNumber: billNumber || undefined,
+      notes: notes || undefined,
     });
     
-    alert('Expense/Bill logged successfully!');
+    alert('Bill logged successfully!');
     
     // Reset form
-    setSelectedCategoryId('');
     setSelectedSupplierId('');
-    setAmount('');
     setBillNumber('');
     setNotes('');
     setExpenseDate(new Date().toISOString().split('T')[0]);
-  }
+    setBillItems([]);
+  };
 
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
+  
+  const availableMaterials = rawMaterials.filter(mat => !billItems.some(item => item.rawMaterialId === mat.id));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>New Expense / Bill</CardTitle>
-        <CardDescription>
-          Select 'none' for supplier to log a general expense like a salary.
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="categoryId">Expense Category</Label>
-              <Select name="categoryId" value={selectedCategoryId} onValueChange={setSelectedCategoryId} required>
-                <SelectTrigger><SelectValue placeholder="Select a category..."/></SelectTrigger>
-                <SelectContent>
-                  {expenseCategories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+    <form onSubmit={handleSubmit}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Log Supplier Bill</CardTitle>
+          <CardDescription>
+            Record an itemized bill from a specific supplier.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="supplierId">Supplier</Label>
-              <Select name="supplierId" value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
-                <SelectTrigger><SelectValue placeholder="Select a supplier (optional)"/></SelectTrigger>
+              <Select name="supplierId" value={selectedSupplierId} onValueChange={setSelectedSupplierId} required>
+                <SelectTrigger><SelectValue placeholder="Select a supplier..."/></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (General Expense)</SelectItem>
                   {suppliers.map(sup => <SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} required />
+              <Label htmlFor="billNumber">Bill / Invoice Number</Label>
+              <Input id="billNumber" name="billNumber" placeholder="e.g., INV-12345" value={billNumber} onChange={e => setBillNumber(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="expenseDate">Date</Label>
               <Input id="expenseDate" name="expenseDate" type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} required/>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="billNumber">Bill / Invoice Number (Optional)</Label>
-            <Input id="billNumber" name="billNumber" placeholder="e.g., INV-12345" value={billNumber} onChange={e => setBillNumber(e.target.value)} />
-          </div>
+          
+          <Card>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Bill Items</CardTitle>
+                     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-[250px] justify-between">
+                                Add Material
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[250px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search material..." />
+                                <CommandList>
+                                <CommandEmpty>No material found.</CommandEmpty>
+                                <CommandGroup>
+                                    {availableMaterials.map((material) => (
+                                    <CommandItem
+                                        key={material.id}
+                                        value={material.name}
+                                        onSelect={() => handleAddItem(material)}
+                                    >
+                                        {material.name}
+                                    </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Material</TableHead>
+                            <TableHead className="w-[120px]">Quantity</TableHead>
+                            <TableHead className="w-[120px]">Cost/Unit</TableHead>
+                            <TableHead className="w-[120px] text-right">Subtotal</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {billItems.length > 0 ? billItems.map(item => (
+                            <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.name} <span className="text-xs text-muted-foreground">({item.unit})</span></TableCell>
+                                <TableCell>
+                                    <Input 
+                                        type="number" 
+                                        value={item.quantity} 
+                                        onChange={e => handleItemChange(item.id, 'quantity', parseFloat(e.target.value))}
+                                        className="h-8"
+                                        min="0"
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Input 
+                                        type="number"
+                                        step="0.01"
+                                        value={item.cost}
+                                        onChange={e => handleItemChange(item.id, 'cost', parseFloat(e.target.value))}
+                                        className="h-8"
+                                        min="0"
+                                    />
+                                </TableCell>
+                                <TableCell className="text-right font-medium">৳{(item.quantity * item.cost).toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-8 w-8">
+                                        <XCircle className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                    No items added to this bill.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+            <CardFooter className="flex justify-end bg-muted/50 p-4">
+                <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Total Amount</p>
+                    <p className="text-2xl font-bold">৳{totalAmount.toFixed(2)}</p>
+                </div>
+            </CardFooter>
+          </Card>
+
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (Optional)</Label>
-            <Textarea id="notes" name="notes" placeholder="e.g., Purchase of raw materials" value={notes} onChange={e => setNotes(e.target.value)} />
+            <Textarea id="notes" name="notes" placeholder="e.g., Purchase of raw materials for weekly stock" value={notes} onChange={e => setNotes(e.target.value)} />
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit">Log Expense</Button>
+          <Button type="submit">Log Bill</Button>
         </CardFooter>
-      </form>
-    </Card>
+      </Card>
+    </form>
   );
 }

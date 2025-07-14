@@ -1,0 +1,21 @@
+[debug] [2025-07-14T06:05:26.994Z] ----------------------------------------------------------------------
+[debug] [2025-07-14T06:05:26.997Z] Command:       /nix/store/rbdrkcs5kkwpalxcd7c6bnm33lk2955n-nodejs-20.19.0/bin/node /nix/store/fprgfkwna33crhc86jqbf5878piivvgw-firebase-tools-14.7.0/lib/node_modules/firebase-tools/lib/bin/firebase.js init
+[debug] [2025-07-14T06:05:26.998Z] CLI Version:   14.7.0
+[debug] [2025-07-14T06:05:26.998Z] Platform:      linux
+[debug] [2025-07-14T06:05:26.998Z] Node Version:  v20.19.0
+[debug] [2025-07-14T06:05:26.998Z] Time:          Mon Jul 14 2025 06:05:26 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-07-14T06:05:26.998Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-07-14T06:05:27.005Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-14T06:06:00.487Z] Running auto auth
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/studio
+
