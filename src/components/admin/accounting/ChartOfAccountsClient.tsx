@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
@@ -30,12 +31,14 @@ const AccountTree = ({
   onAdd,
   onEdit,
   onDelete,
+  getFullPath,
 }: {
   items: any[];
   level?: number;
   onAdd: (type: DialogState['type'], parent: any) => void;
   onEdit: (item: any, type: DialogState['type']) => void;
   onDelete: (item: any, type: DialogState['type']) => void;
+  getFullPath: (item: LedgerAccount) => string;
 }) => {
   const { settings } = useSettings();
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
@@ -61,45 +64,57 @@ const AccountTree = ({
   return (
     <div className="space-y-1">
       {items.map((item, index) => {
-        const isLast = index === items.length - 1;
         const children = getChildren(item, level);
+        const isLastItemInLevel = index === items.length - 1;
 
-        return (
-          <div key={item.id} className="relative">
-            <div className="flex items-center group">
-              <div className="flex-shrink-0 flex items-center justify-end" style={{ width: `${level * 32}px`}}>
-                {level > 0 && (
-                  <>
-                    <div className="w-1/2 h-full border-r border-gray-300"></div>
-                    <div className={cn("w-1/2 h-px bg-gray-300", isLast && 'h-1/2 self-start')}></div>
-                  </>
-                )}
-              </div>
-              <div className={cn("absolute bg-gray-300", level > 0 && `h-full w-px left-[${level * 32 - 16}px] top-0`, isLast && 'h-1/2')}></div>
-
-              <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80">
+        const itemContent = (
+            <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80">
                 <div className="py-2">
-                  <p className="font-semibold">{item.name}</p>
-                  {itemType === 'Ledger' && (
+                    <p className="font-semibold">{item.name}</p>
+                    {itemType === 'Ledger' && (
                     <p className="text-xs text-muted-foreground">
-                      Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
+                        Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
                     </p>
-                  )}
+                    )}
                 </div>
                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {childType && (
+                    {childType && (
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAdd(childType, item)}>
                         <PlusCircle className="h-4 w-4 text-green-600" />
                     </Button>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
                     <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                    </Button>
                 </div>
+            </div>
+        );
+
+        return (
+          <div key={item.id} className="relative group">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 flex flex-col items-center self-stretch mr-2" style={{ width: `${level * 24}px`}}>
+                {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
+                {level > 0 && <div className={cn("h-px w-full bg-gray-300", isLastItemInLevel && 'h-1/2 self-start')}></div>}
+                {level > 0 && !isLastItemInLevel && <div className="h-full w-px bg-gray-300" />}
               </div>
+              <div
+                  className="absolute w-3 h-px bg-gray-300"
+                  style={{ top: '1.1rem', left: `${level * 24}px` }}
+              ></div>
+               { itemType === 'Ledger' ? (
+                <Popover openDelay={200}>
+                  <PopoverTrigger asChild>{itemContent}</PopoverTrigger>
+                  <PopoverContent className="w-auto p-2 text-sm">
+                    {getFullPath(item)}
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                itemContent
+              )}
             </div>
             
             <div className="relative">
@@ -109,6 +124,7 @@ const AccountTree = ({
                 onAdd={onAdd}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                getFullPath={getFullPath}
               />
             </div>
           </div>
@@ -135,6 +151,8 @@ export function ChartOfAccountsClient() {
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
   
+  const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
+
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
     setDialogState({ isOpen: true, type, editing, parent });
   };
@@ -180,7 +198,7 @@ export function ChartOfAccountsClient() {
     let childExists = false;
     if (type === 'Group') childExists = accountSubGroups.some(h => h.groupId === item.id);
     else if (type === 'Sub-Group') childExists = accountHeads.some(h => h.subGroupId === item.id);
-    else if (type === 'Head') childExists = accountSubHeads.some(h => sh.headId === item.id);
+    else if (type === 'Head') childExists = accountSubHeads.some(h => h.headId === item.id);
     else if (type === 'Sub-Head') childExists = ledgerAccounts.some(l => l.subHeadId === item.id);
     
     if (childExists) {
@@ -226,6 +244,8 @@ export function ChartOfAccountsClient() {
         let itemsAdded = 0;
         const errors: string[] = [];
         
+        // Use a set to keep track of what's been added in this run to avoid duplicate checks against a stale context
+        const createdInThisRun = { groups: new Set(), subGroups: new Set(), heads: new Set(), subHeads: new Set() };
         let currentGroups = [...settings.accountGroups];
         let currentSubGroups = [...settings.accountSubGroups];
         let currentHeads = [...settings.accountHeads];
@@ -292,7 +312,26 @@ export function ChartOfAccountsClient() {
       setClearConfirmationOpen(false);
   }
 
-  const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
+  const getFullPath = (ledger: LedgerAccount): string => {
+      const path = [ledger.name];
+      let currentSubHead = accountSubHeads.find(sh => sh.id === ledger.subHeadId);
+      if (currentSubHead) {
+          path.unshift(currentSubHead.name);
+          let currentHead = accountHeads.find(h => h.id === currentSubHead!.headId);
+          if (currentHead) {
+              path.unshift(currentHead.name);
+              let currentSubGroup = accountSubGroups.find(sg => sg.id === currentHead!.subGroupId);
+              if (currentSubGroup) {
+                  path.unshift(currentSubGroup.name);
+                  let currentGroup = accountGroups.find(g => g.id === currentSubGroup!.groupId);
+                  if (currentGroup) {
+                      path.unshift(currentGroup.name);
+                  }
+              }
+          }
+      }
+      return path.join(' > ');
+  };
   
   if (!isLoaded) {
     return <div>Loading chart of accounts...</div>;
@@ -331,6 +370,7 @@ export function ChartOfAccountsClient() {
                   onAdd={handleOpenDialog}
                   onEdit={(item, type) => handleOpenDialog(type, item)}
                   onDelete={handleDelete}
+                  getFullPath={getFullPath}
                 />
               </div>
            </div>
@@ -389,5 +429,7 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
+
+    
 
     
