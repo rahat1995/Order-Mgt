@@ -1,5 +1,6 @@
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -413,6 +414,8 @@ export interface LedgerAccount {
   id: string;
   name: string;
   subHeadId: string;
+  code?: string;
+  openingBalance?: number;
 }
 
 
@@ -479,3 +482,5 @@ export interface AppSettings {
       serial: number;
   }
 }
+
+    

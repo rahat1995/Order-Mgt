@@ -81,13 +81,16 @@ export function ChartOfAccountsClient() {
     if (type === 'Group') {
         editing ? updateAccountGroup({ ...(editing as AccountGroup), name }) : addAccountGroup({ name });
     } else if (type === 'Sub-Group' && parent) {
-        editing ? updateAccountSubGroup({ ...(editing as AccountSubGroup), name }) : addAccountSubGroup({ name, groupId: parent.id });
+        editing ? updateAccountSubGroup({ ...(editing as AccountSubGroup), name, groupId: parent.id }) : addAccountSubGroup({ name, groupId: parent.id });
     } else if (type === 'Head' && parent) {
-        editing ? updateAccountHead({ ...(editing as AccountHead), name }) : addAccountHead({ name, subGroupId: parent.id });
+        editing ? updateAccountHead({ ...(editing as AccountHead), name, subGroupId: parent.id }) : addAccountHead({ name, subGroupId: parent.id });
     } else if (type === 'Sub-Head' && parent) {
-        editing ? updateAccountSubHead({ ...(editing as AccountSubHead), name }) : addAccountSubHead({ name, headId: parent.id });
+        editing ? updateAccountSubHead({ ...(editing as AccountSubHead), name, headId: parent.id }) : addAccountSubHead({ name, headId: parent.id });
     } else if (type === 'Ledger' && parent) {
-        editing ? updateLedgerAccount({ ...(editing as LedgerAccount), name }) : addLedgerAccount({ name, subHeadId: parent.id });
+        const code = formData.get('code') as string;
+        const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
+        const ledgerData = { name, code, openingBalance, subHeadId: parent.id };
+        editing ? updateLedgerAccount({ ...(editing as LedgerAccount), ...ledgerData }) : addLedgerAccount(ledgerData);
     }
     
     handleCloseDialog();
@@ -115,11 +118,11 @@ export function ChartOfAccountsClient() {
   }
 
   const handleDownloadFormat = () => {
-    const headers = ["groupName", "subGroupName", "headName", "subHeadName", "ledgerName"];
+    const headers = ["groupName", "subGroupName", "headName", "subHeadName", "ledgerName", "ledgerCode", "openingBalance"];
     const exampleData = [
-      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Checking Accounts", ledgerName: "Main Checking Account" },
-      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Savings Accounts", ledgerName: "Business Savings" },
-      { groupName: "Expenses", subGroupName: "Operating Expenses", headName: "Salaries", subHeadName: "Management Salaries", ledgerName: "CEO Salary" },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Checking Accounts", ledgerName: "Main Checking Account", ledgerCode: "10101", openingBalance: 50000.00 },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Savings Accounts", ledgerName: "Business Savings", ledgerCode: "10102", openingBalance: 150000.00 },
+      { groupName: "Expenses", subGroupName: "Operating Expenses", headName: "Salaries", subHeadName: "Management Salaries", ledgerName: "CEO Salary", ledgerCode: "50101", openingBalance: 0 },
     ];
     const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
     const wb = XLSX.utils.book_new();
@@ -144,9 +147,9 @@ export function ChartOfAccountsClient() {
         const errors: string[] = [];
 
         json.forEach((row, index) => {
-          const { groupName, subGroupName, headName, subHeadName, ledgerName } = row;
+          const { groupName, subGroupName, headName, subHeadName, ledgerName, ledgerCode, openingBalance } = row;
           if (!groupName || !subGroupName || !headName || !subHeadName || !ledgerName) {
-            errors.push(`Row ${index + 2}: Missing required fields. All 5 columns must be filled.`);
+            errors.push(`Row ${index + 2}: Missing required fields. All name columns must be filled.`);
             return;
           }
 
@@ -165,7 +168,7 @@ export function ChartOfAccountsClient() {
 
             let ledger = settings.ledgerAccounts.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.subHeadId === subHead!.id);
             if (!ledger) {
-              addLedgerAccount({ name: ledgerName, subHeadId: subHead!.id });
+              addLedgerAccount({ name: ledgerName, code: ledgerCode || '', openingBalance: parseFloat(openingBalance) || 0, subHeadId: subHead!.id });
               itemsAdded++;
             }
           } catch (e: any) {
@@ -217,7 +220,14 @@ export function ChartOfAccountsClient() {
                 selectedItem?.id === item.id && "bg-muted font-semibold"
               )}
             >
-                <span>{item.name}</span>
+                {type === 'Ledger' ? (
+                  <div className="text-sm">
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">Code: {item.code} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}</p>
+                  </div>
+                ) : (
+                  <span>{item.name}</span>
+                )}
                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(item); }}>
                         <Edit className="h-4 w-4" />
@@ -242,10 +252,10 @@ export function ChartOfAccountsClient() {
     return <div>Loading chart of accounts...</div>;
   }
 
-  const filteredSubGroups = selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [];
-  const filteredHeads = selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [];
-  const filteredSubHeads = selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [];
-  const filteredLedgers = selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [];
+  const filteredSubGroups = useMemo(() => selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [], [selectedGroup, accountSubGroups]);
+  const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
+  const filteredSubHeads = useMemo(() => selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [], [selectedHead, accountSubHeads]);
+  const filteredLedgers = useMemo(() => selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [], [selectedSubHead, ledgerAccounts]);
 
   return (
     <>
@@ -303,6 +313,18 @@ export function ChartOfAccountsClient() {
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" defaultValue={(dialogState.editing as any)?.name} required />
               </div>
+              {dialogState.type === 'Ledger' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="code">Ledger Code</Label>
+                    <Input id="code" name="code" defaultValue={(dialogState.editing as LedgerAccount)?.code} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="openingBalance">Opening Balance</Label>
+                    <Input id="openingBalance" name="openingBalance" type="number" step="0.01" defaultValue={(dialogState.editing as LedgerAccount)?.openingBalance} />
+                  </div>
+                </>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
@@ -314,3 +336,5 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
+
+    
