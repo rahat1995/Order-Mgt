@@ -93,42 +93,33 @@ export function ChartOfAccountsClient() {
 
     const { type, editing, parent } = dialogState;
 
-    if (type === 'Group') {
-        if (editing) {
-            updateAccountGroup({ ...(editing as AccountGroup), name });
-        } else {
+    if (editing) { // Handle all updates
+        if (type === 'Group') updateAccountGroup({ ...(editing as AccountGroup), name });
+        else if (type === 'Sub-Group') updateAccountSubGroup({ ...(editing as AccountSubGroup), name });
+        else if (type === 'Head') updateAccountHead({ ...(editing as AccountHead), name });
+        else if (type === 'Sub-Head') updateAccountSubHead({ ...(editing as AccountSubHead), name });
+        else if (type === 'Ledger') {
+            const code = formData.get('code') as string;
+            const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
+            updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance });
+        }
+    } else { // Handle all creations
+        if (type === 'Group') {
             const newGroup = addAccountGroup({ name });
             setSelectedGroup(newGroup);
-        }
-    } else if (type === 'Sub-Group' && parent) {
-        if (editing) {
-            updateAccountSubGroup({ ...(editing as AccountSubGroup), name, groupId: parent.id });
-        } else {
+        } else if (type === 'Sub-Group' && parent) {
             const newSubGroup = addAccountSubGroup({ name, groupId: parent.id });
             setSelectedSubGroup(newSubGroup);
-        }
-    } else if (type === 'Head' && parent) {
-        if (editing) {
-            updateAccountHead({ ...(editing as AccountHead), name, subGroupId: parent.id });
-        } else {
+        } else if (type === 'Head' && parent) {
             const newHead = addAccountHead({ name, subGroupId: parent.id });
             setSelectedHead(newHead);
-        }
-    } else if (type === 'Sub-Head' && parent) {
-        if (editing) {
-            updateAccountSubHead({ ...(editing as AccountSubHead), name, headId: parent.id });
-        } else {
+        } else if (type === 'Sub-Head' && parent) {
             const newSubHead = addAccountSubHead({ name, headId: parent.id });
             setSelectedSubHead(newSubHead);
-        }
-    } else if (type === 'Ledger' && parent) {
-        const code = formData.get('code') as string;
-        const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
-        const ledgerData = { name, code, openingBalance, subHeadId: parent.id };
-        if (editing) {
-            updateLedgerAccount({ ...(editing as LedgerAccount), ...ledgerData });
-        } else {
-            addLedgerAccount(ledgerData);
+        } else if (type === 'Ledger' && parent) {
+            const code = formData.get('code') as string;
+            const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
+            addLedgerAccount({ name, code, openingBalance, subHeadId: parent.id });
         }
     }
     
@@ -369,3 +360,5 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
+
+    
