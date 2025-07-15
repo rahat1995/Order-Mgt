@@ -1,24 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+import { ChartOfAccountsClient } from "@/components/admin/accounting/ChartOfAccountsClient";
 import { BookUser } from "lucide-react";
 
 export default function AccountingPage() {
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
+    <div className="space-y-6">
+       <div className="flex items-center gap-4">
         <BookUser className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold">Accounting Management</h1>
+        <h1 className="text-3xl font-bold">Chart of Accounts</h1>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Accounting</CardTitle>
-          <CardDescription>
-            Manage your financial accounts, ledgers, and reports. This module is under construction.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Future features for managing chart of accounts, journal entries, and financial statements will be available here.</p>
-        </CardContent>
-      </Card>
+      <p className="text-muted-foreground">
+        Manage the foundational structure of your financial accounts. Define groups, heads, and ledger accounts.
+      </p>
+      <div className="h-[1px] w-full bg-border" />
+      <ChartOfAccountsClient />
     </div>
   );
 }

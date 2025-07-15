@@ -385,6 +385,24 @@ export interface Employee {
   salary: number;
 }
 
+// Accounting
+export interface AccountGroup {
+  id: string;
+  name: string; // e.g., Assets, Liabilities, Equity, Revenue, Expenses
+}
+
+export interface AccountHead {
+  id: string;
+  name: string; // e.g., Current Assets, Fixed Assets
+  groupId: string;
+}
+
+export interface LedgerAccount {
+  id: string;
+  name: string; // e.g., Cash, Bank, Accounts Receivable
+  headId: string;
+}
+
 
 export interface AppSettings {
   organization: OrganizationInfo;
@@ -429,6 +447,10 @@ export interface AppSettings {
   // HR Management
   designations: Designation[];
   employees: Employee[];
+  // Accounting
+  accountGroups: AccountGroup[];
+  accountHeads: AccountHead[];
+  ledgerAccounts: LedgerAccount[];
   
   lastOrderNumberForDate: {
     date: string; // YYYY-MM-DD
