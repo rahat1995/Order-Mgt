@@ -65,56 +65,58 @@ const AccountTree = ({
     <div className="space-y-1">
       {items.map((item, index) => {
         const children = getChildren(item, level);
-        const isLastItemInLevel = index === items.length - 1;
-
+        
         const itemContent = (
-            <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80">
+            <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80 group">
                 <div className="py-2">
                     <p className="font-semibold">{item.name}</p>
                     {itemType === 'Ledger' && (
                     <p className="text-xs text-muted-foreground">
-                        Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
+                        Code: {item.code || 'N/A'} | OB: ৳{(item.openingBalance || 0).toFixed(2)}
                     </p>
                     )}
                 </div>
                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                     {childType && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAdd(childType, item)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onAdd(childType, item); }}>
                         <PlusCircle className="h-4 w-4 text-green-600" />
                     </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
-                    <Edit className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(item, itemType); }}>
+                      <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onDelete(item, itemType); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                 </div>
             </div>
         );
 
         return (
-          <div key={item.id} className="relative group">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 flex flex-col items-center self-stretch mr-2" style={{ width: `${level * 24}px`}}>
-                {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
-                {level > 0 && <div className={cn("h-px w-full bg-gray-300", isLastItemInLevel && 'h-1/2 self-start')}></div>}
-                {level > 0 && !isLastItemInLevel && <div className="h-full w-px bg-gray-300" />}
-              </div>
-              <div
-                  className="absolute w-3 h-px bg-gray-300"
-                  style={{ top: '1.1rem', left: `${level * 24}px` }}
-              ></div>
-               { itemType === 'Ledger' ? (
-                <Popover openDelay={200}>
-                  <PopoverTrigger asChild>{itemContent}</PopoverTrigger>
-                  <PopoverContent className="w-auto p-2 text-sm">
-                    {getFullPath(item)}
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                itemContent
-              )}
+          <div key={item.id} className="relative">
+             <div className="flex items-start">
+               {/* Vertical and Horizontal lines */}
+                <div className="flex-shrink-0 w-6 h-full absolute left-0 flex flex-col items-center" style={{ marginLeft: `${level * 1.5}rem`}}>
+                    {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
+                    {level > 0 && <div className="h-px w-full bg-gray-300"></div>}
+                    {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
+                </div>
+
+                <div 
+                    className="flex-grow flex items-center" 
+                    style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}
+                >
+                     { itemType === 'Ledger' ? (
+                        <Popover openDelay={200}>
+                            <PopoverTrigger asChild><div className="w-full">{itemContent}</div></PopoverTrigger>
+                            <PopoverContent className="w-auto p-2 text-sm">
+                                {getFullPath(item)}
+                            </PopoverContent>
+                        </Popover>
+                    ) : (
+                        <div className="w-full">{itemContent}</div>
+                    )}
+                </div>
             </div>
             
             <div className="relative">
@@ -152,6 +154,7 @@ export function ChartOfAccountsClient() {
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
   
   const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
     setDialogState({ isOpen: true, type, editing, parent });
@@ -161,9 +164,9 @@ export function ChartOfAccountsClient() {
     setDialogState({ isOpen: false, type: null, editing: null });
   };
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+  const processFormSubmit = (closeAfterSave: boolean) => {
+    if (!formRef.current) return;
+    const formData = new FormData(formRef.current);
     const name = formData.get('name') as string;
     if (!name) return;
 
@@ -191,7 +194,23 @@ export function ChartOfAccountsClient() {
         }
     }
     
-    handleCloseDialog();
+    if (closeAfterSave) {
+        handleCloseDialog();
+    } else {
+        // Clear the form for the next entry
+        formRef.current.reset();
+        const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]');
+        if (nameInput) nameInput.focus();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    processFormSubmit(true);
+  };
+  
+  const handleSaveAndAddAnother = () => {
+    processFormSubmit(false);
   };
   
   const handleDelete = (item: any, type: DialogState['type']) => {
@@ -244,8 +263,6 @@ export function ChartOfAccountsClient() {
         let itemsAdded = 0;
         const errors: string[] = [];
         
-        // Use a set to keep track of what's been added in this run to avoid duplicate checks against a stale context
-        const createdInThisRun = { groups: new Set(), subGroups: new Set(), heads: new Set(), subHeads: new Set() };
         let currentGroups = [...settings.accountGroups];
         let currentSubGroups = [...settings.accountSubGroups];
         let currentHeads = [...settings.accountHeads];
@@ -385,7 +402,7 @@ export function ChartOfAccountsClient() {
             </DialogTitle>
             {dialogState.parent && <DialogDescription>Adding under "{dialogState.parent.name}"</DialogDescription>}
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form ref={formRef} onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -406,6 +423,9 @@ export function ChartOfAccountsClient() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+              {!dialogState.editing && (
+                <Button type="button" variant="secondary" onClick={handleSaveAndAddAnother}>Save &amp; Add Another</Button>
+              )}
               <Button type="submit">{dialogState.editing ? 'Save Changes' : 'Create'}</Button>
             </DialogFooter>
           </form>
