@@ -31,6 +31,7 @@ export function ChartOfAccountsClient() {
     addLedgerAccount, updateLedgerAccount, deleteLedgerAccount, 
     isLoaded 
   } = useSettings();
+  
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
 
   const [selectedGroup, setSelectedGroup] = useState<AccountGroup | null>(null);
@@ -39,6 +40,11 @@ export function ChartOfAccountsClient() {
   const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
 
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
+
+  const filteredSubGroups = useMemo(() => selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [], [selectedGroup, accountSubGroups]);
+  const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
+  const filteredSubHeads = useMemo(() => selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [], [selectedHead, accountSubHeads]);
+  const filteredLedgers = useMemo(() => selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [], [selectedSubHead, ledgerAccounts]);
 
   const handleSelectGroup = (group: AccountGroup) => {
     setSelectedGroup(group);
@@ -188,7 +194,6 @@ export function ChartOfAccountsClient() {
     reader.readAsArrayBuffer(file);
   };
 
-
   const renderColumn = (
     title: string,
     items: any[],
@@ -251,11 +256,6 @@ export function ChartOfAccountsClient() {
   if (!isLoaded) {
     return <div>Loading chart of accounts...</div>;
   }
-
-  const filteredSubGroups = useMemo(() => selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [], [selectedGroup, accountSubGroups]);
-  const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
-  const filteredSubHeads = useMemo(() => selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [], [selectedHead, accountSubHeads]);
-  const filteredLedgers = useMemo(() => selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [], [selectedSubHead, ledgerAccounts]);
 
   return (
     <>
@@ -336,5 +336,3 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
-
-    
