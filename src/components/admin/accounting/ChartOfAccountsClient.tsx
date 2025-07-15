@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,23 +45,32 @@ export function ChartOfAccountsClient() {
   const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
   const filteredSubHeads = useMemo(() => selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [], [selectedHead, accountSubHeads]);
   const filteredLedgers = useMemo(() => selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [], [selectedSubHead, ledgerAccounts]);
-
-  const handleSelectGroup = (group: AccountGroup) => {
-    setSelectedGroup(group);
+  
+  useEffect(() => {
     setSelectedSubGroup(null);
     setSelectedHead(null);
     setSelectedSubHead(null);
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    setSelectedHead(null);
+    setSelectedSubHead(null);
+  }, [selectedSubGroup]);
+
+  useEffect(() => {
+    setSelectedSubHead(null);
+  }, [selectedHead]);
+
+  const handleSelectGroup = (group: AccountGroup) => {
+    setSelectedGroup(group);
   };
 
   const handleSelectSubGroup = (subGroup: AccountSubGroup) => {
     setSelectedSubGroup(subGroup);
-    setSelectedHead(null);
-    setSelectedSubHead(null);
   }
 
   const handleSelectHead = (head: AccountHead) => {
     setSelectedHead(head);
-    setSelectedSubHead(null);
   };
   
   const handleSelectSubHead = (subHead: AccountSubHead) => {
@@ -85,18 +94,42 @@ export function ChartOfAccountsClient() {
     const { type, editing, parent } = dialogState;
 
     if (type === 'Group') {
-        editing ? updateAccountGroup({ ...(editing as AccountGroup), name }) : addAccountGroup({ name });
+        if (editing) {
+            updateAccountGroup({ ...(editing as AccountGroup), name });
+        } else {
+            const newGroup = addAccountGroup({ name });
+            setSelectedGroup(newGroup);
+        }
     } else if (type === 'Sub-Group' && parent) {
-        editing ? updateAccountSubGroup({ ...(editing as AccountSubGroup), name, groupId: parent.id }) : addAccountSubGroup({ name, groupId: parent.id });
+        if (editing) {
+            updateAccountSubGroup({ ...(editing as AccountSubGroup), name, groupId: parent.id });
+        } else {
+            const newSubGroup = addAccountSubGroup({ name, groupId: parent.id });
+            setSelectedSubGroup(newSubGroup);
+        }
     } else if (type === 'Head' && parent) {
-        editing ? updateAccountHead({ ...(editing as AccountHead), name, subGroupId: parent.id }) : addAccountHead({ name, subGroupId: parent.id });
+        if (editing) {
+            updateAccountHead({ ...(editing as AccountHead), name, subGroupId: parent.id });
+        } else {
+            const newHead = addAccountHead({ name, subGroupId: parent.id });
+            setSelectedHead(newHead);
+        }
     } else if (type === 'Sub-Head' && parent) {
-        editing ? updateAccountSubHead({ ...(editing as AccountSubHead), name, headId: parent.id }) : addAccountSubHead({ name, headId: parent.id });
+        if (editing) {
+            updateAccountSubHead({ ...(editing as AccountSubHead), name, headId: parent.id });
+        } else {
+            const newSubHead = addAccountSubHead({ name, headId: parent.id });
+            setSelectedSubHead(newSubHead);
+        }
     } else if (type === 'Ledger' && parent) {
         const code = formData.get('code') as string;
         const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
         const ledgerData = { name, code, openingBalance, subHeadId: parent.id };
-        editing ? updateLedgerAccount({ ...(editing as LedgerAccount), ...ledgerData }) : addLedgerAccount(ledgerData);
+        if (editing) {
+            updateLedgerAccount({ ...(editing as LedgerAccount), ...ledgerData });
+        } else {
+            addLedgerAccount(ledgerData);
+        }
     }
     
     handleCloseDialog();
@@ -194,6 +227,10 @@ export function ChartOfAccountsClient() {
     reader.readAsArrayBuffer(file);
   };
 
+  if (!isLoaded) {
+    return <div>Loading chart of accounts...</div>;
+  }
+
   const renderColumn = (
     title: string,
     items: any[],
@@ -252,10 +289,6 @@ export function ChartOfAccountsClient() {
       </CardContent>
     </Card>
   );
-
-  if (!isLoaded) {
-    return <div>Loading chart of accounts...</div>;
-  }
 
   return (
     <>
@@ -321,7 +354,7 @@ export function ChartOfAccountsClient() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="openingBalance">Opening Balance</Label>
-                    <Input id="openingBalance" name="openingBalance" type="number" step="0.01" defaultValue={(dialogState.editing as LedgerAccount)?.openingBalance} />
+                    <Input id="openingBalance" name="openingBalance" type="number" step="0.01" defaultValue={(dialogState.editing as LedgerAccount)?.openingBalance || 0} />
                   </div>
                 </>
               )}
