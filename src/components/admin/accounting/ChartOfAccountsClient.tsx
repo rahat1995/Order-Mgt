@@ -39,7 +39,7 @@ const AccountTree = ({
   onAdd: (type: DialogState['type'], parent: any) => void;
   onEdit: (item: any, type: DialogState['type']) => void;
   onDelete: (item: any, type: DialogState['type']) => void;
-  getFullPath: (item: LedgerAccount) => string;
+  getFullPath: (item: any, itemType: DialogState['type']) => string;
 }) => {
   const { settings } = useSettings();
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
@@ -111,11 +111,11 @@ const AccountTree = ({
                     className="flex-grow flex items-center" 
                     style={{ paddingLeft: `${(level) * 1.5 + 2}rem` }}
                 >
-                     { itemType === 'Ledger' ? (
+                     { level > 0 ? (
                         <Popover openDelay={200}>
                             <PopoverTrigger asChild><div className="w-full">{itemContent}</div></PopoverTrigger>
                             <PopoverContent className="w-auto p-2 text-sm">
-                                {getFullPath(item)}
+                                {getFullPath(item, itemType)}
                             </PopoverContent>
                         </Popover>
                     ) : (
@@ -155,11 +155,17 @@ export function ChartOfAccountsClient() {
   } = useSettings();
   
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
-  const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
-  const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
   
   const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
+  const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
+  const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
+  
+  const [selectedGroup, setSelectedGroup] = useState<AccountGroup | null>(null);
+  const [selectedSubGroup, setSelectedSubGroup] = useState<AccountSubGroup | null>(null);
+  const [selectedHead, setSelectedHead] = useState<AccountHead | null>(null);
+  const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
+  
 
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
     setDialogState({ isOpen: true, type, editing, parent });
@@ -169,6 +175,15 @@ export function ChartOfAccountsClient() {
     setDialogState({ isOpen: false, type: null, editing: null });
   };
   
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    processFormSubmit(true);
+  };
+  
+  const handleSaveAndAddAnother = () => {
+    processFormSubmit(false);
+  };
+
   const processFormSubmit = (closeAfterSave: boolean) => {
     if (!formRef.current) return;
     const formData = new FormData(formRef.current);
@@ -176,6 +191,8 @@ export function ChartOfAccountsClient() {
     if (!name) return;
 
     const { type, editing, parent } = dialogState;
+
+    let newEntity: any = null;
 
     if (editing) {
         if (type === 'Group') updateAccountGroup({ ...(editing as AccountGroup), name });
@@ -188,10 +205,22 @@ export function ChartOfAccountsClient() {
             updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance });
         }
     } else {
-        if (type === 'Group') addAccountGroup({ name });
-        else if (type === 'Sub-Group' && parent) addAccountSubGroup({ name, groupId: parent.id });
-        else if (type === 'Head' && parent) addAccountHead({ name, subGroupId: parent.id });
-        else if (type === 'Sub-Head' && parent) addAccountSubHead({ name, headId: parent.id });
+        if (type === 'Group') {
+           newEntity = addAccountGroup({ name });
+           setSelectedGroup(newEntity);
+        }
+        else if (type === 'Sub-Group' && parent) {
+            newEntity = addAccountSubGroup({ name, groupId: parent.id });
+            setSelectedSubGroup(newEntity);
+        }
+        else if (type === 'Head' && parent) {
+            newEntity = addAccountHead({ name, subGroupId: parent.id });
+            setSelectedHead(newEntity);
+        }
+        else if (type === 'Sub-Head' && parent) {
+            newEntity = addAccountSubHead({ name, headId: parent.id });
+            setSelectedSubHead(newEntity);
+        }
         else if (type === 'Ledger' && parent) {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
@@ -207,15 +236,6 @@ export function ChartOfAccountsClient() {
         const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]');
         if (nameInput) nameInput.focus();
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    processFormSubmit(true);
-  };
-  
-  const handleSaveAndAddAnother = () => {
-    processFormSubmit(false);
   };
   
   const handleDelete = (item: any, type: DialogState['type']) => {
@@ -334,24 +354,41 @@ export function ChartOfAccountsClient() {
       setClearConfirmationOpen(false);
   }
 
-  const getFullPath = (ledger: LedgerAccount): string => {
-      const path = [ledger.name];
-      let currentSubHead = accountSubHeads.find(sh => sh.id === ledger.subHeadId);
-      if (currentSubHead) {
-          path.unshift(currentSubHead.name);
-          let currentHead = accountHeads.find(h => h.id === currentSubHead!.headId);
-          if (currentHead) {
-              path.unshift(currentHead.name);
-              let currentSubGroup = accountSubGroups.find(sg => sg.id === currentHead!.subGroupId);
-              if (currentSubGroup) {
-                  path.unshift(currentSubGroup.name);
-                  let currentGroup = accountGroups.find(g => g.id === currentSubGroup!.groupId);
-                  if (currentGroup) {
-                      path.unshift(currentGroup.name);
-                  }
-              }
+  const getFullPath = (item: any, itemType: DialogState['type']): string => {
+      const path: string[] = [item.name];
+      let currentItem = item;
+
+      if (itemType === 'Ledger') {
+          let currentSubHead = accountSubHeads.find(sh => sh.id === currentItem.subHeadId);
+          if (currentSubHead) {
+              path.unshift(currentSubHead.name);
+              currentItem = currentSubHead;
+              itemType = 'Sub-Head';
           }
       }
+      if (itemType === 'Sub-Head') {
+          let currentHead = accountHeads.find(h => h.id === currentItem.headId);
+          if (currentHead) {
+              path.unshift(currentHead.name);
+              currentItem = currentHead;
+              itemType = 'Head';
+          }
+      }
+      if (itemType === 'Head') {
+          let currentSubGroup = accountSubGroups.find(sg => sg.id === currentItem.subGroupId);
+          if (currentSubGroup) {
+              path.unshift(currentSubGroup.name);
+              currentItem = currentSubGroup;
+              itemType = 'Sub-Group';
+          }
+      }
+      if (itemType === 'Sub-Group') {
+          let currentGroup = accountGroups.find(g => g.id === currentItem.groupId);
+          if (currentGroup) {
+              path.unshift(currentGroup.name);
+          }
+      }
+      
       return path.join(' > ');
   };
   
@@ -454,8 +491,3 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
-
-    
-
-    
-
