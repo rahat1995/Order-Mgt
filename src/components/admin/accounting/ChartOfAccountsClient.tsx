@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle } from 'lucide-react';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
-import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 
 
@@ -57,11 +56,14 @@ const AccountTree = ({
   if (!items.length && level > 0) return null;
 
   return (
-    <div className="space-y-1" style={{ paddingLeft: `${level * 24}px` }}>
+    <div className="space-y-1">
       {items.map((item: any) => (
-        <React.Fragment key={item.id}>
-          <div className="flex items-center justify-between p-2 rounded-md hover:bg-muted/80 group">
-            <div className="text-sm">
+        <div key={item.id} className="relative">
+          <div
+            className="flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80 group"
+            style={{ paddingLeft: `${level * 24 + 8}px` }}
+          >
+            <div className="text-sm py-2">
               <p className="font-semibold">{item.name}</p>
               {itemType === 'Ledger' && (
                 <p className="text-xs text-muted-foreground">
@@ -90,7 +92,7 @@ const AccountTree = ({
             onEdit={onEdit}
             onDelete={onDelete}
           />
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );
@@ -364,4 +366,3 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
-
