@@ -2,6 +2,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -388,6 +389,12 @@ export interface Employee {
 }
 
 // Accounting
+export interface AccountType {
+  id: string;
+  name: string; // e.g., Asset, Liability, Income, Expense
+  code: string; // e.g., AS, LB, IN, EX
+}
+
 export interface AccountGroup {
   id: string;
   name: string;
@@ -416,6 +423,7 @@ export interface LedgerAccount {
   id: string;
   name: string;
   subHeadId: string;
+  accountTypeId: string;
   code?: string;
   openingBalance?: number;
 }
@@ -465,6 +473,7 @@ export interface AppSettings {
   designations: Designation[];
   employees: Employee[];
   // Accounting
+  accountTypes: AccountType[];
   accountGroups: AccountGroup[];
   accountSubGroups: AccountSubGroup[];
   accountHeads: AccountHead[];

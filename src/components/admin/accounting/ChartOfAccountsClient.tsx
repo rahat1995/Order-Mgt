@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 type DialogState = {
@@ -42,7 +43,7 @@ const AccountTree = ({
   getFullPath: (item: any, itemType: DialogState['type']) => string;
 }) => {
   const { settings } = useSettings();
-  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
+  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts, accountTypes } = settings;
 
   const getChildren = (item: any, currentLevel: number) => {
     switch (currentLevel) {
@@ -77,7 +78,7 @@ const AccountTree = ({
                         <p className="font-semibold">{item.name}</p>
                         {itemType === 'Ledger' && (
                         <p className="text-xs text-muted-foreground">
-                            Code: {item.code || 'N/A'} | OB: ৳{(item.openingBalance || 0).toFixed(2)}
+                            Code: {item.code || 'N/A'} | Type: {accountTypes.find(at => at.id === item.accountTypeId)?.name || 'N/A'} | OB: ৳{(item.openingBalance || 0).toFixed(2)}
                         </p>
                         )}
                     </div>
@@ -154,7 +155,7 @@ export function ChartOfAccountsClient() {
     isLoaded 
   } = useSettings();
   
-  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
+  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts, accountTypes } = settings;
   
   const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
@@ -202,7 +203,8 @@ export function ChartOfAccountsClient() {
         else if (type === 'Ledger') {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
-            updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance });
+            const accountTypeId = formData.get('accountTypeId') as string;
+            updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance, accountTypeId });
         }
     } else {
         if (type === 'Group') {
@@ -224,14 +226,18 @@ export function ChartOfAccountsClient() {
         else if (type === 'Ledger' && parent) {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
-            addLedgerAccount({ name, code, openingBalance, subHeadId: parent.id });
+            const accountTypeId = formData.get('accountTypeId') as string;
+            if (!accountTypeId) {
+                alert("Account Type is required.");
+                return;
+            }
+            newEntity = addLedgerAccount({ name, code, openingBalance, subHeadId: parent.id, accountTypeId });
         }
     }
     
     if (closeAfterSave) {
         handleCloseDialog();
     } else {
-        // Clear the form for the next entry
         formRef.current.reset();
         const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]');
         if (nameInput) nameInput.focus();
@@ -260,11 +266,11 @@ export function ChartOfAccountsClient() {
   }
 
   const handleDownloadFormat = () => {
-    const headers = ["groupName", "subGroupName", "headName", "subHeadName", "ledgerName", "ledgerCode", "openingBalance"];
+    const headers = ["groupName", "subGroupName", "headName", "subHeadName", "ledgerName", "ledgerCode", "openingBalance", "accountTypeCode"];
     const exampleData = [
-      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Checking Accounts", ledgerName: "Main Checking Account", ledgerCode: "10101", openingBalance: 50000.00 },
-      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Savings Accounts", ledgerName: "Business Savings", ledgerCode: "10102", openingBalance: 150000.00 },
-      { groupName: "Expenses", subGroupName: "Operating Expenses", headName: "Salaries", subHeadName: "Management Salaries", ledgerName: "CEO Salary", ledgerCode: "50101", openingBalance: 0 },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Checking Accounts", ledgerName: "Main Checking Account", ledgerCode: "10101", openingBalance: 50000.00, accountTypeCode: "ASSET" },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Savings Accounts", ledgerName: "Business Savings", ledgerCode: "10102", openingBalance: 150000.00, accountTypeCode: "ASSET" },
+      { groupName: "Expenses", subGroupName: "Operating Expenses", headName: "Salaries", subHeadName: "Management Salaries", ledgerName: "CEO Salary", ledgerCode: "50101", openingBalance: 0, accountTypeCode: "EXPENSE" },
     ];
     const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
     const wb = XLSX.utils.book_new();
@@ -295,9 +301,9 @@ export function ChartOfAccountsClient() {
         let currentLedgers = [...settings.ledgerAccounts];
 
         json.forEach((row, index) => {
-          const { groupName, subGroupName, headName, subHeadName, ledgerName, ledgerCode, openingBalance } = row;
+          const { groupName, subGroupName, headName, subHeadName, ledgerName, ledgerCode, openingBalance, accountTypeCode } = row;
           if (!groupName || !subGroupName || !headName || !subHeadName || !ledgerName) {
-            errors.push(`Row ${index + 2}: Missing required fields. All name columns must be filled.`);
+            errors.push(`Row ${index + 2}: Missing required name fields.`);
             return;
           }
 
@@ -325,10 +331,16 @@ export function ChartOfAccountsClient() {
               subHead = addAccountSubHead({ name: subHeadName, headId: head!.id });
               currentSubHeads.push(subHead);
             }
+            
+            const accountType = accountTypes.find(at => at.code.toLowerCase() === accountTypeCode?.toString().toLowerCase());
+            if (!accountType) {
+                errors.push(`Row ${index + 2}: Account Type with code "${accountTypeCode}" not found. Please create it first.`);
+                return;
+            }
 
             let ledger = currentLedgers.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.subHeadId === subHead!.id);
             if (!ledger) {
-              const newLedger = addLedgerAccount({ name: ledgerName, code: ledgerCode || '', openingBalance: parseFloat(openingBalance) || 0, subHeadId: subHead!.id });
+              const newLedger = addLedgerAccount({ name: ledgerName, code: ledgerCode || '', openingBalance: parseFloat(openingBalance) || 0, subHeadId: subHead!.id, accountTypeId: accountType.id });
               currentLedgers.push(newLedger);
               itemsAdded++;
             }
@@ -452,6 +464,17 @@ export function ChartOfAccountsClient() {
               </div>
               {dialogState.type === 'Ledger' && (
                 <>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountTypeId">Account Type</Label>
+                    <Select name="accountTypeId" defaultValue={(dialogState.editing as LedgerAccount)?.accountTypeId} required>
+                        <SelectTrigger><SelectValue placeholder="Select a type..."/></SelectTrigger>
+                        <SelectContent>
+                            {accountTypes.map(type => (
+                                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="code">Ledger Code</Label>
                     <Input id="code" name="code" defaultValue={(dialogState.editing as LedgerAccount)?.code} />

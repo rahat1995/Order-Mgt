@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -88,6 +88,7 @@ const defaultSettings: AppSettings = {
   designations: [],
   employees: [],
   // Accounting
+  accountTypes: [],
   accountGroups: [],
   accountSubGroups: [],
   accountHeads: [],
@@ -222,6 +223,9 @@ interface SettingsContextType {
   updateEmployee: (employee: Employee) => void;
   deleteEmployee: (employeeId: string) => void;
   // Accounting
+  addAccountType: (type: Omit<AccountType, 'id'>) => AccountType;
+  updateAccountType: (type: AccountType) => void;
+  deleteAccountType: (typeId: string) => void;
   addAccountGroup: (group: Omit<AccountGroup, 'id'>) => AccountGroup;
   updateAccountGroup: (group: AccountGroup) => void;
   deleteAccountGroup: (groupId: string) => void;
@@ -319,6 +323,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         supplierPayments: storedSettings.supplierPayments || defaultSettings.supplierPayments,
         designations: storedSettings.designations || defaultSettings.designations,
         employees: storedSettings.employees || defaultSettings.employees,
+        accountTypes: storedSettings.accountTypes || defaultSettings.accountTypes,
         accountGroups: storedSettings.accountGroups || defaultSettings.accountGroups,
         accountSubGroups: storedSettings.accountSubGroups || defaultSettings.accountSubGroups,
         accountHeads: storedSettings.accountHeads || defaultSettings.accountHeads,
@@ -749,6 +754,18 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   // Accounting
+  const addAccountType = (type: Omit<AccountType, 'id'>): AccountType => {
+    const newType = { ...type, id: uuidv4() };
+    setSettings(prev => ({...prev, accountTypes: [...prev.accountTypes, newType]}));
+    return newType;
+  }
+  const updateAccountType = (type: AccountType) => setSettings(prev => ({...prev, accountTypes: prev.accountTypes.map(t => t.id === type.id ? type : t)}));
+  const deleteAccountType = (typeId: string) => {
+      if (confirm('Are you sure? This may affect existing ledger accounts.')) {
+          setSettings(prev => ({...prev, accountTypes: prev.accountTypes.filter(t => t.id !== typeId)}));
+      }
+  }
+
   const addAccountGroup = (group: Omit<AccountGroup, 'id'>): AccountGroup => {
     const newGroup = { ...group, id: uuidv4() };
     setSettings(prev => ({...prev, accountGroups: [...prev.accountGroups, newGroup]}));
@@ -810,6 +827,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
+    addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
     clearChartOfAccounts
   };

@@ -40,6 +40,7 @@ import {
   ShoppingBasket,
   CreditCard,
   List,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -101,7 +102,11 @@ const moduleLinks = [
         { href: '/admin/modules/hrManagement/designations', label: 'Designations', icon: Briefcase },
       ]
     },
-    { key: 'accounting', label: 'Accounting', icon: BookUser, href: '/admin/modules/accounting' },
+    { key: 'accounting', label: 'Accounting', icon: BookUser, href: '/admin/modules/accounting', 
+      subLinks: [
+        { href: '/admin/modules/accounting/types', label: 'Account Types', icon: SlidersHorizontal },
+      ]
+    },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 
