@@ -203,6 +203,12 @@ export function ChartOfAccountsClient() {
 
         let itemsAdded = 0;
         const errors: string[] = [];
+        
+        let currentGroups = [...settings.accountGroups];
+        let currentSubGroups = [...settings.accountSubGroups];
+        let currentHeads = [...settings.accountHeads];
+        let currentSubHeads = [...settings.accountSubHeads];
+        let currentLedgers = [...settings.ledgerAccounts];
 
         json.forEach((row, index) => {
           const { groupName, subGroupName, headName, subHeadName, ledgerName, ledgerCode, openingBalance } = row;
@@ -212,21 +218,34 @@ export function ChartOfAccountsClient() {
           }
 
           try {
-            let group = settings.accountGroups.find(g => g.name.toLowerCase() === groupName.toString().toLowerCase());
-            if (!group) group = addAccountGroup({ name: groupName });
+            let group = currentGroups.find(g => g.name.toLowerCase() === groupName.toString().toLowerCase());
+            if (!group) {
+              group = addAccountGroup({ name: groupName });
+              currentGroups.push(group);
+            }
 
-            let subGroup = settings.accountSubGroups.find(sg => sg.name.toLowerCase() === subGroupName.toString().toLowerCase() && sg.groupId === group!.id);
-            if (!subGroup) subGroup = addAccountSubGroup({ name: subGroupName, groupId: group!.id });
+            let subGroup = currentSubGroups.find(sg => sg.name.toLowerCase() === subGroupName.toString().toLowerCase() && sg.groupId === group!.id);
+            if (!subGroup) {
+              subGroup = addAccountSubGroup({ name: subGroupName, groupId: group!.id });
+              currentSubGroups.push(subGroup);
+            }
             
-            let head = settings.accountHeads.find(h => h.name.toLowerCase() === headName.toString().toLowerCase() && h.subGroupId === subGroup!.id);
-            if (!head) head = addAccountHead({ name: headName, subGroupId: subGroup!.id });
+            let head = currentHeads.find(h => h.name.toLowerCase() === headName.toString().toLowerCase() && h.subGroupId === subGroup!.id);
+            if (!head) {
+              head = addAccountHead({ name: headName, subGroupId: subGroup!.id });
+              currentHeads.push(head);
+            }
 
-            let subHead = settings.accountSubHeads.find(sh => sh.name.toLowerCase() === subHeadName.toString().toLowerCase() && sh.headId === head!.id);
-            if (!subHead) subHead = addAccountSubHead({ name: subHeadName, headId: head!.id });
+            let subHead = currentSubHeads.find(sh => sh.name.toLowerCase() === subHeadName.toString().toLowerCase() && sh.headId === head!.id);
+            if (!subHead) {
+              subHead = addAccountSubHead({ name: subHeadName, headId: head!.id });
+              currentSubHeads.push(subHead);
+            }
 
-            let ledger = settings.ledgerAccounts.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.subHeadId === subHead!.id);
+            let ledger = currentLedgers.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.subHeadId === subHead!.id);
             if (!ledger) {
-              addLedgerAccount({ name: ledgerName, code: ledgerCode || '', openingBalance: parseFloat(openingBalance) || 0, subHeadId: subHead!.id });
+              const newLedger = addLedgerAccount({ name: ledgerName, code: ledgerCode || '', openingBalance: parseFloat(openingBalance) || 0, subHeadId: subHead!.id });
+              currentLedgers.push(newLedger);
               itemsAdded++;
             }
           } catch (e: any) {
@@ -345,3 +364,4 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
+
