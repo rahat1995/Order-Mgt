@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, ChevronRight, Upload, Download, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle } from 'lucide-react';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
@@ -20,6 +20,82 @@ type DialogState = {
   editing: AccountGroup | AccountSubGroup | AccountHead | AccountSubHead | LedgerAccount | null;
   parent?: AccountGroup | AccountSubGroup | AccountHead | AccountSubHead;
 };
+
+const hierarchyOrder = ['Group', 'Sub-Group', 'Head', 'Sub-Head', 'Ledger'];
+
+// A new recursive component to render the tree
+const AccountTree = ({
+  parentId,
+  level = 0,
+  onAdd,
+  onEdit,
+  onDelete
+}: {
+  parentId?: string;
+  level?: number;
+  onAdd: (type: DialogState['type'], parent: any) => void;
+  onEdit: (item: any, type: DialogState['type']) => void;
+  onDelete: (item: any, type: DialogState['type']) => void;
+}) => {
+  const { settings } = useSettings();
+  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
+
+  const items = useMemo(() => {
+    switch (level) {
+      case 0: return accountGroups.filter(g => !g.parentId);
+      case 1: return accountSubGroups.filter(sg => sg.groupId === parentId);
+      case 2: return accountHeads.filter(h => h.subGroupId === parentId);
+      case 3: return accountSubHeads.filter(sh => sh.headId === parentId);
+      case 4: return ledgerAccounts.filter(l => l.subHeadId === parentId);
+      default: return [];
+    }
+  }, [level, parentId, accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts]);
+
+  const itemType = hierarchyOrder[level] as DialogState['type'];
+  const childType = hierarchyOrder[level + 1] as DialogState['type'];
+
+  if (!items.length && level > 0) return null;
+
+  return (
+    <div className="space-y-1" style={{ paddingLeft: `${level * 24}px` }}>
+      {items.map((item: any) => (
+        <React.Fragment key={item.id}>
+          <div className="flex items-center justify-between p-2 rounded-md hover:bg-muted/80 group">
+            <div className="text-sm">
+              <p className="font-semibold">{item.name}</p>
+              {itemType === 'Ledger' && (
+                <p className="text-xs text-muted-foreground">
+                  Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {childType && (
+                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAdd(childType, item)}>
+                    <PlusCircle className="h-4 w-4 text-green-600" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          </div>
+          <AccountTree
+            parentId={item.id}
+            level={level + 1}
+            onAdd={onAdd}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
 
 export function ChartOfAccountsClient() {
   const { 
@@ -34,50 +110,8 @@ export function ChartOfAccountsClient() {
   } = useSettings();
   
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
-
-  const [selectedGroup, setSelectedGroup] = useState<AccountGroup | null>(null);
-  const [selectedSubGroup, setSelectedSubGroup] = useState<AccountSubGroup | null>(null);
-  const [selectedHead, setSelectedHead] = useState<AccountHead | null>(null);
-  const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
-
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
-
-  const filteredSubGroups = useMemo(() => selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [], [selectedGroup, accountSubGroups]);
-  const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
-  const filteredSubHeads = useMemo(() => selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [], [selectedHead, accountSubHeads]);
-  const filteredLedgers = useMemo(() => selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [], [selectedSubHead, ledgerAccounts]);
-  
-  useEffect(() => {
-    setSelectedSubGroup(null);
-    setSelectedHead(null);
-    setSelectedSubHead(null);
-  }, [selectedGroup]);
-
-  useEffect(() => {
-    setSelectedHead(null);
-    setSelectedSubHead(null);
-  }, [selectedSubGroup]);
-
-  useEffect(() => {
-    setSelectedSubHead(null);
-  }, [selectedHead]);
-
-  const handleSelectGroup = (group: AccountGroup) => {
-    setSelectedGroup(group);
-  };
-
-  const handleSelectSubGroup = (subGroup: AccountSubGroup) => {
-    setSelectedSubGroup(subGroup);
-  }
-
-  const handleSelectHead = (head: AccountHead) => {
-    setSelectedHead(head);
-  };
-  
-  const handleSelectSubHead = (subHead: AccountSubHead) => {
-    setSelectedSubHead(subHead);
-  };
   
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
     setDialogState({ isOpen: true, type, editing, parent });
@@ -95,7 +129,7 @@ export function ChartOfAccountsClient() {
 
     const { type, editing, parent } = dialogState;
 
-    if (editing) { // Handle all updates
+    if (editing) {
         if (type === 'Group') updateAccountGroup({ ...(editing as AccountGroup), name });
         else if (type === 'Sub-Group') updateAccountSubGroup({ ...(editing as AccountSubGroup), name });
         else if (type === 'Head') updateAccountHead({ ...(editing as AccountHead), name });
@@ -105,20 +139,12 @@ export function ChartOfAccountsClient() {
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
             updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance });
         }
-    } else { // Handle all creations
-        if (type === 'Group') {
-            const newGroup = addAccountGroup({ name });
-            setSelectedGroup(newGroup);
-        } else if (type === 'Sub-Group' && parent) {
-            const newSubGroup = addAccountSubGroup({ name, groupId: parent.id });
-            setSelectedSubGroup(newSubGroup);
-        } else if (type === 'Head' && parent) {
-            const newHead = addAccountHead({ name, subGroupId: parent.id });
-            setSelectedHead(newHead);
-        } else if (type === 'Sub-Head' && parent) {
-            const newSubHead = addAccountSubHead({ name, headId: parent.id });
-            setSelectedSubHead(newSubHead);
-        } else if (type === 'Ledger' && parent) {
+    } else {
+        if (type === 'Group') addAccountGroup({ name });
+        else if (type === 'Sub-Group' && parent) addAccountSubGroup({ name, groupId: parent.id });
+        else if (type === 'Head' && parent) addAccountHead({ name, subGroupId: parent.id });
+        else if (type === 'Sub-Head' && parent) addAccountSubHead({ name, headId: parent.id });
+        else if (type === 'Ledger' && parent) {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
             addLedgerAccount({ name, code, openingBalance, subHeadId: parent.id });
@@ -141,11 +167,11 @@ export function ChartOfAccountsClient() {
     }
 
     if (confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
-        if (type === 'Group') { deleteAccountGroup(item.id); if (selectedGroup?.id === item.id) setSelectedGroup(null); }
-        else if (type === 'Sub-Group') { deleteAccountSubGroup(item.id); if (selectedSubGroup?.id === item.id) setSelectedSubGroup(null); }
-        else if (type === 'Head') { deleteAccountHead(item.id); if (selectedHead?.id === item.id) setSelectedHead(null); }
-        else if (type === 'Sub-Head') { deleteAccountSubHead(item.id); if (selectedSubHead?.id === item.id) setSelectedSubHead(null); }
-        else if (type === 'Ledger') { deleteLedgerAccount(item.id); }
+        if (type === 'Group') deleteAccountGroup(item.id);
+        else if (type === 'Sub-Group') deleteAccountSubGroup(item.id);
+        else if (type === 'Head') deleteAccountHead(item.id);
+        else if (type === 'Sub-Head') deleteAccountSubHead(item.id);
+        else if (type === 'Ledger') deleteLedgerAccount(item.id);
     }
   }
 
@@ -229,109 +255,43 @@ export function ChartOfAccountsClient() {
     return <div>Loading chart of accounts...</div>;
   }
 
-  const renderColumn = (
-    title: string,
-    items: any[],
-    selectedItem: any | null,
-    onSelectItem: (item: any) => void,
-    onAdd: () => void,
-    onEdit: (item: any) => void,
-    onDelete: (item: any) => void,
-    showAddButton: boolean,
-    type: DialogState['type']
-  ) => (
-    <Card className="flex-1 flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
-        {showAddButton && (
-          <Button size="sm" variant="outline" onClick={onAdd}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
-        {items.length > 0 ? (
-          items.map(item => (
-            <div
-              key={item.id}
-              onClick={() => onSelectItem(item)}
-              className={cn(
-                "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/80 group",
-                selectedItem?.id === item.id && "bg-muted font-semibold"
-              )}
-            >
-                {type === 'Ledger' ? (
-                  <div className="text-sm">
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Code: {item.code} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}</p>
-                  </div>
-                ) : (
-                  <span>{item.name}</span>
-                )}
-                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(item); }}>
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onDelete(item); }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                    {type !== 'Ledger' && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-center text-muted-foreground pt-8">
-            {title === "Groups" ? "No groups yet." : `Select a parent to see its children.`}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-
   return (
     <>
-      <div className="flex justify-end gap-2 mb-4">
-        <Button onClick={handleDownloadFormat} variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" /> Download Format
-        </Button>
-        <Button asChild variant="outline" size="sm">
-            <Label className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" /> Upload Accounts
-                <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
-            </Label>
-        </Button>
-        <Button onClick={() => setClearConfirmationOpen(true)} variant="destructive" size="sm">
-            <Trash2 className="mr-2 h-4 w-4" /> Clear Chart of Accounts
-        </Button>
-      </div>
-
-      <div className="flex gap-2 h-[calc(100vh-16rem)]">
-        {renderColumn('Groups', accountGroups, selectedGroup, handleSelectGroup, 
-            () => handleOpenDialog('Group', null), 
-            (g) => handleOpenDialog('Group', g),
-            (g) => handleDelete(g, 'Group'),
-            true, 'Group')}
-        {renderColumn('Sub-Groups', filteredSubGroups, selectedSubGroup, handleSelectSubGroup, 
-            () => handleOpenDialog('Sub-Group', null, selectedGroup!), 
-            (sg) => handleOpenDialog('Sub-Group', sg, selectedGroup!),
-            (sg) => handleDelete(sg, 'Sub-Group'),
-            !!selectedGroup, 'Sub-Group')}
-        {renderColumn('Account Heads', filteredHeads, selectedHead, handleSelectHead, 
-            () => handleOpenDialog('Head', null, selectedSubGroup!), 
-            (h) => handleOpenDialog('Head', h, selectedSubGroup!),
-            (h) => handleDelete(h, 'Head'),
-            !!selectedSubGroup, 'Head')}
-        {renderColumn('Sub-Heads', filteredSubHeads, selectedSubHead, handleSelectSubHead,
-            () => handleOpenDialog('Sub-Head', null, selectedHead!),
-            (sh) => handleOpenDialog('Sub-Head', sh, selectedHead!),
-            (sh) => handleDelete(sh, 'Sub-Head'),
-            !!selectedHead, 'Sub-Head')}
-        {renderColumn('Ledger Accounts', filteredLedgers, null, () => {}, 
-            () => handleOpenDialog('Ledger', null, selectedSubHead!), 
-            (l) => handleOpenDialog('Ledger', l, selectedSubHead!),
-            (l) => handleDelete(l, 'Ledger'),
-            !!selectedSubHead, 'Ledger')}
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-end gap-2">
+            <Button onClick={handleDownloadFormat} variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" /> Download Format
+            </Button>
+            <Button asChild variant="outline" size="sm">
+                <Label className="cursor-pointer">
+                    <Upload className="mr-2 h-4 w-4" /> Upload Accounts
+                    <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
+                </Label>
+            </Button>
+            <Button onClick={() => setClearConfirmationOpen(true)} variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" /> Clear Chart of Accounts
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+           <div className="border rounded-lg p-4 min-h-[calc(100vh-20rem)]">
+              <div className="flex items-center justify-between pb-2 border-b">
+                 <h4 className="font-semibold">Chart of Accounts</h4>
+                 <Button size="sm" variant="outline" onClick={() => handleOpenDialog('Group', null)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Group
+                 </Button>
+              </div>
+              <div className="mt-4">
+                <AccountTree
+                  onAdd={handleOpenDialog}
+                  onEdit={(item, type) => handleOpenDialog(type, item)}
+                  onDelete={handleDelete}
+                />
+              </div>
+           </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={dialogState.isOpen} onOpenChange={handleCloseDialog}>
         <DialogContent>
@@ -385,4 +345,3 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
-

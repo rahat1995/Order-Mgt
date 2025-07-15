@@ -1,6 +1,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -390,6 +391,7 @@ export interface Employee {
 export interface AccountGroup {
   id: string;
   name: string;
+  parentId?: undefined; // Groups are top-level
 }
 
 export interface AccountSubGroup {
@@ -482,5 +484,3 @@ export interface AppSettings {
       serial: number;
   }
 }
-
-    
