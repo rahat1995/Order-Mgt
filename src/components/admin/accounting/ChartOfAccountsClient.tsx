@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ChevronRight, Upload, Download } from 'lucide-react';
 import type { AccountGroup, AccountHead, LedgerAccount } from '@/types';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 
 type DialogState = {
@@ -91,6 +92,79 @@ export function ChartOfAccountsClient() {
     }
   }
 
+  const handleDownloadFormat = () => {
+    const headers = ["groupName", "headName", "ledgerName"];
+    const exampleData = [
+      { groupName: "Assets", headName: "Current Assets", ledgerName: "Cash" },
+      { groupName: "Assets", headName: "Current Assets", ledgerName: "Accounts Receivable" },
+      { groupName: "Expenses", headName: "Operating Expenses", ledgerName: "Salaries Expense" },
+    ];
+    const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ChartOfAccounts");
+    XLSX.writeFile(wb, "chart_of_accounts_format.xlsx");
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+        let itemsAdded = 0;
+        const errors: string[] = [];
+
+        json.forEach((row, index) => {
+          const { groupName, headName, ledgerName } = row;
+          if (!groupName || !headName || !ledgerName) {
+            errors.push(`Row ${index + 2}: Missing required fields (groupName, headName, ledgerName).`);
+            return;
+          }
+
+          try {
+            // Find or create group
+            let group = settings.accountGroups.find(g => g.name.toLowerCase() === groupName.toString().toLowerCase());
+            if (!group) {
+              group = addAccountGroup({ name: groupName });
+            }
+
+            // Find or create head
+            let head = settings.accountHeads.find(h => h.name.toLowerCase() === headName.toString().toLowerCase() && h.groupId === group!.id);
+            if (!head) {
+              head = addAccountHead({ name: headName, groupId: group!.id });
+            }
+
+            // Find or create ledger
+            let ledger = settings.ledgerAccounts.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.headId === head!.id);
+            if (!ledger) {
+              addLedgerAccount({ name: ledgerName, headId: head!.id });
+              itemsAdded++;
+            }
+          } catch (e: any) {
+             errors.push(`Row ${index + 2}: Error processing - ${e.message}`);
+          }
+        });
+
+        alert(`${itemsAdded} new ledger accounts added successfully.${errors.length > 0 ? `\n\nErrors:\n${errors.join('\n')}` : ''}`);
+
+      } catch (error) {
+        console.error("Error processing file:", error);
+        alert("Failed to process the uploaded file. Please ensure it is a valid Excel file.");
+      } finally {
+        event.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+
   const renderColumn = (
     title: string,
     items: any[],
@@ -152,6 +226,18 @@ export function ChartOfAccountsClient() {
 
   return (
     <>
+      <div className="flex justify-end gap-2 mb-4">
+        <Button onClick={handleDownloadFormat} variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" /> Download Format
+        </Button>
+        <Button asChild variant="outline" size="sm">
+            <Label className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Upload Accounts
+                <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
+            </Label>
+        </Button>
+      </div>
+
       <div className="flex gap-4 h-[calc(100vh-16rem)]">
         {renderColumn('Account Groups', accountGroups, selectedGroup, handleSelectGroup, 
             () => handleOpenDialog('Group', null), 

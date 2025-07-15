@@ -220,13 +220,13 @@ interface SettingsContextType {
   updateEmployee: (employee: Employee) => void;
   deleteEmployee: (employeeId: string) => void;
   // Accounting
-  addAccountGroup: (group: Omit<AccountGroup, 'id'>) => void;
+  addAccountGroup: (group: Omit<AccountGroup, 'id'>) => AccountGroup;
   updateAccountGroup: (group: AccountGroup) => void;
   deleteAccountGroup: (groupId: string) => void;
-  addAccountHead: (head: Omit<AccountHead, 'id'>) => void;
+  addAccountHead: (head: Omit<AccountHead, 'id'>) => AccountHead;
   updateAccountHead: (head: AccountHead) => void;
   deleteAccountHead: (headId: string) => void;
-  addLedgerAccount: (account: Omit<LedgerAccount, 'id'>) => void;
+  addLedgerAccount: (account: Omit<LedgerAccount, 'id'>) => LedgerAccount;
   updateLedgerAccount: (account: LedgerAccount) => void;
   deleteLedgerAccount: (accountId: string) => void;
 }
@@ -738,15 +738,27 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   // Accounting
-  const addAccountGroup = (group: Omit<AccountGroup, 'id'>) => setSettings(prev => ({...prev, accountGroups: [...prev.accountGroups, {...group, id: uuidv4()}]}));
+  const addAccountGroup = (group: Omit<AccountGroup, 'id'>): AccountGroup => {
+    const newGroup = { ...group, id: uuidv4() };
+    setSettings(prev => ({...prev, accountGroups: [...prev.accountGroups, newGroup]}));
+    return newGroup;
+  };
   const updateAccountGroup = (group: AccountGroup) => setSettings(prev => ({...prev, accountGroups: prev.accountGroups.map(g => g.id === group.id ? group : g)}));
   const deleteAccountGroup = (groupId: string) => setSettings(prev => ({...prev, accountGroups: prev.accountGroups.filter(g => g.id !== groupId)}));
   
-  const addAccountHead = (head: Omit<AccountHead, 'id'>) => setSettings(prev => ({...prev, accountHeads: [...prev.accountHeads, {...head, id: uuidv4()}]}));
+  const addAccountHead = (head: Omit<AccountHead, 'id'>): AccountHead => {
+    const newHead = { ...head, id: uuidv4() };
+    setSettings(prev => ({...prev, accountHeads: [...prev.accountHeads, newHead]}));
+    return newHead;
+  };
   const updateAccountHead = (head: AccountHead) => setSettings(prev => ({...prev, accountHeads: prev.accountHeads.map(h => h.id === head.id ? head : h)}));
   const deleteAccountHead = (headId: string) => setSettings(prev => ({...prev, accountHeads: prev.accountHeads.filter(h => h.id !== headId)}));
 
-  const addLedgerAccount = (account: Omit<LedgerAccount, 'id'>) => setSettings(prev => ({...prev, ledgerAccounts: [...prev.ledgerAccounts, {...account, id: uuidv4()}]}));
+  const addLedgerAccount = (account: Omit<LedgerAccount, 'id'>): LedgerAccount => {
+    const newAccount = { ...account, id: uuidv4() };
+    setSettings(prev => ({...prev, ledgerAccounts: [...prev.ledgerAccounts, newAccount]}));
+    return newAccount;
+  };
   const updateLedgerAccount = (account: LedgerAccount) => setSettings(prev => ({...prev, ledgerAccounts: prev.ledgerAccounts.map(l => l.id === account.id ? account : l)}));
   const deleteLedgerAccount = (accountId: string) => setSettings(prev => ({...prev, ledgerAccounts: prev.ledgerAccounts.filter(l => l.id !== accountId)}));
 
