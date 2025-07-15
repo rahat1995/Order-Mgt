@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle } from 'lucide-react';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import * as XLSX from 'xlsx';
+import { cn } from '@/lib/utils';
 
 
 type DialogState = {
@@ -24,76 +25,93 @@ const hierarchyOrder = ['Group', 'Sub-Group', 'Head', 'Sub-Head', 'Ledger'];
 
 // A new recursive component to render the tree
 const AccountTree = ({
-  parentId,
+  items,
   level = 0,
   onAdd,
   onEdit,
-  onDelete
+  onDelete,
+  parentPrefix = ''
 }: {
-  parentId?: string;
+  items: any[];
   level?: number;
   onAdd: (type: DialogState['type'], parent: any) => void;
   onEdit: (item: any, type: DialogState['type']) => void;
   onDelete: (item: any, type: DialogState['type']) => void;
+  parentPrefix?: string;
 }) => {
   const { settings } = useSettings();
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
 
-  const items = useMemo(() => {
-    switch (level) {
-      case 0: return accountGroups.filter(g => !g.parentId);
-      case 1: return accountSubGroups.filter(sg => sg.groupId === parentId);
-      case 2: return accountHeads.filter(h => h.subGroupId === parentId);
-      case 3: return accountSubHeads.filter(sh => sh.headId === parentId);
-      case 4: return ledgerAccounts.filter(l => l.subHeadId === parentId);
+  const getChildren = (item: any, currentLevel: number) => {
+    switch (currentLevel) {
+      case 0: return accountSubGroups.filter(sg => sg.groupId === item.id);
+      case 1: return accountHeads.filter(h => h.subGroupId === item.id);
+      case 2: return accountSubHeads.filter(sh => sh.headId === item.id);
+      case 3: return ledgerAccounts.filter(l => l.subHeadId === item.id);
       default: return [];
     }
-  }, [level, parentId, accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts]);
+  };
 
   const itemType = hierarchyOrder[level] as DialogState['type'];
   const childType = hierarchyOrder[level + 1] as DialogState['type'];
-
-  if (!items.length && level > 0) return null;
+  
+  if (!items.length) {
+    if (level === 0) return <p className="text-center text-sm text-muted-foreground py-8">No account groups found. Click "Add Group" to start.</p>;
+    return null;
+  }
 
   return (
     <div className="space-y-1">
-      {items.map((item: any) => (
-        <div key={item.id} className="relative">
-          <div
-            className="flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80 group"
-            style={{ paddingLeft: `${level * 24 + 8}px` }}
-          >
-            <div className="text-sm py-2">
-              <p className="font-semibold">{item.name}</p>
-              {itemType === 'Ledger' && (
-                <p className="text-xs text-muted-foreground">
-                  Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
-                </p>
-              )}
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        const children = getChildren(item, level);
+
+        return (
+          <div key={item.id} className="relative">
+            <div className="flex items-center group">
+              <div className="flex-shrink-0 flex items-center justify-end" style={{ width: `${level * 24}px`}}>
+                {level > 0 && <div className="w-1/2 h-full border-r border-gray-300"></div>}
+              </div>
+              <div className={cn("flex-shrink-0 border-l border-b border-gray-300 rounded-bl-md", level === 0 && 'border-none')} style={{width: '12px', height:'24px', marginTop: '-12px'}}></div>
+
+              <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80">
+                <div className="py-2">
+                  <p className="font-semibold">{item.name}</p>
+                  {itemType === 'Ledger' && (
+                    <p className="text-xs text-muted-foreground">
+                      Code: {item.code || 'N/A'} | OB: ৳{item.openingBalance?.toFixed(2) || '0.00'}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {childType && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAdd(childType, item)}>
+                        <PlusCircle className="h-4 w-4 text-green-600" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-              {childType && (
-                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAdd(childType, item)}>
-                    <PlusCircle className="h-4 w-4 text-green-600" />
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item, itemType)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(item, itemType)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+            
+            <div className="relative">
+              {!isLast && level > 0 && <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300" style={{ left: `${level * 24}px` }}></div>}
+              <AccountTree
+                items={children}
+                level={level + 1}
+                onAdd={onAdd}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
             </div>
           </div>
-          <AccountTree
-            parentId={item.id}
-            level={level + 1}
-            onAdd={onAdd}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
@@ -272,6 +290,8 @@ export function ChartOfAccountsClient() {
       setClearConfirmationOpen(false);
   }
 
+  const topLevelGroups = useMemo(() => accountGroups.filter(g => !g.parentId), [accountGroups]);
+  
   if (!isLoaded) {
     return <div>Loading chart of accounts...</div>;
   }
@@ -305,6 +325,7 @@ export function ChartOfAccountsClient() {
               </div>
               <div className="mt-4">
                 <AccountTree
+                  items={topLevelGroups}
                   onAdd={handleOpenDialog}
                   onEdit={(item, type) => handleOpenDialog(type, item)}
                   onDelete={handleDelete}
@@ -366,3 +387,4 @@ export function ChartOfAccountsClient() {
     </>
   );
 }
+
