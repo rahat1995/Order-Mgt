@@ -30,14 +30,12 @@ const AccountTree = ({
   onAdd,
   onEdit,
   onDelete,
-  parentPrefix = ''
 }: {
   items: any[];
   level?: number;
   onAdd: (type: DialogState['type'], parent: any) => void;
   onEdit: (item: any, type: DialogState['type']) => void;
   onDelete: (item: any, type: DialogState['type']) => void;
-  parentPrefix?: string;
 }) => {
   const { settings } = useSettings();
   const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
@@ -69,10 +67,15 @@ const AccountTree = ({
         return (
           <div key={item.id} className="relative">
             <div className="flex items-center group">
-              <div className="flex-shrink-0 flex items-center justify-end" style={{ width: `${level * 24}px`}}>
-                {level > 0 && <div className="w-1/2 h-full border-r border-gray-300"></div>}
+              <div className="flex-shrink-0 flex items-center justify-end" style={{ width: `${level * 32}px`}}>
+                {level > 0 && (
+                  <>
+                    <div className="w-1/2 h-full border-r border-gray-300"></div>
+                    <div className={cn("w-1/2 h-px bg-gray-300", isLast && 'h-1/2 self-start')}></div>
+                  </>
+                )}
               </div>
-              <div className={cn("flex-shrink-0 border-l border-b border-gray-300 rounded-bl-md", level === 0 && 'border-none')} style={{width: '12px', height:'24px', marginTop: '-12px'}}></div>
+              <div className={cn("absolute bg-gray-300", level > 0 && `h-full w-px left-[${level * 32 - 16}px] top-0`, isLast && 'h-1/2')}></div>
 
               <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80">
                 <div className="py-2">
@@ -100,7 +103,6 @@ const AccountTree = ({
             </div>
             
             <div className="relative">
-              {!isLast && level > 0 && <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300" style={{ left: `${level * 24}px` }}></div>}
               <AccountTree
                 items={children}
                 level={level + 1}
@@ -178,7 +180,7 @@ export function ChartOfAccountsClient() {
     let childExists = false;
     if (type === 'Group') childExists = accountSubGroups.some(h => h.groupId === item.id);
     else if (type === 'Sub-Group') childExists = accountHeads.some(h => h.subGroupId === item.id);
-    else if (type === 'Head') childExists = accountSubHeads.some(h => h.headId === item.id);
+    else if (type === 'Head') childExists = accountSubHeads.some(h => sh.headId === item.id);
     else if (type === 'Sub-Head') childExists = ledgerAccounts.some(l => l.subHeadId === item.id);
     
     if (childExists) {
@@ -388,3 +390,4 @@ export function ChartOfAccountsClient() {
   );
 }
 
+    
