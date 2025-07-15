@@ -388,19 +388,31 @@ export interface Employee {
 // Accounting
 export interface AccountGroup {
   id: string;
-  name: string; // e.g., Assets, Liabilities, Equity, Revenue, Expenses
+  name: string;
+}
+
+export interface AccountSubGroup {
+  id: string;
+  name: string;
+  groupId: string;
 }
 
 export interface AccountHead {
   id: string;
-  name: string; // e.g., Current Assets, Fixed Assets
-  groupId: string;
+  name: string;
+  subGroupId: string;
+}
+
+export interface AccountSubHead {
+  id: string;
+  name: string;
+  headId: string;
 }
 
 export interface LedgerAccount {
   id: string;
-  name: string; // e.g., Cash, Bank, Accounts Receivable
-  headId: string;
+  name: string;
+  subHeadId: string;
 }
 
 
@@ -449,7 +461,9 @@ export interface AppSettings {
   employees: Employee[];
   // Accounting
   accountGroups: AccountGroup[];
+  accountSubGroups: AccountSubGroup[];
   accountHeads: AccountHead[];
+  accountSubHeads: AccountSubHead[];
   ledgerAccounts: LedgerAccount[];
   
   lastOrderNumberForDate: {

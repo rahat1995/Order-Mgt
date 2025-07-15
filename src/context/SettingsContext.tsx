@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountGroup, AccountHead, LedgerAccount } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -89,7 +89,9 @@ const defaultSettings: AppSettings = {
   employees: [],
   // Accounting
   accountGroups: [],
+  accountSubGroups: [],
   accountHeads: [],
+  accountSubHeads: [],
   ledgerAccounts: [],
   lastOrderNumberForDate: {
     date: '',
@@ -223,9 +225,15 @@ interface SettingsContextType {
   addAccountGroup: (group: Omit<AccountGroup, 'id'>) => AccountGroup;
   updateAccountGroup: (group: AccountGroup) => void;
   deleteAccountGroup: (groupId: string) => void;
+  addAccountSubGroup: (subGroup: Omit<AccountSubGroup, 'id'>) => AccountSubGroup;
+  updateAccountSubGroup: (subGroup: AccountSubGroup) => void;
+  deleteAccountSubGroup: (subGroupId: string) => void;
   addAccountHead: (head: Omit<AccountHead, 'id'>) => AccountHead;
   updateAccountHead: (head: AccountHead) => void;
   deleteAccountHead: (headId: string) => void;
+  addAccountSubHead: (subHead: Omit<AccountSubHead, 'id'>) => AccountSubHead;
+  updateAccountSubHead: (subHead: AccountSubHead) => void;
+  deleteAccountSubHead: (subHeadId: string) => void;
   addLedgerAccount: (account: Omit<LedgerAccount, 'id'>) => LedgerAccount;
   updateLedgerAccount: (account: LedgerAccount) => void;
   deleteLedgerAccount: (accountId: string) => void;
@@ -311,7 +319,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         designations: storedSettings.designations || defaultSettings.designations,
         employees: storedSettings.employees || defaultSettings.employees,
         accountGroups: storedSettings.accountGroups || defaultSettings.accountGroups,
+        accountSubGroups: storedSettings.accountSubGroups || defaultSettings.accountSubGroups,
         accountHeads: storedSettings.accountHeads || defaultSettings.accountHeads,
+        accountSubHeads: storedSettings.accountSubHeads || defaultSettings.accountSubHeads,
         ledgerAccounts: storedSettings.ledgerAccounts || defaultSettings.ledgerAccounts,
         lastOrderNumberForDate: storedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
         lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
@@ -694,7 +704,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         if (payment.billId) {
             newSettings.supplierBills = newSettings.supplierBills.map(bill => {
                 if (bill.id === payment.billId) {
-                    const newPaidAmount = bill.paidAmount + payment.amount;
+                    const newPaidAmount = (bill.paidAmount || 0) + payment.amount;
                     const newPaymentStatus = newPaidAmount >= bill.totalAmount ? 'paid' : (newPaidAmount > 0 ? 'partially-paid' : 'unpaid');
                     return { ...bill, paidAmount: newPaidAmount, paymentStatus: newPaymentStatus };
                 }
@@ -746,6 +756,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const updateAccountGroup = (group: AccountGroup) => setSettings(prev => ({...prev, accountGroups: prev.accountGroups.map(g => g.id === group.id ? group : g)}));
   const deleteAccountGroup = (groupId: string) => setSettings(prev => ({...prev, accountGroups: prev.accountGroups.filter(g => g.id !== groupId)}));
   
+  const addAccountSubGroup = (subGroup: Omit<AccountSubGroup, 'id'>): AccountSubGroup => {
+    const newSubGroup = { ...subGroup, id: uuidv4() };
+    setSettings(prev => ({...prev, accountSubGroups: [...prev.accountSubGroups, newSubGroup]}));
+    return newSubGroup;
+  };
+  const updateAccountSubGroup = (subGroup: AccountSubGroup) => setSettings(prev => ({...prev, accountSubGroups: prev.accountSubGroups.map(sg => sg.id === subGroup.id ? subGroup : sg)}));
+  const deleteAccountSubGroup = (subGroupId: string) => setSettings(prev => ({...prev, accountSubGroups: prev.accountSubGroups.filter(sg => sg.id !== subGroupId)}));
+
   const addAccountHead = (head: Omit<AccountHead, 'id'>): AccountHead => {
     const newHead = { ...head, id: uuidv4() };
     setSettings(prev => ({...prev, accountHeads: [...prev.accountHeads, newHead]}));
@@ -753,6 +771,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   };
   const updateAccountHead = (head: AccountHead) => setSettings(prev => ({...prev, accountHeads: prev.accountHeads.map(h => h.id === head.id ? head : h)}));
   const deleteAccountHead = (headId: string) => setSettings(prev => ({...prev, accountHeads: prev.accountHeads.filter(h => h.id !== headId)}));
+
+  const addAccountSubHead = (subHead: Omit<AccountSubHead, 'id'>): AccountSubHead => {
+    const newSubHead = { ...subHead, id: uuidv4() };
+    setSettings(prev => ({...prev, accountSubHeads: [...prev.accountSubHeads, newSubHead]}));
+    return newSubHead;
+  };
+  const updateAccountSubHead = (subHead: AccountSubHead) => setSettings(prev => ({...prev, accountSubHeads: prev.accountSubHeads.map(sh => sh.id === subHead.id ? subHead : sh)}));
+  const deleteAccountSubHead = (subHeadId: string) => setSettings(prev => ({...prev, accountSubHeads: prev.accountSubHeads.filter(sh => sh.id !== subHeadId)}));
 
   const addLedgerAccount = (account: Omit<LedgerAccount, 'id'>): LedgerAccount => {
     const newAccount = { ...account, id: uuidv4() };
@@ -772,7 +798,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
-    addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountHead, updateAccountHead, deleteAccountHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount
+    addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;

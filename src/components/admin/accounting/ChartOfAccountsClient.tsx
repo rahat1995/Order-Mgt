@@ -9,34 +9,57 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, ChevronRight, Upload, Download } from 'lucide-react';
-import type { AccountGroup, AccountHead, LedgerAccount } from '@/types';
+import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 
 
 type DialogState = {
   isOpen: boolean;
-  type: 'Group' | 'Head' | 'Ledger' | null;
-  editing: AccountGroup | AccountHead | LedgerAccount | null;
-  parent?: AccountGroup | AccountHead;
+  type: 'Group' | 'Sub-Group' | 'Head' | 'Sub-Head' | 'Ledger' | null;
+  editing: AccountGroup | AccountSubGroup | AccountHead | AccountSubHead | LedgerAccount | null;
+  parent?: AccountGroup | AccountSubGroup | AccountHead | AccountSubHead;
 };
 
 export function ChartOfAccountsClient() {
-  const { settings, addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountHead, updateAccountHead, deleteAccountHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount, isLoaded } = useSettings();
-  const { accountGroups, accountHeads, ledgerAccounts } = settings;
+  const { 
+    settings, 
+    addAccountGroup, updateAccountGroup, deleteAccountGroup,
+    addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup,
+    addAccountHead, updateAccountHead, deleteAccountHead,
+    addAccountSubHead, updateAccountSubHead, deleteAccountSubHead,
+    addLedgerAccount, updateLedgerAccount, deleteLedgerAccount, 
+    isLoaded 
+  } = useSettings();
+  const { accountGroups, accountSubGroups, accountHeads, accountSubHeads, ledgerAccounts } = settings;
 
   const [selectedGroup, setSelectedGroup] = useState<AccountGroup | null>(null);
+  const [selectedSubGroup, setSelectedSubGroup] = useState<AccountSubGroup | null>(null);
   const [selectedHead, setSelectedHead] = useState<AccountHead | null>(null);
+  const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
 
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
 
   const handleSelectGroup = (group: AccountGroup) => {
     setSelectedGroup(group);
+    setSelectedSubGroup(null);
     setSelectedHead(null);
+    setSelectedSubHead(null);
   };
+
+  const handleSelectSubGroup = (subGroup: AccountSubGroup) => {
+    setSelectedSubGroup(subGroup);
+    setSelectedHead(null);
+    setSelectedSubHead(null);
+  }
 
   const handleSelectHead = (head: AccountHead) => {
     setSelectedHead(head);
+    setSelectedSubHead(null);
+  };
+  
+  const handleSelectSubHead = (subHead: AccountSubHead) => {
+    setSelectedSubHead(subHead);
   };
   
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
@@ -57,22 +80,25 @@ export function ChartOfAccountsClient() {
 
     if (type === 'Group') {
         editing ? updateAccountGroup({ ...(editing as AccountGroup), name }) : addAccountGroup({ name });
+    } else if (type === 'Sub-Group' && parent) {
+        editing ? updateAccountSubGroup({ ...(editing as AccountSubGroup), name }) : addAccountSubGroup({ name, groupId: parent.id });
     } else if (type === 'Head' && parent) {
-        editing ? updateAccountHead({ ...(editing as AccountHead), name }) : addAccountHead({ name, groupId: parent.id });
+        editing ? updateAccountHead({ ...(editing as AccountHead), name }) : addAccountHead({ name, subGroupId: parent.id });
+    } else if (type === 'Sub-Head' && parent) {
+        editing ? updateAccountSubHead({ ...(editing as AccountSubHead), name }) : addAccountSubHead({ name, headId: parent.id });
     } else if (type === 'Ledger' && parent) {
-        editing ? updateLedgerAccount({ ...(editing as LedgerAccount), name }) : addLedgerAccount({ name, headId: parent.id });
+        editing ? updateLedgerAccount({ ...(editing as LedgerAccount), name }) : addLedgerAccount({ name, subHeadId: parent.id });
     }
     
     handleCloseDialog();
   };
   
-  const handleDelete = (item: AccountGroup | AccountHead | LedgerAccount, type: 'Group' | 'Head' | 'Ledger') => {
+  const handleDelete = (item: any, type: DialogState['type']) => {
     let childExists = false;
-    if (type === 'Group') {
-        childExists = accountHeads.some(h => h.groupId === item.id);
-    } else if (type === 'Head') {
-        childExists = ledgerAccounts.some(l => l.headId === item.id);
-    }
+    if (type === 'Group') childExists = accountSubGroups.some(h => h.groupId === item.id);
+    else if (type === 'Sub-Group') childExists = accountHeads.some(h => h.subGroupId === item.id);
+    else if (type === 'Head') childExists = accountSubHeads.some(h => h.headId === item.id);
+    else if (type === 'Sub-Head') childExists = ledgerAccounts.some(l => l.subHeadId === item.id);
     
     if (childExists) {
         alert(`Cannot delete "${item.name}" because it contains other items. Please delete its children first.`);
@@ -80,24 +106,20 @@ export function ChartOfAccountsClient() {
     }
 
     if (confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
-        if (type === 'Group') {
-            deleteAccountGroup(item.id);
-            if (selectedGroup?.id === item.id) setSelectedGroup(null);
-        } else if (type === 'Head') {
-            deleteAccountHead(item.id);
-            if (selectedHead?.id === item.id) setSelectedHead(null);
-        } else if (type === 'Ledger') {
-            deleteLedgerAccount(item.id);
-        }
+        if (type === 'Group') { deleteAccountGroup(item.id); if (selectedGroup?.id === item.id) setSelectedGroup(null); }
+        else if (type === 'Sub-Group') { deleteAccountSubGroup(item.id); if (selectedSubGroup?.id === item.id) setSelectedSubGroup(null); }
+        else if (type === 'Head') { deleteAccountHead(item.id); if (selectedHead?.id === item.id) setSelectedHead(null); }
+        else if (type === 'Sub-Head') { deleteAccountSubHead(item.id); if (selectedSubHead?.id === item.id) setSelectedSubHead(null); }
+        else if (type === 'Ledger') { deleteLedgerAccount(item.id); }
     }
   }
 
   const handleDownloadFormat = () => {
-    const headers = ["groupName", "headName", "ledgerName"];
+    const headers = ["groupName", "subGroupName", "headName", "subHeadName", "ledgerName"];
     const exampleData = [
-      { groupName: "Assets", headName: "Current Assets", ledgerName: "Cash" },
-      { groupName: "Assets", headName: "Current Assets", ledgerName: "Accounts Receivable" },
-      { groupName: "Expenses", headName: "Operating Expenses", ledgerName: "Salaries Expense" },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Checking Accounts", ledgerName: "Main Checking Account" },
+      { groupName: "Assets", subGroupName: "Current Assets", headName: "Bank Accounts", subHeadName: "Savings Accounts", ledgerName: "Business Savings" },
+      { groupName: "Expenses", subGroupName: "Operating Expenses", headName: "Salaries", subHeadName: "Management Salaries", ledgerName: "CEO Salary" },
     ];
     const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
     const wb = XLSX.utils.book_new();
@@ -122,29 +144,28 @@ export function ChartOfAccountsClient() {
         const errors: string[] = [];
 
         json.forEach((row, index) => {
-          const { groupName, headName, ledgerName } = row;
-          if (!groupName || !headName || !ledgerName) {
-            errors.push(`Row ${index + 2}: Missing required fields (groupName, headName, ledgerName).`);
+          const { groupName, subGroupName, headName, subHeadName, ledgerName } = row;
+          if (!groupName || !subGroupName || !headName || !subHeadName || !ledgerName) {
+            errors.push(`Row ${index + 2}: Missing required fields. All 5 columns must be filled.`);
             return;
           }
 
           try {
-            // Find or create group
             let group = settings.accountGroups.find(g => g.name.toLowerCase() === groupName.toString().toLowerCase());
-            if (!group) {
-              group = addAccountGroup({ name: groupName });
-            }
+            if (!group) group = addAccountGroup({ name: groupName });
 
-            // Find or create head
-            let head = settings.accountHeads.find(h => h.name.toLowerCase() === headName.toString().toLowerCase() && h.groupId === group!.id);
-            if (!head) {
-              head = addAccountHead({ name: headName, groupId: group!.id });
-            }
+            let subGroup = settings.accountSubGroups.find(sg => sg.name.toLowerCase() === subGroupName.toString().toLowerCase() && sg.groupId === group!.id);
+            if (!subGroup) subGroup = addAccountSubGroup({ name: subGroupName, groupId: group!.id });
+            
+            let head = settings.accountHeads.find(h => h.name.toLowerCase() === headName.toString().toLowerCase() && h.subGroupId === subGroup!.id);
+            if (!head) head = addAccountHead({ name: headName, subGroupId: subGroup!.id });
 
-            // Find or create ledger
-            let ledger = settings.ledgerAccounts.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.headId === head!.id);
+            let subHead = settings.accountSubHeads.find(sh => sh.name.toLowerCase() === subHeadName.toString().toLowerCase() && sh.headId === head!.id);
+            if (!subHead) subHead = addAccountSubHead({ name: subHeadName, headId: head!.id });
+
+            let ledger = settings.ledgerAccounts.find(l => l.name.toLowerCase() === ledgerName.toString().toLowerCase() && l.subHeadId === subHead!.id);
             if (!ledger) {
-              addLedgerAccount({ name: ledgerName, headId: head!.id });
+              addLedgerAccount({ name: ledgerName, subHeadId: subHead!.id });
               itemsAdded++;
             }
           } catch (e: any) {
@@ -174,7 +195,7 @@ export function ChartOfAccountsClient() {
     onEdit: (item: any) => void,
     onDelete: (item: any) => void,
     showAddButton: boolean,
-    type: 'Group' | 'Head' | 'Ledger'
+    type: DialogState['type']
   ) => (
     <Card className="flex-1 flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -210,7 +231,7 @@ export function ChartOfAccountsClient() {
           ))
         ) : (
           <p className="text-sm text-center text-muted-foreground pt-8">
-            {title === "Account Groups" ? "No groups yet." : `Select a ${title === 'Account Heads' ? 'group' : 'head'} to see its children.`}
+            {title === "Groups" ? "No groups yet." : `Select a parent to see its children.`}
           </p>
         )}
       </CardContent>
@@ -221,8 +242,10 @@ export function ChartOfAccountsClient() {
     return <div>Loading chart of accounts...</div>;
   }
 
-  const filteredHeads = selectedGroup ? accountHeads.filter(h => h.groupId === selectedGroup.id) : [];
-  const filteredLedgers = selectedHead ? ledgerAccounts.filter(l => l.headId === selectedHead.id) : [];
+  const filteredSubGroups = selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [];
+  const filteredHeads = selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [];
+  const filteredSubHeads = selectedHead ? accountSubHeads.filter(sh => sh.headId === selectedHead.id) : [];
+  const filteredLedgers = selectedSubHead ? ledgerAccounts.filter(l => l.subHeadId === selectedSubHead.id) : [];
 
   return (
     <>
@@ -238,22 +261,32 @@ export function ChartOfAccountsClient() {
         </Button>
       </div>
 
-      <div className="flex gap-4 h-[calc(100vh-16rem)]">
-        {renderColumn('Account Groups', accountGroups, selectedGroup, handleSelectGroup, 
+      <div className="flex gap-2 h-[calc(100vh-16rem)]">
+        {renderColumn('Groups', accountGroups, selectedGroup, handleSelectGroup, 
             () => handleOpenDialog('Group', null), 
             (g) => handleOpenDialog('Group', g),
             (g) => handleDelete(g, 'Group'),
             true, 'Group')}
+        {renderColumn('Sub-Groups', filteredSubGroups, selectedSubGroup, handleSelectSubGroup, 
+            () => handleOpenDialog('Sub-Group', null, selectedGroup!), 
+            (sg) => handleOpenDialog('Sub-Group', sg, selectedGroup!),
+            (sg) => handleDelete(sg, 'Sub-Group'),
+            !!selectedGroup, 'Sub-Group')}
         {renderColumn('Account Heads', filteredHeads, selectedHead, handleSelectHead, 
-            () => handleOpenDialog('Head', null, selectedGroup!), 
-            (h) => handleOpenDialog('Head', h, selectedGroup!),
+            () => handleOpenDialog('Head', null, selectedSubGroup!), 
+            (h) => handleOpenDialog('Head', h, selectedSubGroup!),
             (h) => handleDelete(h, 'Head'),
-            !!selectedGroup, 'Head')}
+            !!selectedSubGroup, 'Head')}
+        {renderColumn('Sub-Heads', filteredSubHeads, selectedSubHead, handleSelectSubHead,
+            () => handleOpenDialog('Sub-Head', null, selectedHead!),
+            (sh) => handleOpenDialog('Sub-Head', sh, selectedHead!),
+            (sh) => handleDelete(sh, 'Sub-Head'),
+            !!selectedHead, 'Sub-Head')}
         {renderColumn('Ledger Accounts', filteredLedgers, null, () => {}, 
-            () => handleOpenDialog('Ledger', null, selectedHead!), 
-            (l) => handleOpenDialog('Ledger', l, selectedHead!),
+            () => handleOpenDialog('Ledger', null, selectedSubHead!), 
+            (l) => handleOpenDialog('Ledger', l, selectedSubHead!),
             (l) => handleDelete(l, 'Ledger'),
-            !!selectedHead, 'Ledger')}
+            !!selectedSubHead, 'Ledger')}
       </div>
 
       <Dialog open={dialogState.isOpen} onOpenChange={handleCloseDialog}>
