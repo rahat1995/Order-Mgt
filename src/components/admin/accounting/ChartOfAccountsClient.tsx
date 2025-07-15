@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle, Library, Folder, Bookmark, Tag, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import * as XLSX from 'xlsx';
@@ -23,6 +23,7 @@ type DialogState = {
 };
 
 const hierarchyOrder = ['Group', 'Sub-Group', 'Head', 'Sub-Head', 'Ledger'];
+const layerIcons = [Library, Folder, Bookmark, Tag, FileText];
 
 // A new recursive component to render the tree
 const AccountTree = ({
@@ -55,6 +56,7 @@ const AccountTree = ({
 
   const itemType = hierarchyOrder[level] as DialogState['type'];
   const childType = hierarchyOrder[level + 1] as DialogState['type'];
+  const Icon = layerIcons[level];
   
   if (!items.length) {
     if (level === 0) return <p className="text-center text-sm text-muted-foreground py-8">No account groups found. Click "Add Group" to start.</p>;
@@ -65,16 +67,20 @@ const AccountTree = ({
     <div className="space-y-1">
       {items.map((item, index) => {
         const children = getChildren(item, level);
+        const isLastItem = index === items.length - 1;
         
         const itemContent = (
             <div className="flex-grow flex items-center justify-between pl-2 pr-1 rounded-md hover:bg-muted/80 group">
-                <div className="py-2">
-                    <p className="font-semibold">{item.name}</p>
-                    {itemType === 'Ledger' && (
-                    <p className="text-xs text-muted-foreground">
-                        Code: {item.code || 'N/A'} | OB: ৳{(item.openingBalance || 0).toFixed(2)}
-                    </p>
-                    )}
+                <div className="py-2 flex items-center gap-2">
+                    {Icon && <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                    <div>
+                        <p className="font-semibold">{item.name}</p>
+                        {itemType === 'Ledger' && (
+                        <p className="text-xs text-muted-foreground">
+                            Code: {item.code || 'N/A'} | OB: ৳{(item.openingBalance || 0).toFixed(2)}
+                        </p>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                     {childType && (
@@ -96,15 +102,14 @@ const AccountTree = ({
           <div key={item.id} className="relative">
              <div className="flex items-start">
                {/* Vertical and Horizontal lines */}
-                <div className="flex-shrink-0 w-6 h-full absolute left-0 flex flex-col items-center" style={{ marginLeft: `${level * 1.5}rem`}}>
-                    {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
-                    {level > 0 && <div className="h-px w-full bg-gray-300"></div>}
-                    {level > 0 && <div className="h-1/2 w-px bg-gray-300" />}
+                <div className="flex-shrink-0 w-8 h-full absolute left-0 flex items-center" style={{ marginLeft: `${level * 1.5}rem`}}>
+                    {level > 0 && <div className={cn("h-full w-px bg-gray-300 absolute", isLastItem ? 'top-[-50%]' : 'top-[-50%] bottom-[-50%]')}></div>}
+                    {level > 0 && <div className="h-px w-full bg-gray-300 absolute"></div>}
                 </div>
 
                 <div 
                     className="flex-grow flex items-center" 
-                    style={{ paddingLeft: `${(level + 1) * 1.5}rem` }}
+                    style={{ paddingLeft: `${(level) * 1.5 + 2}rem` }}
                 >
                      { itemType === 'Ledger' ? (
                         <Popover openDelay={200}>
@@ -384,7 +389,7 @@ export function ChartOfAccountsClient() {
               <div className="mt-4">
                 <AccountTree
                   items={topLevelGroups}
-                  onAdd={handleOpenDialog}
+                  onAdd={(type, parent) => handleOpenDialog(type, null, parent)}
                   onEdit={(item, type) => handleOpenDialog(type, item)}
                   onDelete={handleDelete}
                   getFullPath={getFullPath}
@@ -453,3 +458,4 @@ export function ChartOfAccountsClient() {
     
 
     
+
