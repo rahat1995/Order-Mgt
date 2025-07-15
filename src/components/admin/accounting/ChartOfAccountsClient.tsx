@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, ChevronRight, Upload, Download } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ChevronRight, Upload, Download, AlertTriangle } from 'lucide-react';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
@@ -29,6 +29,7 @@ export function ChartOfAccountsClient() {
     addAccountHead, updateAccountHead, deleteAccountHead,
     addAccountSubHead, updateAccountSubHead, deleteAccountSubHead,
     addLedgerAccount, updateLedgerAccount, deleteLedgerAccount, 
+    clearChartOfAccounts,
     isLoaded 
   } = useSettings();
   
@@ -40,6 +41,7 @@ export function ChartOfAccountsClient() {
   const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
 
   const [dialogState, setDialogState] = useState<DialogState>({ isOpen: false, type: null, editing: null });
+  const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
 
   const filteredSubGroups = useMemo(() => selectedGroup ? accountSubGroups.filter(sg => sg.groupId === selectedGroup.id) : [], [selectedGroup, accountSubGroups]);
   const filteredHeads = useMemo(() => selectedSubGroup ? accountHeads.filter(h => h.subGroupId === selectedSubGroup.id) : [], [selectedSubGroup, accountHeads]);
@@ -217,6 +219,11 @@ export function ChartOfAccountsClient() {
     };
     reader.readAsArrayBuffer(file);
   };
+  
+  const handleConfirmClear = () => {
+      clearChartOfAccounts();
+      setClearConfirmationOpen(false);
+  }
 
   if (!isLoaded) {
     return <div>Loading chart of accounts...</div>;
@@ -293,6 +300,9 @@ export function ChartOfAccountsClient() {
                 <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
             </Label>
         </Button>
+        <Button onClick={() => setClearConfirmationOpen(true)} variant="destructive" size="sm">
+            <Trash2 className="mr-2 h-4 w-4" /> Clear Chart of Accounts
+        </Button>
       </div>
 
       <div className="flex gap-2 h-[calc(100vh-16rem)]">
@@ -357,8 +367,22 @@ export function ChartOfAccountsClient() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      <Dialog open={clearConfirmationOpen} onOpenChange={setClearConfirmationOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-6 w-6 text-destructive" /> Are you absolutely sure?</DialogTitle>
+                <DialogDescription className="pt-2">
+                    This action is irreversible. It will permanently delete your entire Chart of Accounts, including all groups, heads, and ledger accounts.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setClearConfirmationOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleConfirmClear}>Yes, Clear Everything</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
-    

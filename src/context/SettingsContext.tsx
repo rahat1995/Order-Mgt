@@ -237,6 +237,7 @@ interface SettingsContextType {
   addLedgerAccount: (account: Omit<LedgerAccount, 'id'>) => LedgerAccount;
   updateLedgerAccount: (account: LedgerAccount) => void;
   deleteLedgerAccount: (accountId: string) => void;
+  clearChartOfAccounts: () => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -788,6 +789,17 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const updateLedgerAccount = (account: LedgerAccount) => setSettings(prev => ({...prev, ledgerAccounts: prev.ledgerAccounts.map(l => l.id === account.id ? account : l)}));
   const deleteLedgerAccount = (accountId: string) => setSettings(prev => ({...prev, ledgerAccounts: prev.ledgerAccounts.filter(l => l.id !== accountId)}));
 
+  const clearChartOfAccounts = () => {
+    setSettings(prev => ({
+      ...prev,
+      accountGroups: [],
+      accountSubGroups: [],
+      accountHeads: [],
+      accountSubHeads: [],
+      ledgerAccounts: [],
+    }));
+  };
+
 
   const contextValue = {
     settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
@@ -798,7 +810,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
-    addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount
+    addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
+    clearChartOfAccounts
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
