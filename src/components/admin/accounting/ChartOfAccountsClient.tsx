@@ -162,11 +162,6 @@ export function ChartOfAccountsClient() {
   const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
   
-  const [selectedGroup, setSelectedGroup] = useState<AccountGroup | null>(null);
-  const [selectedSubGroup, setSelectedSubGroup] = useState<AccountSubGroup | null>(null);
-  const [selectedHead, setSelectedHead] = useState<AccountHead | null>(null);
-  const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
-
   // State for AccountType combobox
   const [accountTypePopoverOpen, setAccountTypePopoverOpen] = useState(false);
   const [selectedAccountTypeId, setSelectedAccountTypeId] = useState('');
@@ -185,15 +180,6 @@ export function ChartOfAccountsClient() {
     setDialogState({ isOpen: false, type: null, editing: null });
   };
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    processFormSubmit(true);
-  };
-  
-  const handleSaveAndAddAnother = () => {
-    processFormSubmit(false);
-  };
-
   const processFormSubmit = (closeAfterSave: boolean) => {
     if (!formRef.current) return;
     const formData = new FormData(formRef.current);
@@ -216,22 +202,10 @@ export function ChartOfAccountsClient() {
             updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance, accountTypeId });
         }
     } else {
-        if (type === 'Group') {
-           newEntity = addAccountGroup({ name });
-           setSelectedGroup(newEntity);
-        }
-        else if (type === 'Sub-Group' && parent) {
-            newEntity = addAccountSubGroup({ name, groupId: parent.id });
-            setSelectedSubGroup(newEntity);
-        }
-        else if (type === 'Head' && parent) {
-            newEntity = addAccountHead({ name, subGroupId: parent.id });
-            setSelectedHead(newEntity);
-        }
-        else if (type === 'Sub-Head' && parent) {
-            newEntity = addAccountSubHead({ name, headId: parent.id });
-            setSelectedSubHead(newEntity);
-        }
+        if (type === 'Group') newEntity = addAccountGroup({ name });
+        else if (type === 'Sub-Group' && parent) newEntity = addAccountSubGroup({ name, groupId: parent.id });
+        else if (type === 'Head' && parent) newEntity = addAccountHead({ name, subGroupId: parent.id });
+        else if (type === 'Sub-Head' && parent) newEntity = addAccountSubHead({ name, headId: parent.id });
         else if (type === 'Ledger' && parent) {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
@@ -249,11 +223,30 @@ export function ChartOfAccountsClient() {
     } else {
         formRef.current.reset();
         setSelectedAccountTypeId('');
+        
+        // Smart "Add Another" logic
+        if (newEntity) {
+            const currentTypeIndex = hierarchyOrder.findIndex(t => t === type);
+            const nextType = hierarchyOrder[currentTypeIndex + 1] as DialogState['type'];
+            if (nextType) {
+                setDialogState(prev => ({ ...prev, type: nextType, parent: newEntity }));
+            }
+        }
+        
         const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]');
         if (nameInput) nameInput.focus();
     }
   };
+
+  const handleSaveAndAddAnother = () => {
+    processFormSubmit(false);
+  };
   
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    processFormSubmit(true);
+  };
+
   const handleDelete = (item: any, type: DialogState['type']) => {
     let childExists = false;
     if (type === 'Group') childExists = accountSubGroups.some(h => h.groupId === item.id);
