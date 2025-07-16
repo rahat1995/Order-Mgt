@@ -13,9 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronsUpDown, XCircle, Plus, PlusCircle } from 'lucide-react';
+import { ChevronsUpDown, XCircle, Plus, PlusCircle, ScanLine, Loader2 } from 'lucide-react';
 import type { RawMaterial, BillItem, Supplier } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { extractBillInfo } from '@/ai/flows/extract-bill-info-flow';
 
 export function LogExpenseClient() {
   const { settings, addSupplierBill, addSupplier, addRawMaterial, isLoaded } = useSettings();
@@ -32,6 +33,9 @@ export function LogExpenseClient() {
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
   
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const prevSupplierCountRef = useRef(suppliers.length);
 
   useEffect(() => {
@@ -41,6 +45,78 @@ export function LogExpenseClient() {
     }
     prevSupplierCountRef.current = suppliers.length;
   }, [suppliers]);
+  
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUri = e.target?.result as string;
+        try {
+          const result = await extractBillInfo({ photoDataUri: dataUri, suppliers });
+          
+          if (result.supplierId) {
+              setSelectedSupplierId(result.supplierId);
+          }
+          if (result.billNumber) {
+              setBillNumber(result.billNumber);
+          }
+          if (result.date) {
+              setExpenseDate(new Date(result.date).toISOString().split('T')[0]);
+          }
+
+          if (result.items && result.items.length > 0) {
+            const newBillItems: BillItem[] = result.items.map(item => {
+                let material = rawMaterials.find(rm => rm.name.toLowerCase() === item.name.toLowerCase());
+                if (!material) {
+                    // Find a default or 'Uncategorized' category
+                    let defaultCategory = expenseCategories.find(c => c.name.toLowerCase() === 'uncategorized') || expenseCategories[0];
+                    if (!defaultCategory) { // Create if doesn't exist
+                        // This part is tricky as we can't easily add a category from here.
+                        // Let's assume a general category exists or just skip adding new materials for now.
+                        console.warn(`Raw material "${item.name}" not found. Skipping.`);
+                        return null;
+                    }
+                    material = addRawMaterial({ name: item.name, unit: 'unit', categoryId: defaultCategory.id });
+                }
+
+                return {
+                    id: uuidv4(),
+                    rawMaterialId: material.id,
+                    name: material.name,
+                    unit: material.unit,
+                    quantity: item.quantity,
+                    cost: item.cost,
+                }
+            }).filter((i): i is BillItem => i !== null);
+            setBillItems(newBillItems);
+          }
+           if (result.totalAmount) {
+              setPaidAmount(result.totalAmount.toString());
+          }
+
+        } catch (error) {
+          console.error('AI extraction failed:', error);
+          alert('Failed to extract information from the bill. Please enter it manually.');
+        } finally {
+            setIsScanning(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+        console.error('File reading failed:', error);
+        alert('Could not read the selected file.');
+        setIsScanning(false);
+    }
+     // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
 
   const totalAmount = useMemo(() => {
     return billItems.reduce((acc, item) => acc + item.quantity * item.cost, 0);
@@ -141,10 +217,25 @@ export function LogExpenseClient() {
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>Record Supplier Bill</CardTitle>
-          <CardDescription>
-            Enter the details of a bill received from a supplier.
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Record Supplier Bill</CardTitle>
+              <CardDescription>
+                Enter the details of a bill received from a supplier, or scan it with AI.
+              </CardDescription>
+            </div>
+            <div>
+              <Input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,application/pdf"/>
+               <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}>
+                 {isScanning ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ScanLine className="mr-2 h-4 w-4" />
+                  )}
+                  {isScanning ? 'Scanning...' : 'Scan Bill with AI'}
+                </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
@@ -178,7 +269,7 @@ export function LogExpenseClient() {
                     <CardTitle className="text-lg">Bill Items</CardTitle>
                      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="w-[250px] justify-between">
+                            <Button type="button" variant="outline" role="combobox" className="w-[250px] justify-between">
                                 Add Material
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -246,7 +337,7 @@ export function LogExpenseClient() {
                                 </TableCell>
                                 <TableCell className="text-right font-medium">৳{(item.quantity * item.cost).toFixed(2)}</TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-8 w-8">
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} className="h-8 w-8">
                                         <XCircle className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </TableCell>
@@ -285,7 +376,10 @@ export function LogExpenseClient() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit">Record Bill</Button>
+          <Button type="submit" disabled={isScanning}>
+            {isScanning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Record Bill
+          </Button>
         </CardFooter>
       </Card>
     </form>
