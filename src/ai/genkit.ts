@@ -1,6 +1,6 @@
 import { genkit } from 'genkit';
 // import { googleAI } from '@genkit-ai/google-ai';
-import { defineDotprompt, dotprompt } from 'genkit/dotprompt';
+import { dotprompt } from '@genkit-ai/dotprompt';
 
 export const ai = genkit({
   plugins: [
