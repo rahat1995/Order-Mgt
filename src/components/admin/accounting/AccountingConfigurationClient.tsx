@@ -12,109 +12,56 @@ import type { LedgerAccount, AccountingSettings } from '@/types';
 import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const LedgerEntryGroup = ({ title, accounts, balances, onBalanceChange, type }: { title: string, accounts: LedgerAccount[], balances: Record<string, number>, onBalanceChange: (id: string, value: string) => void, type: 'debit' | 'credit' }) => {
-  if (accounts.length === 0) return null;
-  return (
-    <div>
-        <h3 className="text-lg font-semibold mb-2 p-2 border-b-2">{title}</h3>
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Account</TableHead>
-                    <TableHead className="w-[150px] text-right">{type === 'debit' ? 'Debit' : 'Credit'}</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {accounts.map(ledger => (
-                     <TableRow key={ledger.id}>
-                        <TableCell>
-                            <p className="font-medium">{ledger.name}</p>
-                            <p className="text-xs text-muted-foreground">{ledger.code}</p>
-                        </TableCell>
-                        <TableCell>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                value={balances[ledger.id] || ''}
-                                onChange={(e) => onBalanceChange(ledger.id, e.target.value)}
-                                className="h-8 text-right"
-                                placeholder="0.00"
-                            />
-                        </TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-        </Table>
-    </div>
-  );
-}
-
-
 export function AccountingConfigurationClient() {
   const { settings, setAccountingSettings, updateAllLedgerOpeningBalances, isLoaded } = useSettings();
   
   const [accountingConfig, setAccountingConfig] = useState<AccountingSettings>(settings.accountingSettings);
-  const [openingBalances, setOpeningBalances] = useState<Record<string, number>>({});
+  
+  // openingBalances will store a tuple [debit, credit] for each ledgerId
+  const [openingBalances, setOpeningBalances] = useState<Record<string, [number, number]>>({});
 
   useEffect(() => {
     if (isLoaded) {
       setAccountingConfig(settings.accountingSettings);
       const initialBalances = settings.ledgerAccounts.reduce((acc, ledger) => {
-        acc[ledger.id] = ledger.openingBalance || 0;
+        const balance = ledger.openingBalance || 0;
+        const accountType = settings.accountTypes.find(at => at.id === ledger.accountTypeId);
+        const isDebit = accountType?.code === 'ASSET' || accountType?.code === 'EXPENSE';
+        acc[ledger.id] = isDebit ? [balance, 0] : [0, balance];
         return acc;
-      }, {} as Record<string, number>);
+      }, {} as Record<string, [number, number]>);
       setOpeningBalances(initialBalances);
     }
-  }, [isLoaded, settings.accountingSettings, settings.ledgerAccounts]);
+  }, [isLoaded, settings.accountingSettings, settings.ledgerAccounts, settings.accountTypes]);
 
   const handleConfigChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setAccountingConfig(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleBalanceChange = (ledgerId: string, value: string) => {
+  const handleBalanceChange = (ledgerId: string, type: 'debit' | 'credit', value: string) => {
     const newBalance = parseFloat(value) || 0;
-    setOpeningBalances(prev => ({ ...prev, [ledgerId]: newBalance }));
+    setOpeningBalances(prev => ({
+      ...prev,
+      [ledgerId]: type === 'debit' ? [newBalance, 0] : [0, newBalance],
+    }));
   };
 
-  const { totalDebit, totalCredit, isBalanced, groupedAccounts } = useMemo(() => {
+  const { totalDebit, totalCredit, isBalanced } = useMemo(() => {
     let debit = 0;
     let credit = 0;
     
-    const groups: { [key: string]: LedgerAccount[] } = {
-        assets: [],
-        liabilities: [],
-        income: [],
-        expenses: [],
-        other: [],
-    };
-
-    settings.ledgerAccounts.forEach(ledger => {
-      const balance = openingBalances[ledger.id] || 0;
-      const accountType = settings.accountTypes.find(at => at.id === ledger.accountTypeId);
-      if (accountType?.code === 'ASSET') {
-        debit += balance;
-        groups.assets.push(ledger);
-      } else if (accountType?.code === 'EXPENSE') {
-        debit += balance;
-        groups.expenses.push(ledger);
-      } else if (accountType?.code === 'LIABILITY') {
-        credit += balance;
-        groups.liabilities.push(ledger);
-      } else if (accountType?.code === 'INCOME') {
-        credit += balance;
-        groups.income.push(ledger);
-      } else {
-        groups.other.push(ledger); // Should not happen with proper setup
-      }
+    Object.values(openingBalances).forEach(([d, c]) => {
+      debit += d;
+      credit += c;
     });
+
     return {
       totalDebit: debit,
       totalCredit: credit,
       isBalanced: Math.abs(debit - credit) < 0.01,
-      groupedAccounts: groups,
     };
-  }, [openingBalances, settings.ledgerAccounts, settings.accountTypes]);
+  }, [openingBalances]);
 
   const handleSave = () => {
     if (!isBalanced) {
@@ -122,7 +69,17 @@ export function AccountingConfigurationClient() {
       return;
     }
     setAccountingSettings(accountingConfig);
-    updateAllLedgerOpeningBalances(openingBalances);
+    
+    const finalBalances = Object.entries(openingBalances).reduce((acc, [ledgerId, [debit, credit]]) => {
+        const accountType = settings.accountTypes.find(at => at.id === settings.ledgerAccounts.find(l => l.id === ledgerId)?.accountTypeId);
+        const isDebitType = accountType?.code === 'ASSET' || accountType?.code === 'EXPENSE';
+        // Debit types have positive balance, Credit types have negative balance in some systems, but here we just store the magnitude.
+        // The sign is implicit in the account type.
+        acc[ledgerId] = isDebitType ? debit : credit;
+        return acc;
+    }, {} as Record<string, number>);
+
+    updateAllLedgerOpeningBalances(finalBalances);
     alert('Accounting settings and opening balances saved successfully!');
   };
 
@@ -158,23 +115,58 @@ export function AccountingConfigurationClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Opening Balance Entry</CardTitle>
+          <CardTitle>Opening Balance Entry (Trial Balance)</CardTitle>
           <CardDescription>Enter the opening balance for all your ledger accounts. Debits and Credits must match to save.</CardDescription>
         </CardHeader>
         <CardContent>
            {settings.ledgerAccounts.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Debit Side */}
-                    <div className="space-y-6">
-                        <LedgerEntryGroup title="Assets" accounts={groupedAccounts.assets} balances={openingBalances} onBalanceChange={handleBalanceChange} type="debit" />
-                        <LedgerEntryGroup title="Expenses" accounts={groupedAccounts.expenses} balances={openingBalances} onBalanceChange={handleBalanceChange} type="debit" />
-                    </div>
-                     {/* Credit Side */}
-                    <div className="space-y-6">
-                         <LedgerEntryGroup title="Liabilities" accounts={groupedAccounts.liabilities} balances={openingBalances} onBalanceChange={handleBalanceChange} type="credit" />
-                         <LedgerEntryGroup title="Income" accounts={groupedAccounts.income} balances={openingBalances} onBalanceChange={handleBalanceChange} type="credit" />
-                    </div>
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-2/5">Account</TableHead>
+                            <TableHead>Account Type</TableHead>
+                            <TableHead className="w-[150px] text-right">Debit</TableHead>
+                            <TableHead className="w-[150px] text-right">Credit</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {settings.ledgerAccounts.map(ledger => {
+                           const [debit, credit] = openingBalances[ledger.id] || [0, 0];
+                           const accountType = settings.accountTypes.find(at => at.id === ledger.accountTypeId);
+                           return (
+                             <TableRow key={ledger.id}>
+                                <TableCell>
+                                    <p className="font-medium">{ledger.name}</p>
+                                    <p className="text-xs text-muted-foreground">{ledger.code}</p>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-xs font-semibold text-muted-foreground">{accountType?.name || 'N/A'}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={debit || ''}
+                                        onChange={(e) => handleBalanceChange(ledger.id, 'debit', e.target.value)}
+                                        className="h-8 text-right"
+                                        placeholder="0.00"
+                                    />
+                                </TableCell>
+                                 <TableCell>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={credit || ''}
+                                        onChange={(e) => handleBalanceChange(ledger.id, 'credit', e.target.value)}
+                                        className="h-8 text-right"
+                                        placeholder="0.00"
+                                    />
+                                </TableCell>
+                            </TableRow>
+                           );
+                        })}
+                    </TableBody>
+                </Table>
            ) : (
                 <div className="text-center py-12 border rounded-lg">
                     <h3 className="text-lg font-semibold">No Ledger Accounts Found</h3>
@@ -206,4 +198,3 @@ export function AccountingConfigurationClient() {
     </div>
   );
 }
-
