@@ -4,6 +4,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -396,6 +397,25 @@ export interface Employee {
 }
 
 // Accounting
+export type VoucherType = 'Payment' | 'Receipt' | 'Contra' | 'Journal';
+
+export interface VoucherTransaction {
+    id: string;
+    ledgerId: string;
+    isDebit: boolean;
+    amount: number;
+    narration?: string;
+}
+
+export interface AccountingVoucher {
+    id: string;
+    voucherNumber: string;
+    date: string; // ISO date string
+    type: VoucherType;
+    narration?: string;
+    transactions: VoucherTransaction[];
+}
+
 export interface AccountType {
   id: string;
   name: string; // e.g., Asset, Liability, Income, Expense
@@ -487,6 +507,7 @@ export interface AppSettings {
   accountHeads: AccountHead[];
   accountSubHeads: AccountSubHead[];
   ledgerAccounts: LedgerAccount[];
+  accountingVouchers: AccountingVoucher[];
   
   lastOrderNumberForDate: {
     date: string; // YYYY-MM-DD
@@ -499,5 +520,11 @@ export interface AppSettings {
   lastChallanNumberForDate: {
       date: string;
       serial: number;
-  }
+  };
+  lastVoucherNumbers: {
+      [key in VoucherType]?: {
+          date: string; // YYYY-MM-DD
+          serial: number;
+      }
+  };
 }

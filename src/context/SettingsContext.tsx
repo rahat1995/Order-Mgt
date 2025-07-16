@@ -1,8 +1,9 @@
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings } from '@/types';
-import React, from 'react';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType } from '@/types';
+import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const defaultSettings: AppSettings = {
@@ -99,6 +100,7 @@ const defaultSettings: AppSettings = {
   accountHeads: [],
   accountSubHeads: [],
   ledgerAccounts: [],
+  accountingVouchers: [],
   lastOrderNumberForDate: {
     date: '',
     serial: 0,
@@ -110,7 +112,8 @@ const defaultSettings: AppSettings = {
   lastChallanNumberForDate: {
       date: '',
       serial: 0,
-  }
+  },
+  lastVoucherNumbers: {},
 };
 
 type ChallanItemBlueprint = { 
@@ -229,6 +232,8 @@ interface SettingsContextType {
   updateEmployee: (employee: Employee) => void;
   deleteEmployee: (employeeId: string) => void;
   // Accounting
+  addAccountingVoucher: (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>) => AccountingVoucher;
+  deleteAccountingVoucher: (voucherId: string) => void;
   addAccountType: (type: Omit<AccountType, 'id'>) => AccountType;
   updateAccountType: (type: AccountType) => void;
   deleteAccountType: (typeId: string) => void;
@@ -337,9 +342,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         accountHeads: storedSettings.accountHeads || defaultSettings.accountHeads,
         accountSubHeads: storedSettings.accountSubHeads || defaultSettings.accountSubHeads,
         ledgerAccounts: storedSettings.ledgerAccounts || defaultSettings.ledgerAccounts,
+        accountingVouchers: storedSettings.accountingVouchers || defaultSettings.accountingVouchers,
         lastOrderNumberForDate: storedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
         lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
         lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
+        lastVoucherNumbers: storedSettings.lastVoucherNumbers || defaultSettings.lastVoucherNumbers,
       };
       setSettingsState(mergedSettings);
     } else {
@@ -763,6 +770,40 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   // Accounting
+  const addAccountingVoucher = (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>): AccountingVoucher => {
+      let newVoucher: AccountingVoucher;
+      setSettings(prev => {
+        const today = new Date(), yyyy = today.getFullYear(), mm = String(today.getMonth() + 1).padStart(2, '0'), dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const prefixMap = { Payment: 'PV', Receipt: 'RV', Contra: 'CV', Journal: 'JV' };
+        const prefix = prefixMap[voucher.type];
+
+        const lastVoucherState = prev.lastVoucherNumbers[voucher.type] || { date: '', serial: 0 };
+        const newSerial = lastVoucherState.date === todayStr ? lastVoucherState.serial + 1 : 1;
+        const voucherNumber = `${prefix}-${dd}${mm}${yyyy.toString().slice(-2)}-${String(newSerial).padStart(4, '0')}`;
+        
+        newVoucher = { ...voucher, id: uuidv4(), voucherNumber };
+        
+        return {
+          ...prev,
+          accountingVouchers: [...prev.accountingVouchers, newVoucher],
+          lastVoucherNumbers: {
+            ...prev.lastVoucherNumbers,
+            [voucher.type]: { date: todayStr, serial: newSerial },
+          },
+        };
+      });
+      // @ts-ignore
+      return newVoucher;
+  };
+
+  const deleteAccountingVoucher = (voucherId: string) => {
+      if (confirm('Are you sure you want to delete this voucher? This cannot be undone.')) {
+        setSettings(prev => ({ ...prev, accountingVouchers: prev.accountingVouchers.filter(v => v.id !== voucherId)}));
+      }
+  }
+
+
   const addAccountType = (type: Omit<AccountType, 'id'>): AccountType => {
     const newType = { ...type, id: uuidv4() };
     setSettings(prev => ({...prev, accountTypes: [...prev.accountTypes, newType]}));
@@ -846,6 +887,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
+    addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
     clearChartOfAccounts,

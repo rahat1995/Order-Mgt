@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -41,6 +42,7 @@ import {
   CreditCard,
   List,
   SlidersHorizontal,
+  ReceiptText,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -104,6 +106,7 @@ const moduleLinks = [
     },
     { key: 'accounting', label: 'Accounting', icon: BookUser, href: '/admin/modules/accounting', 
       subLinks: [
+        { href: '/admin/modules/accounting/vouchers', label: 'Vouchers', icon: ReceiptText },
         { href: '/admin/modules/accounting/types', label: 'Account Types', icon: SlidersHorizontal },
         { href: '/admin/modules/accounting/configuration', label: 'Configuration', icon: Cog },
       ]
