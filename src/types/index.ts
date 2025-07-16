@@ -3,6 +3,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -76,6 +77,12 @@ export interface ServiceJobSettings {
 export interface ChallanSettings {
     printWithOfficeCopy: boolean;
     printOfficeCopyWithPrice: boolean;
+}
+
+export interface AccountingSettings {
+  fiscalYear: string;
+  fiscalYearStartDate: string; // ISO date
+  openingDate: string; // ISO date
 }
 
 export interface MenuCategory {
@@ -436,6 +443,7 @@ export interface AppSettings {
   posSettings: PosSettings;
   serviceJobSettings: ServiceJobSettings;
   challanSettings: ChallanSettings;
+  accountingSettings: AccountingSettings;
   floors: Floor[];
   tables: Table[];
   reservations: Reservation[];

@@ -105,6 +105,7 @@ const moduleLinks = [
     { key: 'accounting', label: 'Accounting', icon: BookUser, href: '/admin/modules/accounting', 
       subLinks: [
         { href: '/admin/modules/accounting/types', label: 'Account Types', icon: SlidersHorizontal },
+        { href: '/admin/modules/accounting/configuration', label: 'Configuration', icon: Cog },
       ]
     },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },

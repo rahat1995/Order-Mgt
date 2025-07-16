@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings } from '@/types';
 import React, from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -50,6 +50,11 @@ const defaultSettings: AppSettings = {
   challanSettings: {
     printWithOfficeCopy: true,
     printOfficeCopyWithPrice: true,
+  },
+  accountingSettings: {
+    fiscalYear: '2024-2025',
+    fiscalYearStartDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0], // Default to Jan 1st of current year
+    openingDate: new Date().toISOString().split('T')[0],
   },
   floors: [],
   tables: [],
@@ -124,6 +129,7 @@ interface SettingsContextType {
   setPosSettings: (settings: PosSettings) => void;
   setServiceJobSettings: (settings: ServiceJobSettings) => void;
   setChallanSettings: (settings: ChallanSettings) => void;
+  setAccountingSettings: (settings: AccountingSettings) => void;
   // Table Management
   addFloor: (floor: Omit<Floor, 'id'>) => Floor;
   updateFloor: (floor: Floor) => void;
@@ -242,6 +248,7 @@ interface SettingsContextType {
   updateLedgerAccount: (account: LedgerAccount) => void;
   deleteLedgerAccount: (accountId: string) => void;
   clearChartOfAccounts: () => void;
+  updateAllLedgerOpeningBalances: (balances: Record<string, number>) => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -291,6 +298,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         posSettings: { ...defaultSettings.posSettings, ...storedSettings.posSettings },
         serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...storedSettings.serviceJobSettings },
         challanSettings: { ...defaultSettings.challanSettings, ...storedSettings.challanSettings },
+        accountingSettings: { ...defaultSettings.accountingSettings, ...storedSettings.accountingSettings },
         floors: storedSettings.floors || defaultSettings.floors,
         tables: storedSettings.tables || defaultSettings.tables,
         reservations: storedSettings.reservations || defaultSettings.reservations,
@@ -365,6 +373,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const setPosSettings = (posSettings: PosSettings) => setSettings(prev => ({ ...prev, posSettings }));
   const setServiceJobSettings = (serviceJobSettings: ServiceJobSettings) => setSettings(prev => ({ ...prev, serviceJobSettings }));
   const setChallanSettings = (challanSettings: ChallanSettings) => setSettings(prev => ({ ...prev, challanSettings }));
+  const setAccountingSettings = (accountingSettings: AccountingSettings) => setSettings(prev => ({...prev, accountingSettings}));
   
   // Table Management
   const addFloor = (floor: Omit<Floor, 'id'>): Floor => {
@@ -816,10 +825,20 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       ledgerAccounts: [],
     }));
   };
+  
+  const updateAllLedgerOpeningBalances = (balances: Record<string, number>) => {
+    setSettings(prev => ({
+      ...prev,
+      ledgerAccounts: prev.ledgerAccounts.map(ledger => ({
+        ...ledger,
+        openingBalance: balances[ledger.id] || 0,
+      }))
+    }));
+  };
 
 
   const contextValue = {
-    settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
+    settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, setAccountingSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
     addInvProductCategory, updateInvProductCategory, deleteInvProductCategory, addBrand, updateBrand, deleteBrand, addModel, updateModel, deleteModel,
     addInvProduct, updateInvProduct, deleteInvProduct,
     addAttribute, updateAttribute, deleteAttribute,
@@ -829,7 +848,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
-    clearChartOfAccounts
+    clearChartOfAccounts,
+    updateAllLedgerOpeningBalances,
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
