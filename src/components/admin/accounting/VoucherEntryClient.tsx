@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronsUpDown, XCircle, PlusCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronsUpDown, XCircle, PlusCircle, AlertCircle, CheckCircle2, Check } from 'lucide-react';
 import type { VoucherType, VoucherTransaction, LedgerAccount } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,7 @@ type TransactionRow = Omit<VoucherTransaction, 'isDebit' | 'amount'> & {
 
 export function VoucherEntryClient() {
     const { settings, addAccountingVoucher, isLoaded } = useSettings();
-    const { ledgerAccounts } = settings;
+    const { ledgerAccounts, accountingSettings } = settings;
 
     const [voucherType, setVoucherType] = useState<VoucherType>('Payment');
     const [voucherDate, setVoucherDate] = useState(new Date().toISOString().split('T')[0]);
@@ -38,8 +38,20 @@ export function VoucherEntryClient() {
     const { totalDebit, totalCredit, isBalanced } = useMemo(() => {
         const debit = transactions.reduce((acc, tx) => acc + tx.debit, 0);
         const credit = transactions.reduce((acc, tx) => acc + tx.credit, 0);
-        return { totalDebit: debit, totalCredit: credit, isBalanced: debit > 0 && debit === credit };
+        return { totalDebit: debit, totalCredit: credit, isBalanced: debit > 0 && Math.abs(debit - credit) < 0.01 };
     }, [transactions]);
+    
+    const availableLedgers = useMemo(() => {
+        const cashAndBankIds = [...(accountingSettings.cashLedgerIds || []), ...(accountingSettings.bankLedgerIds || [])];
+        if (voucherType === 'Journal') {
+            return ledgerAccounts.filter(l => !cashAndBankIds.includes(l.id));
+        }
+        if (voucherType === 'Contra') {
+            return ledgerAccounts.filter(l => cashAndBankIds.includes(l.id));
+        }
+        return ledgerAccounts;
+    }, [voucherType, ledgerAccounts, accountingSettings]);
+
 
     const resetForm = () => {
         setVoucherDate(new Date().toISOString().split('T')[0]);
@@ -144,7 +156,7 @@ export function VoucherEntryClient() {
                                 <TransactionRowComponent
                                     key={tx.id}
                                     transaction={tx}
-                                    ledgers={ledgerAccounts}
+                                    ledgers={availableLedgers}
                                     onChange={handleTransactionChange}
                                     onRemove={removeRow}
                                 />
@@ -213,7 +225,7 @@ const TransactionRowComponent = ({ transaction, ledgers, onChange, onRemove }: {
                                                 setPopoverOpen(false);
                                             }}
                                         >
-                                            <CheckCircle2 className={cn("mr-2 h-4 w-4", transaction.ledgerId === ledger.id ? "opacity-100" : "opacity-0")}/>
+                                            <Check className={cn("mr-2 h-4 w-4", transaction.ledgerId === ledger.id ? "opacity-100" : "opacity-0")}/>
                                             {ledger.name}
                                         </CommandItem>
                                     ))}
