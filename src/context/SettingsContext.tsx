@@ -56,6 +56,8 @@ const defaultSettings: AppSettings = {
     fiscalYear: '2024-2025',
     fiscalYearStartDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0], // Default to Jan 1st of current year
     openingDate: new Date().toISOString().split('T')[0],
+    cashLedgerIds: [],
+    bankLedgerIds: [],
   },
   floors: [],
   tables: [],

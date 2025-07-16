@@ -5,6 +5,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -84,6 +85,8 @@ export interface AccountingSettings {
   fiscalYear: string;
   fiscalYearStartDate: string; // ISO date
   openingDate: string; // ISO date
+  cashLedgerIds?: string[];
+  bankLedgerIds?: string[];
 }
 
 export interface MenuCategory {
