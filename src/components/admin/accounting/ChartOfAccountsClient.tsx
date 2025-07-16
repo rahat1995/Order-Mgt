@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle, Library, Folder, Bookmark, Tag, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Download, AlertTriangle, Library, Folder, Bookmark, Tag, FileText, ChevronsUpDown, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount } from '@/types';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 
 type DialogState = {
@@ -102,10 +103,9 @@ const AccountTree = ({
         return (
           <div key={item.id} className="relative">
              <div className="flex items-start">
-               {/* Vertical and Horizontal lines */}
                 <div className="flex-shrink-0 w-8 h-full absolute left-0 flex items-center" style={{ marginLeft: `${level * 1.5}rem`}}>
-                    {level > 0 && <div className={cn("h-full w-px bg-gray-300 absolute", isLastItem ? 'top-[-50%]' : 'top-[-50%] bottom-[-50%]')}></div>}
-                    {level > 0 && <div className="h-px w-full bg-gray-300 absolute"></div>}
+                    {level > 0 && <div className={cn("h-full w-px bg-border absolute top-0", isLastItem ? 'h-1/2' : 'h-full')}></div>}
+                    {level > 0 && <div className="h-px w-4 bg-border absolute left-0 top-1/2"></div>}
                 </div>
 
                 <div 
@@ -166,9 +166,18 @@ export function ChartOfAccountsClient() {
   const [selectedSubGroup, setSelectedSubGroup] = useState<AccountSubGroup | null>(null);
   const [selectedHead, setSelectedHead] = useState<AccountHead | null>(null);
   const [selectedSubHead, setSelectedSubHead] = useState<AccountSubHead | null>(null);
+
+  // State for AccountType combobox
+  const [accountTypePopoverOpen, setAccountTypePopoverOpen] = useState(false);
+  const [selectedAccountTypeId, setSelectedAccountTypeId] = useState('');
   
 
   const handleOpenDialog = (type: DialogState['type'], editing: DialogState['editing'], parent?: DialogState['parent']) => {
+    if (type === 'Ledger' && editing) {
+      setSelectedAccountTypeId((editing as LedgerAccount).accountTypeId);
+    } else {
+      setSelectedAccountTypeId('');
+    }
     setDialogState({ isOpen: true, type, editing, parent });
   };
   
@@ -203,7 +212,7 @@ export function ChartOfAccountsClient() {
         else if (type === 'Ledger') {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
-            const accountTypeId = formData.get('accountTypeId') as string;
+            const accountTypeId = selectedAccountTypeId;
             updateLedgerAccount({ ...(editing as LedgerAccount), name, code, openingBalance, accountTypeId });
         }
     } else {
@@ -226,7 +235,7 @@ export function ChartOfAccountsClient() {
         else if (type === 'Ledger' && parent) {
             const code = formData.get('code') as string;
             const openingBalance = parseFloat(formData.get('openingBalance') as string) || 0;
-            const accountTypeId = formData.get('accountTypeId') as string;
+            const accountTypeId = selectedAccountTypeId;
             if (!accountTypeId) {
                 alert("Account Type is required.");
                 return;
@@ -239,6 +248,7 @@ export function ChartOfAccountsClient() {
         handleCloseDialog();
     } else {
         formRef.current.reset();
+        setSelectedAccountTypeId('');
         const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]');
         if (nameInput) nameInput.focus();
     }
@@ -466,14 +476,38 @@ export function ChartOfAccountsClient() {
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="accountTypeId">Account Type</Label>
-                    <Select name="accountTypeId" defaultValue={(dialogState.editing as LedgerAccount)?.accountTypeId} required>
-                        <SelectTrigger><SelectValue placeholder="Select a type..."/></SelectTrigger>
-                        <SelectContent>
-                            {accountTypes.map(type => (
-                                <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                     <Popover open={accountTypePopoverOpen} onOpenChange={setAccountTypePopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-full justify-between" required>
+                                {selectedAccountTypeId ? accountTypes.find(at => at.id === selectedAccountTypeId)?.name : "Select a type..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search type..." />
+                                <CommandList>
+                                    <CommandEmpty>No type found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {accountTypes.map((type) => (
+                                            <CommandItem
+                                                key={type.id}
+                                                value={type.name}
+                                                onSelect={(currentValue) => {
+                                                    const selected = accountTypes.find(at => at.name.toLowerCase() === currentValue.toLowerCase());
+                                                    setSelectedAccountTypeId(selected ? selected.id : "");
+                                                    setAccountTypePopoverOpen(false);
+                                                }}
+                                            >
+                                                 <Check className={cn("mr-2 h-4 w-4", selectedAccountTypeId === type.id ? "opacity-100" : "opacity-0")}/>
+                                                {type.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="code">Ledger Code</Label>
