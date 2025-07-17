@@ -13,9 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronsUpDown, XCircle, Plus, PlusCircle } from 'lucide-react';
+import { ChevronsUpDown, XCircle, Plus, PlusCircle, ScanLine, Loader2 } from 'lucide-react';
 import type { RawMaterial, BillItem, Supplier } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { extractBillInfo } from '@/ai/flows/extract-bill-info-flow';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function LogExpenseClient() {
   const { settings, addSupplierBill, addSupplier, addRawMaterial, isLoaded } = useSettings();
@@ -31,8 +33,12 @@ export function LogExpenseClient() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   
   const prevSupplierCountRef = useRef(suppliers.length);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (suppliers.length > prevSupplierCountRef.current) {
@@ -90,6 +96,15 @@ export function LogExpenseClient() {
     addRawMaterial({ name, unit, categoryId });
     setMaterialDialogOpen(false);
   }
+  
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setScanError("AI feature is currently unavailable. Please enter the bill details manually.");
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+    return;
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,9 +164,22 @@ export function LogExpenseClient() {
                 Enter the details of a bill received from a supplier.
               </CardDescription>
             </div>
+             <div>
+                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*"/>
+                <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={true}>
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    Scan a Bill (Disabled)
+                </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {scanError && (
+              <Alert variant="destructive">
+                  <AlertTitle>Scan Error</AlertTitle>
+                  <AlertDescription>{scanError}</AlertDescription>
+              </Alert>
+          )}
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="supplierId">Supplier</Label>

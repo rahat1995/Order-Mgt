@@ -25,6 +25,7 @@
     "cmdk": "^1.0.0",
     "framer-motion": "^11.2.10",
     "genkit": "^1.0.0",
+    "@genkit-ai/google-ai": "latest",
     "@genkit-ai/dotprompt": "latest",
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.395.0",
