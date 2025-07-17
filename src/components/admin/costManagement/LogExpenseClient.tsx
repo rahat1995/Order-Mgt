@@ -13,11 +13,43 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronsUpDown, XCircle, Plus, PlusCircle, ScanLine, Loader2 } from 'lucide-react';
+import { ChevronsUpDown, XCircle, Plus, ScanLine, Loader2 } from 'lucide-react';
 import type { RawMaterial, BillItem, Supplier } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import { extractBillInfo } from '@/ai/flows/extract-bill-info-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Tesseract from 'tesseract.js';
+
+// Helper function to find the best match for a supplier name from OCR text
+function findBestSupplierMatch(text: string, suppliers: Supplier[]): string | undefined {
+    if (!text || suppliers.length === 0) {
+        return undefined;
+    }
+
+    let bestMatch: Supplier | undefined = undefined;
+    let highestScore = 0;
+    const textLower = text.toLowerCase();
+
+    for (const supplier of suppliers) {
+        const supplierNameLower = supplier.name.toLowerCase();
+        let score = 0;
+        
+        // Simple scoring mechanism: count how many words from the supplier name appear in the text
+        const supplierWords = supplierNameLower.split(/\s+/);
+        for(const word of supplierWords) {
+            if(textLower.includes(word)) {
+                score += word.length;
+            }
+        }
+        
+        if (score > highestScore) {
+            highestScore = score;
+            bestMatch = supplier;
+        }
+    }
+
+    return bestMatch?.id;
+}
+
 
 export function LogExpenseClient() {
   const { settings, addSupplierBill, addSupplier, addRawMaterial, isLoaded } = useSettings();
@@ -104,58 +136,48 @@ export function LogExpenseClient() {
     setIsScanning(true);
     setScanError(null);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const photoDataUri = reader.result as string;
-      try {
-        const result = await extractBillInfo({
-          photoDataUri,
-          suppliers: suppliers.map(s => ({ id: s.id, name: s.name })),
-        });
+    try {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng');
         
-        if (result.supplierId) {
-            setSelectedSupplierId(result.supplierId);
-        } else if (result.supplierName) {
-            const existing = suppliers.find(s => s.name.toLowerCase() === result.supplierName!.toLowerCase());
-            if (existing) {
-                setSelectedSupplierId(existing.id);
-            }
-        }
-        
-        if (result.billNumber) setBillNumber(result.billNumber);
-        if (result.date) setExpenseDate(new Date(result.date).toISOString().split('T')[0]);
-        if (result.totalAmount) setPaidAmount(result.totalAmount.toString());
-
-        if (result.items && result.items.length > 0) {
-            const newItems: BillItem[] = [];
-            result.items.forEach(item => {
-                const existingMaterial = rawMaterials.find(rm => rm.name.toLowerCase() === item.name.toLowerCase());
-                if(existingMaterial) {
-                    newItems.push({
-                        id: uuidv4(),
-                        rawMaterialId: existingMaterial.id,
-                        name: existingMaterial.name,
-                        unit: existingMaterial.unit,
-                        quantity: item.quantity,
-                        cost: item.cost,
-                    });
-                }
-            });
-            setBillItems(newItems);
+        // Find Supplier
+        const matchedSupplierId = findBestSupplierMatch(text, suppliers);
+        if(matchedSupplierId) {
+            setSelectedSupplierId(matchedSupplierId);
         }
 
-      } catch (error) {
-        console.error('AI extraction failed:', error);
+        // Find Bill Number (Invoice No, Bill No, etc.)
+        const billNumberMatch = text.match(/(?:invoice|bill)\s*#?[:\s]?\s*(\w+)/i);
+        if (billNumberMatch && billNumberMatch[1]) {
+            setBillNumber(billNumberMatch[1]);
+        }
+
+        // Find Date (various formats)
+        const dateMatch = text.match(/(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})/);
+        if (dateMatch && dateMatch[1]) {
+            try {
+              // Attempt to parse the date, might need a more robust library for complex cases
+              const parsedDate = new Date(dateMatch[1].replace(/[-/]/g, '/'));
+              if (!isNaN(parsedDate.getTime())) {
+                setExpenseDate(parsedDate.toISOString().split('T')[0]);
+              }
+            } catch(e) { console.error("Date parsing failed", e)}
+        }
+
+        // Find Total Amount
+        const totalMatch = text.match(/(?:total|amount|grand total)[:\s]?\s*[\$৳]?\s*(\d+\.\d{2})/i);
+        if (totalMatch && totalMatch[1]) {
+            setPaidAmount(totalMatch[1]);
+        }
+        
+    } catch (error) {
+        console.error('Tesseract OCR failed:', error);
         setScanError('Failed to extract information from the bill. Please try again or enter details manually.');
-      } finally {
+    } finally {
         setIsScanning(false);
-        // Reset file input so the same file can be re-uploaded
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-      }
-    };
+    }
   };
 
 
