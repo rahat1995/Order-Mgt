@@ -76,10 +76,7 @@ const ExtractBillInfoOutputSchema = z.object({
 export type ExtractBillInfoOutput = z.infer<typeof ExtractBillInfoOutputSchema>;
 
 export async function extractBillInfo(input: ExtractBillInfoInput): Promise<ExtractBillInfoOutput> {
-    // AI feature is temporarily disabled due to a configuration issue.
-    // This check prevents the app from crashing.
-    throw new Error("AI plugin not configured. Cannot extract bill info.");
-    // return extractBillInfoFlow(input);
+    return extractBillInfoFlow(input);
 }
 
 const prompt = ai.definePrompt({
