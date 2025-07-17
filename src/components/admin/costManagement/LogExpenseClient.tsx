@@ -98,11 +98,64 @@ export function LogExpenseClient() {
   }
   
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    setScanError("AI feature is currently unavailable. Please enter the bill details manually.");
-    if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-    }
-    return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setScanError(null);
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const photoDataUri = reader.result as string;
+      try {
+        const result = await extractBillInfo({
+          photoDataUri,
+          suppliers: suppliers.map(s => ({ id: s.id, name: s.name })),
+        });
+        
+        if (result.supplierId) {
+            setSelectedSupplierId(result.supplierId);
+        } else if (result.supplierName) {
+            const existing = suppliers.find(s => s.name.toLowerCase() === result.supplierName!.toLowerCase());
+            if (existing) {
+                setSelectedSupplierId(existing.id);
+            }
+        }
+        
+        if (result.billNumber) setBillNumber(result.billNumber);
+        if (result.date) setExpenseDate(new Date(result.date).toISOString().split('T')[0]);
+        if (result.totalAmount) setPaidAmount(result.totalAmount.toString());
+
+        if (result.items && result.items.length > 0) {
+            const newItems: BillItem[] = [];
+            result.items.forEach(item => {
+                const existingMaterial = rawMaterials.find(rm => rm.name.toLowerCase() === item.name.toLowerCase());
+                if(existingMaterial) {
+                    newItems.push({
+                        id: uuidv4(),
+                        rawMaterialId: existingMaterial.id,
+                        name: existingMaterial.name,
+                        unit: existingMaterial.unit,
+                        quantity: item.quantity,
+                        cost: item.cost,
+                    });
+                }
+            });
+            setBillItems(newItems);
+        }
+
+      } catch (error) {
+        console.error('AI extraction failed:', error);
+        setScanError('Failed to extract information from the bill. Please try again or enter details manually.');
+      } finally {
+        setIsScanning(false);
+        // Reset file input so the same file can be re-uploaded
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+      }
+    };
   };
 
 
@@ -166,9 +219,9 @@ export function LogExpenseClient() {
             </div>
              <div>
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*"/>
-                <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={true}>
-                    <ScanLine className="mr-2 h-4 w-4" />
-                    Scan a Bill (Disabled)
+                <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isScanning}>
+                    {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanLine className="mr-2 h-4 w-4" />}
+                    {isScanning ? 'Scanning...' : 'Scan a Bill'}
                 </Button>
             </div>
           </div>
