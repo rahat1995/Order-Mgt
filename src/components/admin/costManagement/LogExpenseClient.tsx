@@ -71,6 +71,26 @@ export function LogExpenseClient() {
   
   const prevSupplierCountRef = useRef(suppliers.length);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Tesseract.Worker | null>(null);
+
+  useEffect(() => {
+    // Initialize the Tesseract worker when the component mounts
+    const initializeWorker = async () => {
+        const worker = await Tesseract.createWorker({
+            logger: m => console.log(m), // We can still log progress without failing
+        });
+        await worker.loadLanguage('eng');
+        await worker.initialize('eng');
+        workerRef.current = worker;
+    };
+    initializeWorker();
+
+    // Cleanup worker on unmount
+    return () => {
+        workerRef.current?.terminate();
+        workerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (suppliers.length > prevSupplierCountRef.current) {
@@ -131,13 +151,16 @@ export function LogExpenseClient() {
   
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !workerRef.current) {
+        if(!workerRef.current) setScanError('OCR service is not ready. Please wait a moment.');
+        return;
+    }
 
     setIsScanning(true);
     setScanError(null);
 
     try {
-        const { data: { text } } = await Tesseract.recognize(file, 'eng');
+        const { data: { text } } = await workerRef.current.recognize(file);
         
         // Find Supplier
         const matchedSupplierId = findBestSupplierMatch(text, suppliers);
