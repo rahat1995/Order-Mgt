@@ -1,24 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -555,8 +535,20 @@ export interface WorkingArea {
 }
 
 // Microfinance
+export type FeeType = 'percentage' | 'fixed';
 export type InterestCalculationMethod = 'flat' | 'reducing-balance';
 export type RepaymentFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'one-time';
+
+export interface Fee {
+  type: FeeType;
+  value: number;
+}
+
+export interface RepaymentSchedule {
+  frequency: RepaymentFrequency;
+  installments: number[]; // e.g., [110, 220, 330]
+  gracePeriodDays: number;
+}
 
 export interface LoanProduct {
     id: string;
@@ -566,15 +558,13 @@ export interface LoanProduct {
     minAmount: number;
     maxAmount: number;
     defaultAmount: number;
-    insuranceType: 'percentage' | 'fixed';
-    insuranceValue: number;
-    processingFee: number;
-    formFee: number;
-    applicationFee: number;
-    additionalFee: number;
-    otherFee: number;
-    repaymentFrequency: RepaymentFrequency;
-    numberOfInstallments: number;
+    insurance: Fee;
+    processingFee: Fee;
+    formFee: Fee;
+    applicationFee: Fee;
+    additionalFee: Fee;
+    otherFee: Fee;
+    repaymentSchedules: Partial<Record<RepaymentFrequency, RepaymentSchedule>>;
     interestRate: number;
     interestCalculationMethod: InterestCalculationMethod;
 }

@@ -8,18 +8,108 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import type { LoanProduct, InterestCalculationMethod, RepaymentFrequency } from '@/types';
+import { PlusCircle, Edit, Trash2, X } from 'lucide-react';
+import type { LoanProduct, InterestCalculationMethod, RepaymentFrequency, Fee, RepaymentSchedule } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+const allFrequencies: RepaymentFrequency[] = ['daily', 'weekly', 'monthly', 'quarterly', 'one-time'];
+
+const FeeInput = ({ label, name, defaultValue, defaultType }: { label: string, name: string, defaultValue?: number, defaultType?: 'fixed' | 'percentage' }) => (
+    <div className="space-y-2">
+        <Label htmlFor={name}>{label}</Label>
+        <div className="flex gap-2">
+            <Input id={name} name={name} type="number" step="0.01" defaultValue={defaultValue} />
+            <Select name={`${name}Type`} defaultValue={defaultType || 'fixed'}>
+                <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="fixed">Fixed</SelectItem>
+                    <SelectItem value="percentage">%</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+    </div>
+);
+
+const RepaymentScheduleForm = ({ 
+    schedule, 
+    onInstallmentAdd, 
+    onInstallmentRemove, 
+    onGracePeriodChange 
+}: { 
+    schedule: RepaymentSchedule, 
+    onInstallmentAdd: (freq: RepaymentFrequency, value: number) => void,
+    onInstallmentRemove: (freq: RepaymentFrequency, value: number) => void,
+    onGracePeriodChange: (freq: RepaymentFrequency, value: number) => void,
+}) => {
+    const [installmentInput, setInstallmentInput] = useState('');
+    
+    const handleAdd = () => {
+        const num = parseInt(installmentInput, 10);
+        if (!isNaN(num) && num > 0) {
+            onInstallmentAdd(schedule.frequency, num);
+            setInstallmentInput('');
+        }
+    }
+    
+    return (
+        <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label>Installment Options</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                            type="number" 
+                            placeholder="e.g., 46" 
+                            value={installmentInput}
+                            onChange={(e) => setInstallmentInput(e.target.value)}
+                        />
+                        <Button type="button" onClick={handleAdd}>Add</Button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${schedule.frequency}GracePeriod`}>Grace Period (Days)</Label>
+                    <Input 
+                        id={`${schedule.frequency}GracePeriod`}
+                        name={`${schedule.frequency}GracePeriod`}
+                        type="number" 
+                        defaultValue={schedule.gracePeriodDays} 
+                        onChange={(e) => onGracePeriodChange(schedule.frequency, parseInt(e.target.value, 10) || 0)}
+                    />
+                </div>
+            </div>
+             <div className="flex flex-wrap gap-2">
+                {schedule.installments.map(inst => (
+                    <Badge key={inst} variant="secondary" className="flex items-center gap-1">
+                        {inst}
+                        <button type="button" onClick={() => onInstallmentRemove(schedule.frequency, inst)}>
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 export function LoanProductClient() {
   const { settings, addLoanProduct, updateLoanProduct, deleteLoanProduct, isLoaded } = useSettings();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
 
+  const [repaymentSchedules, setRepaymentSchedules] = useState<Partial<Record<RepaymentFrequency, RepaymentSchedule>>>({});
+
   const handleOpenDialog = (product: LoanProduct | null) => {
     setEditingProduct(product);
+    if (product) {
+      setRepaymentSchedules(product.repaymentSchedules || {});
+    } else {
+      setRepaymentSchedules({});
+    }
     setDialogOpen(true);
   };
 
@@ -27,32 +117,84 @@ export function LoanProductClient() {
     setEditingProduct(null);
     setDialogOpen(false);
   };
+  
+  const handleToggleSchedule = (frequency: RepaymentFrequency, checked: boolean) => {
+      setRepaymentSchedules(prev => {
+          const newSchedules = { ...prev };
+          if (checked) {
+              if (!newSchedules[frequency]) {
+                  newSchedules[frequency] = { frequency, installments: [], gracePeriodDays: 0 };
+              }
+          } else {
+              delete newSchedules[frequency];
+          }
+          return newSchedules;
+      });
+  };
+
+  const handleInstallmentAdd = (frequency: RepaymentFrequency, value: number) => {
+      setRepaymentSchedules(prev => {
+          const schedule = prev[frequency];
+          if (schedule && !schedule.installments.includes(value)) {
+              return {
+                  ...prev,
+                  [frequency]: { ...schedule, installments: [...schedule.installments, value].sort((a,b) => a - b) }
+              };
+          }
+          return prev;
+      });
+  };
+
+  const handleInstallmentRemove = (frequency: RepaymentFrequency, value: number) => {
+      setRepaymentSchedules(prev => {
+          const schedule = prev[frequency];
+          if (schedule) {
+              return {
+                  ...prev,
+                  [frequency]: { ...schedule, installments: schedule.installments.filter(i => i !== value) }
+              };
+          }
+          return prev;
+      });
+  };
+  
+  const handleGracePeriodChange = (frequency: RepaymentFrequency, value: number) => {
+      setRepaymentSchedules(prev => {
+          const schedule = prev[frequency];
+          if (schedule) {
+              return { ...prev, [frequency]: { ...schedule, gracePeriodDays: value } };
+          }
+          return prev;
+      });
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    const getFee = (name: string): Fee => ({
+        type: formData.get(`${name}Type`) as 'fixed' | 'percentage',
+        value: parseFloat(formData.get(name) as string) || 0,
+    });
+    
     const productData: Omit<LoanProduct, 'id'> = {
       name: formData.get('name') as string,
       shortName: formData.get('shortName') as string,
       code: formData.get('code') as string,
-      minAmount: parseFloat(formData.get('minAmount') as string),
-      maxAmount: parseFloat(formData.get('maxAmount') as string),
-      defaultAmount: parseFloat(formData.get('defaultAmount') as string),
-      insuranceType: formData.get('insuranceType') as 'percentage' | 'fixed',
-      insuranceValue: parseFloat(formData.get('insuranceValue') as string),
-      processingFee: parseFloat(formData.get('processingFee') as string),
-      formFee: parseFloat(formData.get('formFee') as string),
-      applicationFee: parseFloat(formData.get('applicationFee') as string),
-      additionalFee: parseFloat(formData.get('additionalFee') as string),
-      otherFee: parseFloat(formData.get('otherFee') as string),
-      repaymentFrequency: formData.get('repaymentFrequency') as RepaymentFrequency,
-      numberOfInstallments: parseInt(formData.get('numberOfInstallments') as string, 10),
+      minAmount: parseFloat(formData.get('minAmount') as string) || 0,
+      maxAmount: parseFloat(formData.get('maxAmount') as string) || 0,
+      defaultAmount: parseFloat(formData.get('defaultAmount') as string) || 0,
       interestRate: parseFloat(formData.get('interestRate') as string),
       interestCalculationMethod: formData.get('interestCalculationMethod') as InterestCalculationMethod,
+      insurance: getFee('insurance'),
+      processingFee: getFee('processingFee'),
+      formFee: getFee('formFee'),
+      applicationFee: getFee('applicationFee'),
+      additionalFee: getFee('additionalFee'),
+      otherFee: getFee('otherFee'),
+      repaymentSchedules: repaymentSchedules,
     };
     
-    // Basic validation
     if (!productData.name || !productData.code || isNaN(productData.interestRate)) {
       alert("Please fill all required fields: Name, Code, and Interest Rate.");
       return;
@@ -69,6 +211,12 @@ export function LoanProductClient() {
   if (!isLoaded) {
     return <div>Loading loan products...</div>;
   }
+  
+  const getSchedulesSummary = (schedules: Partial<Record<RepaymentFrequency, RepaymentSchedule>>): string => {
+      return Object.values(schedules)
+        .map(s => `${s.frequency} (${s.installments.join('/')})`)
+        .join(', ');
+  }
 
   return (
     <>
@@ -78,7 +226,7 @@ export function LoanProductClient() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         {settings.loanProducts.length > 0 ? settings.loanProducts.map(product => (
           <Card key={product.id}>
             <CardHeader>
@@ -87,7 +235,7 @@ export function LoanProductClient() {
             </CardHeader>
             <CardContent>
               <p className="text-sm font-semibold">Interest: {product.interestRate}% ({product.interestCalculationMethod})</p>
-              <p className="text-sm text-muted-foreground">Repayment: {product.numberOfInstallments} {product.repaymentFrequency} installments</p>
+              <p className="text-sm text-muted-foreground">Repayments: {getSchedulesSummary(product.repaymentSchedules)}</p>
               <p className="text-sm text-muted-foreground">Amount: ৳{product.minAmount} - ৳{product.maxAmount}</p>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
@@ -110,14 +258,13 @@ export function LoanProductClient() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <ScrollArea className="max-h-[70vh] p-4">
               <div className="space-y-6">
-                {/* Basic Info */}
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -127,37 +274,60 @@ export function LoanProductClient() {
                     </div>
                 </div>
 
-                {/* Loan Amount */}
                  <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Loan Amount</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount} /></div>
-                        <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount} /></div>
-                        <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount} /></div>
+                        <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
+                        <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
+                        <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
                     </div>
                 </div>
 
-                {/* Fees and Insurance */}
                  <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Fees & Insurance</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div className="space-y-2"><Label>Insurance</Label><div className="flex gap-2"><Select name="insuranceType" defaultValue={editingProduct?.insuranceType || 'percentage'}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="percentage">%</SelectItem><SelectItem value="fixed">Fixed</SelectItem></SelectContent></Select><Input name="insuranceValue" type="number" step="0.01" defaultValue={editingProduct?.insuranceValue} /></div></div>
-                         <div className="space-y-2"><Label htmlFor="processingFee">Processing Fee</Label><Input id="processingFee" name="processingFee" type="number" step="0.01" defaultValue={editingProduct?.processingFee} /></div>
-                         <div className="space-y-2"><Label htmlFor="formFee">Form Fee</Label><Input id="formFee" name="formFee" type="number" step="0.01" defaultValue={editingProduct?.formFee} /></div>
-                         <div className="space-y-2"><Label htmlFor="applicationFee">Application Fee</Label><Input id="applicationFee" name="applicationFee" type="number" step="0.01" defaultValue={editingProduct?.applicationFee} /></div>
-                         <div className="space-y-2"><Label htmlFor="additionalFee">Additional Fee</Label><Input id="additionalFee" name="additionalFee" type="number" step="0.01" defaultValue={editingProduct?.additionalFee} /></div>
-                         <div className="space-y-2"><Label htmlFor="otherFee">Other Fee</Label><Input id="otherFee" name="otherFee" type="number" step="0.01" defaultValue={editingProduct?.otherFee} /></div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                         <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
+                         <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
+                         <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
+                         <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
+                         <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
+                         <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
                      </div>
                 </div>
 
-                {/* Repayment and Interest */}
                  <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Repayment & Interest</h3>
+                    <h3 className="font-semibold text-lg">Interest</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label htmlFor="repaymentFrequency">Repayment Frequency</Label><Select name="repaymentFrequency" defaultValue={editingProduct?.repaymentFrequency}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="daily">Daily</SelectItem><SelectItem value="weekly">Weekly</SelectItem><SelectItem value="monthly">Monthly</SelectItem><SelectItem value="quarterly">Quarterly</SelectItem><SelectItem value="one-time">One Time</SelectItem></SelectContent></Select></div>
-                        <div className="space-y-2"><Label htmlFor="numberOfInstallments">Number of Installments</Label><Input id="numberOfInstallments" name="numberOfInstallments" type="number" defaultValue={editingProduct?.numberOfInstallments} /></div>
                         <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
-                        <div className="space-y-2"><Label htmlFor="interestCalculationMethod">Interest Calculation</Label><Select name="interestCalculationMethod" defaultValue={editingProduct?.interestCalculationMethod}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="flat">Flat</SelectItem><SelectItem value="reducing-balance">Reducing Balance</SelectItem></SelectContent></Select></div>
+                        <div className="space-y-2"><Label htmlFor="interestCalculationMethod">Interest Calculation</Label><Select name="interestCalculationMethod" defaultValue={editingProduct?.interestCalculationMethod || 'flat'}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="flat">Flat</SelectItem><SelectItem value="reducing-balance">Reducing Balance</SelectItem></SelectContent></Select></div>
+                    </div>
+                </div>
+
+                 <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-semibold text-lg">Repayment Schedules</h3>
+                     <div className="space-y-4">
+                        {allFrequencies.map(freq => (
+                            <div key={freq} className="p-3 border rounded-md">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor={`switch-${freq}`} className="capitalize font-medium">{freq}</Label>
+                                    <Switch 
+                                        id={`switch-${freq}`} 
+                                        checked={!!repaymentSchedules[freq]}
+                                        onCheckedChange={(checked) => handleToggleSchedule(freq, checked)}
+                                    />
+                                </div>
+                                {repaymentSchedules[freq] && (
+                                    <div className="mt-4">
+                                        <RepaymentScheduleForm 
+                                            schedule={repaymentSchedules[freq]!}
+                                            onInstallmentAdd={handleInstallmentAdd}
+                                            onInstallmentRemove={handleInstallmentRemove}
+                                            onGracePeriodChange={handleGracePeriodChange}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
               </div>
