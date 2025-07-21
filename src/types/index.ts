@@ -11,6 +11,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -468,6 +469,11 @@ export interface LedgerAccount {
 // Fixed Asset Management
 export type DepreciationMethod = 'Straight-Line' | 'Reducing Balance';
 
+export interface AssetCategory {
+    id: string;
+    name: string;
+}
+
 export interface AssetLocation {
     id: string;
     name: string;
@@ -533,6 +539,7 @@ export interface AppSettings {
   // Fixed Asset Management
   fixedAssets: FixedAsset[];
   assetLocations: AssetLocation[];
+  assetCategories: AssetCategory[];
   // Accounting
   accountTypes: AccountType[];
   accountGroups: AccountGroup[];

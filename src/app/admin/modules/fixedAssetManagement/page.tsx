@@ -30,7 +30,7 @@ const fixedAssetSubModules = [
     icon: Milestone,
     title: 'Asset Categories',
     description: 'Define categories for your fixed assets.',
-    enabled: false,
+    enabled: true,
   },
   {
     href: '/admin/modules/fixedAssetManagement/locations',

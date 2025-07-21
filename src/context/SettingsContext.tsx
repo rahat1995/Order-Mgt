@@ -2,9 +2,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -102,6 +103,7 @@ const defaultSettings: AppSettings = {
   // Fixed Asset Management
   fixedAssets: [],
   assetLocations: [],
+  assetCategories: [],
   // Accounting
   accountTypes: [],
   accountGroups: [],
@@ -245,6 +247,9 @@ interface SettingsContextType {
   addAssetLocation: (location: Omit<AssetLocation, 'id'>) => AssetLocation;
   updateAssetLocation: (location: AssetLocation) => void;
   deleteAssetLocation: (locationId: string) => void;
+  addAssetCategory: (category: Omit<AssetCategory, 'id'>) => void;
+  updateAssetCategory: (category: AssetCategory) => void;
+  deleteAssetCategory: (categoryId: string) => void;
   // Accounting
   addAccountingVoucher: (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>) => AccountingVoucher;
   deleteAccountingVoucher: (voucherId: string) => void;
@@ -352,6 +357,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         employees: storedSettings.employees || defaultSettings.employees,
         fixedAssets: storedSettings.fixedAssets || defaultSettings.fixedAssets,
         assetLocations: storedSettings.assetLocations || defaultSettings.assetLocations,
+        assetCategories: storedSettings.assetCategories || defaultSettings.assetCategories,
         accountTypes: storedSettings.accountTypes || defaultSettings.accountTypes,
         accountGroups: storedSettings.accountGroups || defaultSettings.accountGroups,
         accountSubGroups: storedSettings.accountSubGroups || defaultSettings.accountSubGroups,
@@ -802,6 +808,19 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setSettings(prev => ({...prev, assetLocations: prev.assetLocations.filter(l => l.id !== locationId) }));
     }
   }
+  const addAssetCategory = (category: Omit<AssetCategory, 'id'>) => {
+    const newCategory = { ...category, id: uuidv4() };
+    setSettings(prev => ({ ...prev, assetCategories: [...prev.assetCategories, newCategory]}));
+  }
+  const updateAssetCategory = (updatedCategory: AssetCategory) => {
+      setSettings(prev => ({ ...prev, assetCategories: prev.assetCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c)}));
+  }
+  const deleteAssetCategory = (categoryId: string) => {
+    if (confirm('Are you sure?')) {
+        setSettings(prev => ({...prev, assetCategories: prev.assetCategories.filter(c => c.id !== categoryId) }));
+    }
+  }
+
 
   // Accounting
   const addAccountingVoucher = (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>): AccountingVoucher => {
@@ -922,6 +941,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
     addFixedAsset, addAssetLocation, updateAssetLocation, deleteAssetLocation,
+    addAssetCategory, updateAssetCategory, deleteAssetCategory,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
