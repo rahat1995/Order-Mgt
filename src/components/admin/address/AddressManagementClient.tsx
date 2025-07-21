@@ -89,7 +89,7 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         selectors.push(
             <div key="division-selector" className="space-y-2">
                 <Label>Division</Label>
-                <Select value={selectedDivision} onValueChange={v => { setSelectedDivision(v); setSelectedDistrict(''); setSelectedUpozilla(''); setSelectedUnion(''); setSelectedVillage(''); }}>
+                <Select value={selectedDivision} onValueChange={v => { setSelectedDivision(v); setSelectedDistrict(''); setSelectedUpozilla(''); setSelectedUnion(''); setSelectedVillage(''); if(entityType === 'District') {onParentSelect(v); } }}>
                     <SelectTrigger><SelectValue placeholder="Select Division" /></SelectTrigger>
                     <SelectContent>{divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -100,7 +100,7 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         selectors.push(
             <div key="district-selector" className="space-y-2">
                 <Label>District</Label>
-                <Select value={selectedDistrict} onValueChange={v => { setSelectedDistrict(v); setSelectedUpozilla(''); setSelectedUnion(''); setSelectedVillage(''); }} disabled={!selectedDivision}>
+                <Select value={selectedDistrict} onValueChange={v => { setSelectedDistrict(v); setSelectedUpozilla(''); setSelectedUnion(''); setSelectedVillage(''); if(entityType === 'Upozilla') {onParentSelect(v); } }} disabled={!selectedDivision}>
                     <SelectTrigger><SelectValue placeholder="Select District" /></SelectTrigger>
                     <SelectContent>{districts.filter(d => d.parentId === selectedDivision).map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -111,7 +111,7 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         selectors.push(
             <div key="upozilla-selector" className="space-y-2">
                 <Label>Upozilla</Label>
-                <Select value={selectedUpozilla} onValueChange={v => { setSelectedUpozilla(v); setSelectedUnion(''); setSelectedVillage(''); }} disabled={!selectedDistrict}>
+                <Select value={selectedUpozilla} onValueChange={v => { setSelectedUpozilla(v); setSelectedUnion(''); setSelectedVillage(''); if(entityType === 'Union') {onParentSelect(v); } }} disabled={!selectedDistrict}>
                     <SelectTrigger><SelectValue placeholder="Select Upozilla" /></SelectTrigger>
                     <SelectContent>{upozillas.filter(u => u.parentId === selectedDistrict).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -122,7 +122,7 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         selectors.push(
             <div key="union-selector" className="space-y-2">
                 <Label>Union</Label>
-                <Select value={selectedUnion} onValueChange={v => { setSelectedUnion(v); setSelectedVillage(''); }} disabled={!selectedUpozilla}>
+                <Select value={selectedUnion} onValueChange={v => { setSelectedUnion(v); setSelectedVillage(''); if(entityType === 'Village') {onParentSelect(v); } }} disabled={!selectedUpozilla}>
                     <SelectTrigger><SelectValue placeholder="Select Union" /></SelectTrigger>
                     <SelectContent>{unions.filter(u => u.parentId === selectedUpozilla).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -133,7 +133,7 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         selectors.push(
             <div key="village-selector" className="space-y-2">
                 <Label>Village</Label>
-                <Select value={selectedVillage} onValueChange={v => { setSelectedVillage(v); }} disabled={!selectedUnion}>
+                <Select value={selectedVillage} onValueChange={v => { setSelectedVillage(v); if(entityType === 'WorkingArea') {onParentSelect(v); } }} disabled={!selectedUnion}>
                     <SelectTrigger><SelectValue placeholder="Select Village" /></SelectTrigger>
                     <SelectContent>{villages.filter(v => v.parentId === selectedUnion).map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -141,26 +141,9 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
         );
     }
 
-    const finalSelectorIndex = selectors.length - 1;
-    if (finalSelectorIndex >= 0) {
-        const lastSelectorProps = {
-            ...selectors[finalSelectorIndex].props,
-            children: React.cloneElement(selectors[finalSelectorIndex].props.children, {
-                name: "parentId",
-                onValueChange: (value: string) => {
-                    if (entityType === 'WorkingArea') { onParentSelect(value); setSelectedVillage(value); }
-                    if (entityType === 'Village') { onParentSelect(value); setSelectedUnion(value); }
-                    if (entityType === 'Union') { onParentSelect(value); setSelectedUpozilla(value); }
-                    if (entityType === 'Upozilla') { onParentSelect(value); setSelectedDistrict(value); }
-                    if (entityType === 'District') { onParentSelect(value); setSelectedDivision(value); }
-                }
-            })
-        };
-        selectors[finalSelectorIndex] = React.cloneElement(selectors[finalSelectorIndex], lastSelectorProps);
-    }
-
     return <div className="space-y-4">{selectors}</div>;
 }
+
 
 function ManagementPanel({ entityType }: { entityType: EntityType }) {
     const { settings, addAddressData, updateAddressData, deleteAddressData, isLoaded } = useSettings();
