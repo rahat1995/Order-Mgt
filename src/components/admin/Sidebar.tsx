@@ -44,6 +44,7 @@ import {
   SlidersHorizontal,
   ReceiptText,
   HandCoins,
+  Archive,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -120,6 +121,7 @@ const moduleLinks = [
         { href: '/admin/modules/microfinance/configuration', label: 'Configuration', icon: Cog },
       ]
     },
+    { key: 'fixedAssetManagement', label: 'Fixed Assets', icon: Archive, href: '/admin/modules/fixedAssetManagement' },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList, HandCoins } from 'lucide-react';
+import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList, HandCoins, Archive } from 'lucide-react';
 
 const modulesData = [
   { key: 'pos', label: 'POS', icon: ShoppingCart, description: 'Menu, order entry, and voucher management.' },
@@ -24,9 +24,10 @@ const modulesData = [
   { key: 'inventory', label: 'Inventory', icon: Boxes, description: 'Stock and inventory level management.' },
   { key: 'tableManagement', label: 'Table Management', icon: LayoutGrid, description: 'Manage restaurant tables and seating.' },
   { key: 'costManagement', label: 'Cost Management', icon: DollarSign, description: 'Track bills, suppliers, and expenses.' },
-  { key: 'accounting', label: 'Accounting', icon: BookUser, description: 'Manage financial accounts and ledgers.' },
   { key: 'hrManagement', label: 'HR Management', icon: Users, description: 'Manage employees, payroll, and attendance.' },
+  { key: 'accounting', label: 'Accounting', icon: BookUser, description: 'Manage financial accounts and ledgers.' },
   { key: 'microfinance', label: 'Microfinance', icon: HandCoins, description: 'Manage members, loans, and savings.' },
+  { key: 'fixedAssetManagement', label: 'Fixed Assets', icon: Archive, description: 'Manage company assets and depreciation.' },
   { key: 'userAccessControl', label: 'User Access Control', icon: ShieldCheck, description: 'Define roles and permissions for users.' },
 ] as const;
 

@@ -34,6 +34,8 @@ const defaultSettings: AppSettings = {
     accounting: true,
     hrManagement: true,
     userAccessControl: true,
+    microfinance: true,
+    fixedAssetManagement: true,
   },
   posSettings: {
     advancedItemOptions: true,
