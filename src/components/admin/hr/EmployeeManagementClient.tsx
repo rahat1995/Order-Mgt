@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export function EmployeeManagementClient() {
   const { settings, addEmployee, updateEmployee, deleteEmployee, isLoaded } = useSettings();
-  const { employees, designations } = settings;
+  const { employees, designations, branches } = settings;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
@@ -39,12 +39,13 @@ export function EmployeeManagementClient() {
       email: formData.get('email') as string,
       address: formData.get('address') as string,
       designationId: formData.get('designationId') as string,
+      branchId: formData.get('branchId') as string,
       joiningDate: formData.get('joiningDate') as string,
       salary: parseFloat(formData.get('salary') as string),
     };
 
-    if (!employeeData.name || !employeeData.mobile || !employeeData.designationId || !employeeData.joiningDate || isNaN(employeeData.salary) || !employeeData.username || !employeeData.password) {
-        alert("Please fill all required fields, including username and password.");
+    if (!employeeData.name || !employeeData.mobile || !employeeData.designationId || !employeeData.joiningDate || isNaN(employeeData.salary) || !employeeData.username || !employeeData.password || !employeeData.branchId) {
+        alert("Please fill all required fields, including branch, username and password.");
         return;
     }
 
@@ -63,12 +64,12 @@ export function EmployeeManagementClient() {
   return (
     <>
       <div className="flex justify-end">
-        <Button onClick={() => handleOpenDialog(null)} disabled={designations.length === 0}>
+        <Button onClick={() => handleOpenDialog(null)} disabled={designations.length === 0 || branches.length === 0}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Employee
         </Button>
       </div>
-      {designations.length === 0 && <p className="text-sm text-destructive text-right mt-2">Please add a designation before adding an employee.</p>}
+      {(designations.length === 0 || branches.length === 0) && <p className="text-sm text-destructive text-right mt-2">Please add a designation and a branch before adding an employee.</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         {employees.map(employee => (
@@ -79,6 +80,7 @@ export function EmployeeManagementClient() {
             </CardHeader>
             <CardContent>
               <p className="text-sm font-semibold">{employee.mobile}</p>
+              <p className="text-sm text-muted-foreground">{branches.find(b => b.id === employee.branchId)?.name || 'No Branch'}</p>
               <p className="text-sm text-muted-foreground">{employee.email}</p>
               <p className="text-sm text-muted-foreground">{employee.address}</p>
               <div className="mt-2 pt-2 border-t">
@@ -151,10 +153,21 @@ export function EmployeeManagementClient() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="branchId">Branch</Label>
+                  <Select name="branchId" defaultValue={editingEmployee?.branchId} required>
+                    <SelectTrigger><SelectValue placeholder="Select a branch" /></SelectTrigger>
+                    <SelectContent>
+                        {branches.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                     <Label htmlFor="salary">Salary</Label>
                     <Input id="salary" name="salary" type="number" step="0.01" defaultValue={editingEmployee?.salary} required />
                 </div>
-                 <div className="space-y-2 md:col-span-2">
+                 <div className="space-y-2">
                     <Label htmlFor="joiningDate">Joining Date</Label>
                     <Input id="joiningDate" name="joiningDate" type="date" defaultValue={editingEmployee?.joiningDate} required />
                 </div>

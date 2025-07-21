@@ -4,6 +4,7 @@
 import { OrganizationInfoForm } from '@/components/admin/OrganizationInfoForm';
 import { ModuleManagementForm } from '@/components/admin/ModuleManagementForm';
 import { ThemeSelector } from '@/components/admin/ThemeSelector';
+import { BranchManagementForm } from '@/components/admin/settings/BranchManagementForm';
 
 export default function SettingsPage() {
   return (
@@ -21,7 +22,8 @@ export default function SettingsPage() {
           <OrganizationInfoForm />
           <ThemeSelector />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+          <BranchManagementForm />
           <ModuleManagementForm />
         </div>
       </div>

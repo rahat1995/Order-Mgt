@@ -17,7 +17,15 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
+
+export interface Branch {
+  id: string;
+  name: string;
+  code: string;
+  startDate: string; // ISO Date
+}
 
 export interface Floor {
   id: string;
@@ -419,6 +427,7 @@ export interface Employee {
   email?: string;
   address?: string;
   designationId: string;
+  branchId?: string;
   joiningDate: string; // ISO Date string
   salary: number;
 }
@@ -572,6 +581,7 @@ export interface AppSettings {
   challanSettings: ChallanSettings;
   accountingSettings: AccountingSettings;
   microfinanceSettings: MicrofinanceSettings;
+  branches: Branch[];
   floors: Floor[];
   tables: Table[];
   reservations: Reservation[];
