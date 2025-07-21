@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSettings } from '@/context/SettingsContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,10 +29,17 @@ const entityConfig: Record<EntityType, { title: string; parent?: EntityType }> =
 
 function ManagementPanel({ entityType }: { entityType: EntityType }) {
     const { settings, addAddressData, updateAddressData, deleteAddressData, isLoaded } = useSettings();
+    const { divisions, districts, upozillas, unions, villages } = settings;
     const config = entityConfig[entityType];
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
+
+    // State for hierarchical filters
+    const [filterDivision, setFilterDivision] = useState('');
+    const [filterDistrict, setFilterDistrict] = useState('');
+    const [filterUpozilla, setFilterUpozilla] = useState('');
+    const [filterUnion, setFilterUnion] = useState('');
 
     const getEntityData = () => {
         switch(entityType) {
@@ -56,8 +63,24 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
         }
     }
 
-    const data = getEntityData();
     const parentData = getParentData();
+    
+    const filteredData = useMemo(() => {
+        let data = getEntityData();
+
+        if (entityType === 'District' && filterDivision) {
+            data = (data as District[]).filter(d => d.parentId === filterDivision);
+        } else if (entityType === 'Upozilla' && filterDistrict) {
+            data = (data as Upozilla[]).filter(u => u.parentId === filterDistrict);
+        } else if (entityType === 'Union' && filterUpozilla) {
+            data = (data as Union[]).filter(u => u.parentId === filterUpozilla);
+        } else if (entityType === 'Village' && filterUnion) {
+            data = (data as Village[]).filter(v => v.parentId === filterUnion);
+        }
+        
+        return data;
+    }, [entityType, settings, filterDivision, filterDistrict, filterUpozilla, filterUnion]);
+
 
     const handleOpenDialog = (entity: Entity | null) => {
         setEditingEntity(entity);
@@ -157,6 +180,62 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
         };
         reader.readAsArrayBuffer(file);
     };
+    
+    const renderFilters = () => {
+        const filters: JSX.Element[] = [];
+
+        if (['District', 'Upozilla', 'Union', 'Village', 'WorkingArea'].includes(entityType)) {
+            filters.push(
+                <div key="division" className="space-y-1">
+                    <Label>Division</Label>
+                    <Select value={filterDivision} onValueChange={(v) => { setFilterDivision(v); setFilterDistrict(''); setFilterUpozilla(''); setFilterUnion(''); }}>
+                        <SelectTrigger><SelectValue placeholder="Select Division" /></SelectTrigger>
+                        <SelectContent>{divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            );
+        }
+        if (['Upozilla', 'Union', 'Village', 'WorkingArea'].includes(entityType)) {
+            filters.push(
+                <div key="district" className="space-y-1">
+                    <Label>District</Label>
+                    <Select value={filterDistrict} onValueChange={(v) => { setFilterDistrict(v); setFilterUpozilla(''); setFilterUnion(''); }} disabled={!filterDivision}>
+                        <SelectTrigger><SelectValue placeholder="Select District" /></SelectTrigger>
+                        <SelectContent>{districts.filter(d => d.parentId === filterDivision).map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            );
+        }
+        if (['Union', 'Village', 'WorkingArea'].includes(entityType)) {
+            filters.push(
+                <div key="upozilla" className="space-y-1">
+                    <Label>Upozilla</Label>
+                    <Select value={filterUpozilla} onValueChange={(v) => { setFilterUpozilla(v); setFilterUnion(''); }} disabled={!filterDistrict}>
+                        <SelectTrigger><SelectValue placeholder="Select Upozilla" /></SelectTrigger>
+                        <SelectContent>{upozillas.filter(u => u.parentId === filterDistrict).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            );
+        }
+        if (['Village', 'WorkingArea'].includes(entityType)) {
+            filters.push(
+                <div key="union" className="space-y-1">
+                    <Label>Union</Label>
+                    <Select value={filterUnion} onValueChange={setFilterUnion} disabled={!filterUpozilla}>
+                        <SelectTrigger><SelectValue placeholder="Select Union" /></SelectTrigger>
+                        <SelectContent>{unions.filter(u => u.parentId === filterUpozilla).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                </div>
+            );
+        }
+
+        return filters.length > 0 ? (
+            <div className="mb-4 p-4 border rounded-lg grid grid-cols-2 md:grid-cols-4 gap-4">
+                {filters}
+            </div>
+        ) : null;
+    }
+
 
     if (!isLoaded) return <div>Loading...</div>;
 
@@ -175,6 +254,7 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
                 </div>
             </CardHeader>
             <CardContent>
+                {renderFilters()}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -185,7 +265,7 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.length > 0 ? data.map(item => (
+                        {filteredData.length > 0 ? filteredData.map(item => (
                             <TableRow key={item.id}>
                                 <TableCell>{item.id}</TableCell>
                                 <TableCell>{item.name}</TableCell>
@@ -244,7 +324,7 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
 export function AddressManagementClient() {
   return (
     <Tabs defaultValue="Division" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {Object.keys(entityConfig).map(key => (
           <TabsTrigger key={key} value={key}>{entityConfig[key as EntityType].title}</TabsTrigger>
         ))}
