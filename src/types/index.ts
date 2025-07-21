@@ -18,6 +18,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -165,8 +166,14 @@ export interface CustomerGroup {
 }
 
 export interface Samity {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
+  code: string;
+  branchId: string;
+  workingAreaId: string;
+  meetingDay: 'Saturday' | 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+  openingDate: string; // ISO Date string
+  maxMembers: number;
 }
 
 export interface Customer {
@@ -657,5 +664,8 @@ export interface AppSettings {
           date: string; // YYYY-MM-DD
           serial: number;
       }
+  };
+  lastSamitySerials: {
+    [branchId: string]: number;
   };
 }
