@@ -5,9 +5,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -41,6 +42,7 @@ const defaultSettings: AppSettings = {
     userAccessControl: true,
     microfinance: true,
     fixedAssetManagement: true,
+    addressManagement: true,
   },
   posSettings: {
     advancedItemOptions: true,
@@ -110,6 +112,13 @@ const defaultSettings: AppSettings = {
   fixedAssets: [],
   assetLocations: [],
   assetCategories: [],
+  // Address Management
+  divisions: [],
+  districts: [],
+  upozillas: [],
+  unions: [],
+  villages: [],
+  workingAreas: [],
   // Accounting
   accountTypes: [],
   accountGroups: [],
@@ -261,6 +270,10 @@ interface SettingsContextType {
   addAssetCategory: (category: Omit<AssetCategory, 'id'>) => void;
   updateAssetCategory: (category: AssetCategory) => void;
   deleteAssetCategory: (categoryId: string) => void;
+  // Address Management
+  addAddressData: (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', data: any) => void;
+  updateAddressData: (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', data: any) => void;
+  deleteAddressData: (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', id: string) => void;
   // Accounting
   addAccountingVoucher: (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>) => AccountingVoucher;
   deleteAccountingVoucher: (voucherId: string) => void;
@@ -371,6 +384,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         fixedAssets: storedSettings.fixedAssets || defaultSettings.fixedAssets,
         assetLocations: storedSettings.assetLocations || defaultSettings.assetLocations,
         assetCategories: storedSettings.assetCategories || defaultSettings.assetCategories,
+        divisions: storedSettings.divisions || defaultSettings.divisions,
+        districts: storedSettings.districts || defaultSettings.districts,
+        upozillas: storedSettings.upozillas || defaultSettings.upozillas,
+        unions: storedSettings.unions || defaultSettings.unions,
+        villages: storedSettings.villages || defaultSettings.villages,
+        workingAreas: storedSettings.workingAreas || defaultSettings.workingAreas,
         accountTypes: storedSettings.accountTypes || defaultSettings.accountTypes,
         accountGroups: storedSettings.accountGroups || defaultSettings.accountGroups,
         accountSubGroups: storedSettings.accountSubGroups || defaultSettings.accountSubGroups,
@@ -835,6 +854,47 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }
 
+  // Address Management
+  const addAddressData = (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', data: any) => {
+    const keyMap = {
+        'Division': 'divisions',
+        'District': 'districts',
+        'Upozilla': 'upozillas',
+        'Union': 'unions',
+        'Village': 'villages',
+        'WorkingArea': 'workingAreas',
+    };
+    const arrayKey = keyMap[entityType];
+    setSettings(prev => ({...prev, [arrayKey]: [...prev[arrayKey], data]}));
+  }
+  const updateAddressData = (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', data: any) => {
+    const keyMap = {
+        'Division': 'divisions',
+        'District': 'districts',
+        'Upozilla': 'upozillas',
+        'Union': 'unions',
+        'Village': 'villages',
+        'WorkingArea': 'workingAreas',
+    };
+    const arrayKey = keyMap[entityType];
+    setSettings(prev => ({...prev, [arrayKey]: prev[arrayKey].map((item: any) => item.id === data.id ? data : item)}));
+  }
+  const deleteAddressData = (entityType: 'Division' | 'District' | 'Upozilla' | 'Union' | 'Village' | 'WorkingArea', id: string) => {
+     if (confirm('Are you sure?')) {
+        const keyMap = {
+            'Division': 'divisions',
+            'District': 'districts',
+            'Upozilla': 'upozillas',
+            'Union': 'unions',
+            'Village': 'villages',
+            'WorkingArea': 'workingAreas',
+        };
+        const arrayKey = keyMap[entityType];
+        setSettings(prev => ({...prev, [arrayKey]: prev[arrayKey].filter((item: any) => item.id !== id)}));
+     }
+  }
+
+
   // Microfinance
   const addSamity = (samity: Omit<Samity, 'id'>) => setSettings(prev => ({ ...prev, samities: [...prev.samities, { ...samity, id: uuidv4() }] }));
   const updateSamity = (samity: Samity) => setSettings(prev => ({ ...prev, samities: prev.samities.map(s => s.id === samity.id ? samity : s)}));
@@ -965,6 +1025,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
     addFixedAsset, addAssetLocation, updateAssetLocation, deleteAssetLocation,
     addAssetCategory, updateAssetCategory, deleteAssetCategory,
+    addAddressData, updateAddressData, deleteAddressData,
     addSamity, updateSamity, deleteSamity,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,

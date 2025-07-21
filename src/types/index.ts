@@ -14,6 +14,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -69,6 +70,7 @@ export interface ModuleSettings {
   pendingBillReport: boolean;
   microfinance: boolean;
   fixedAssetManagement: boolean;
+  addressManagement: boolean;
 }
 
 export interface PosSettings {
@@ -503,6 +505,35 @@ export interface FixedAsset {
     employeeId?: string;
 }
 
+// Address Management
+export interface Division {
+    id: string;
+    name: string;
+}
+export interface District {
+    id: string;
+    name: string;
+    parentId: string; // Division ID
+}
+export interface Upozilla {
+    id: string;
+    name: string;
+    parentId: string; // District ID
+}
+export interface Union {
+    id: string;
+    name: string;
+    parentId: string; // Upozilla ID
+}
+export interface Village {
+    id: string;
+    name: string;
+    parentId: string; // Union ID
+}
+export interface WorkingArea {
+    id: string;
+    name: string;
+}
 
 export interface AppSettings {
   organization: OrganizationInfo;
@@ -554,6 +585,13 @@ export interface AppSettings {
   fixedAssets: FixedAsset[];
   assetLocations: AssetLocation[];
   assetCategories: AssetCategory[];
+  // Address Management
+  divisions: Division[];
+  districts: District[];
+  upozillas: Upozilla[];
+  unions: Union[];
+  villages: Village[];
+  workingAreas: WorkingArea[];
   // Accounting
   accountTypes: AccountType[];
   accountGroups: AccountGroup[];
