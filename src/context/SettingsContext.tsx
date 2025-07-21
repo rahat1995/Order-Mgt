@@ -6,9 +6,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -80,6 +81,7 @@ const defaultSettings: AppSettings = {
   customers: [],
   customerGroups: [],
   samities: [],
+  loanProducts: [],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -192,6 +194,9 @@ interface SettingsContextType {
   addSamity: (samity: Omit<Samity, 'id'>) => void;
   updateSamity: (samity: Samity) => void;
   deleteSamity: (samityId: string) => void;
+  addLoanProduct: (product: Omit<LoanProduct, 'id'>) => void;
+  updateLoanProduct: (product: LoanProduct) => void;
+  deleteLoanProduct: (productId: string) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -357,6 +362,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         customers: storedSettings.customers || defaultSettings.customers,
         customerGroups: storedSettings.customerGroups || defaultSettings.customerGroups,
         samities: storedSettings.samities || defaultSettings.samities,
+        loanProducts: storedSettings.loanProducts || defaultSettings.loanProducts,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
@@ -903,6 +909,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setSettings(prev => ({...prev, samities: prev.samities.filter(s => s.id !== samityId) }));
     }
   };
+  const addLoanProduct = (product: Omit<LoanProduct, 'id'>) => setSettings(prev => ({ ...prev, loanProducts: [...prev.loanProducts, { ...product, id: uuidv4() }] }));
+  const updateLoanProduct = (product: LoanProduct) => setSettings(prev => ({ ...prev, loanProducts: prev.loanProducts.map(p => p.id === product.id ? product : p)}));
+  const deleteLoanProduct = (productId: string) => {
+      if (confirm('Are you sure you want to delete this loan product?')) {
+        setSettings(prev => ({ ...prev, loanProducts: prev.loanProducts.filter(p => p.id !== productId) }));
+      }
+  };
 
 
   // Accounting
@@ -1027,6 +1040,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAssetCategory, updateAssetCategory, deleteAssetCategory,
     addAddressData, updateAddressData, deleteAddressData,
     addSamity, updateSamity, deleteSamity,
+    addLoanProduct, updateLoanProduct, deleteLoanProduct,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,

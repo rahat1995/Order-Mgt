@@ -16,6 +16,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -537,6 +538,31 @@ export interface WorkingArea {
     parentId: string; // Village ID
 }
 
+// Microfinance
+export type InterestCalculationMethod = 'flat' | 'reducing-balance';
+export type RepaymentFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'one-time';
+
+export interface LoanProduct {
+    id: string;
+    name: string;
+    shortName: string;
+    code: string;
+    minAmount: number;
+    maxAmount: number;
+    defaultAmount: number;
+    insuranceType: 'percentage' | 'fixed';
+    insuranceValue: number;
+    processingFee: number;
+    formFee: number;
+    applicationFee: number;
+    additionalFee: number;
+    otherFee: number;
+    repaymentFrequency: RepaymentFrequency;
+    numberOfInstallments: number;
+    interestRate: number;
+    interestCalculationMethod: InterestCalculationMethod;
+}
+
 export interface AppSettings {
   organization: OrganizationInfo;
   theme: Theme;
@@ -557,6 +583,7 @@ export interface AppSettings {
   vouchers: Voucher[];
   collections: Collection[];
   samities: Samity[];
+  loanProducts: LoanProduct[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];
