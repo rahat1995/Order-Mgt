@@ -2,6 +2,7 @@
 
 
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -18,6 +19,7 @@ import { usePathname } from 'next/navigation';
 
 export function CustomerManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
+  const { samityTerm } = settings.microfinanceSettings;
   const pathname = usePathname();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -103,7 +105,7 @@ export function CustomerManagementClient() {
                   <p className="text-sm text-muted-foreground">Group: {settings.customerGroups.find(g => g.id === customer.groupId)?.name}</p>
               )}
               {settings.samities.find(s => s.id === customer.samityId) && (
-                  <p className="text-sm text-muted-foreground">Samity: {settings.samities.find(s => s.id === customer.samityId)?.name}</p>
+                  <p className="text-sm text-muted-foreground">{samityTerm}: {settings.samities.find(s => s.id === customer.samityId)?.name}</p>
               )}
               {customer.discountType && customer.discountValue && (
                 <div className="mt-2 pt-2 border-t">
@@ -169,9 +171,9 @@ export function CustomerManagementClient() {
                 </div>
                  {isMicrofinance && (
                     <div className="space-y-2">
-                        <Label htmlFor="samityId">Samity</Label>
+                        <Label htmlFor="samityId">{samityTerm}</Label>
                         <Select name="samityId" defaultValue={editingCustomer?.samityId}>
-                        <SelectTrigger><SelectValue placeholder="Select a samity" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">None</SelectItem>
                             {settings.samities.map(samity => (

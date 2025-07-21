@@ -4,9 +4,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -64,6 +65,9 @@ const defaultSettings: AppSettings = {
     openingDate: new Date().toISOString().split('T')[0],
     cashLedgerIds: [],
     bankLedgerIds: [],
+  },
+  microfinanceSettings: {
+    samityTerm: 'Samity',
   },
   floors: [],
   tables: [],
@@ -146,6 +150,7 @@ interface SettingsContextType {
   setServiceJobSettings: (settings: ServiceJobSettings) => void;
   setChallanSettings: (settings: ChallanSettings) => void;
   setAccountingSettings: (settings: AccountingSettings) => void;
+  setMicrofinanceSettings: (settings: MicrofinanceSettings) => void;
   // Table Management
   addFloor: (floor: Omit<Floor, 'id'>) => Floor;
   updateFloor: (floor: Floor) => void;
@@ -329,6 +334,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...storedSettings.serviceJobSettings },
         challanSettings: { ...defaultSettings.challanSettings, ...storedSettings.challanSettings },
         accountingSettings: { ...defaultSettings.accountingSettings, ...storedSettings.accountingSettings },
+        microfinanceSettings: { ...defaultSettings.microfinanceSettings, ...storedSettings.microfinanceSettings },
         floors: storedSettings.floors || defaultSettings.floors,
         tables: storedSettings.tables || defaultSettings.tables,
         reservations: storedSettings.reservations || defaultSettings.reservations,
@@ -410,6 +416,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   const setServiceJobSettings = (serviceJobSettings: ServiceJobSettings) => setSettings(prev => ({ ...prev, serviceJobSettings }));
   const setChallanSettings = (challanSettings: ChallanSettings) => setSettings(prev => ({ ...prev, challanSettings }));
   const setAccountingSettings = (accountingSettings: AccountingSettings) => setSettings(prev => ({...prev, accountingSettings}));
+  const setMicrofinanceSettings = (microfinanceSettings: MicrofinanceSettings) => setSettings(prev => ({...prev, microfinanceSettings}));
   
   // Table Management
   const addFloor = (floor: Omit<Floor, 'id'>): Floor => {
@@ -948,7 +955,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
 
   const contextValue = {
-    settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, setAccountingSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
+    settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, setAccountingSettings, setMicrofinanceSettings, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
     addInvProductCategory, updateInvProductCategory, deleteInvProductCategory, addBrand, updateBrand, deleteBrand, addModel, updateModel, deleteModel,
     addInvProduct, updateInvProduct, deleteInvProduct,
     addAttribute, updateAttribute, deleteAttribute,

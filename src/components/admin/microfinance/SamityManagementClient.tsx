@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -13,6 +14,9 @@ import type { Samity } from '@/types';
 
 export function SamityManagementClient() {
   const { settings, addSamity, updateSamity, deleteSamity, isLoaded } = useSettings();
+  const { samities, microfinanceSettings } = settings;
+  const { samityTerm } = microfinanceSettings;
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSamity, setEditingSamity] = useState<Samity | null>(null);
 
@@ -41,7 +45,7 @@ export function SamityManagementClient() {
   };
 
   if (!isLoaded) {
-    return <div>Loading Samities...</div>;
+    return <div>Loading {samityTerm}s...</div>;
   }
 
   return (
@@ -49,16 +53,16 @@ export function SamityManagementClient() {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>All Samities</CardTitle>
+            <CardTitle>All {samityTerm}s</CardTitle>
             <Button onClick={() => handleOpenDialog(null)} size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Samity
+              <PlusCircle className="mr-2 h-4 w-4" /> Add {samityTerm}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="border rounded-md">
-            {settings.samities.length > 0 ? (
-              settings.samities.map(samity => (
+            {samities.length > 0 ? (
+              samities.map(samity => (
                 <div key={samity.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
                   <p className="font-medium">{samity.name}</p>
                   <div className="flex items-center gap-2">
@@ -72,7 +76,7 @@ export function SamityManagementClient() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground text-center p-4">No Samities found. Click "Add Samity" to start.</p>
+              <p className="text-sm text-muted-foreground text-center p-4">No {samityTerm}s found. Click "Add {samityTerm}" to start.</p>
             )}
           </div>
         </CardContent>
@@ -81,18 +85,18 @@ export function SamityManagementClient() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingSamity ? 'Edit Samity' : 'Add New Samity'}</DialogTitle>
+            <DialogTitle>{editingSamity ? `Edit ${samityTerm}` : `Add New ${samityTerm}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Samity Name</Label>
+                <Label htmlFor="name">{samityTerm} Name</Label>
                 <Input id="name" name="name" defaultValue={editingSamity?.name} required />
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-              <Button type="submit">{editingSamity ? 'Save Changes' : 'Create Samity'}</Button>
+              <Button type="submit">{editingSamity ? 'Save Changes' : `Create ${samityTerm}`}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

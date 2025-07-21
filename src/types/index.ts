@@ -13,6 +13,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -96,6 +97,10 @@ export interface AccountingSettings {
   openingDate: string; // ISO date
   cashLedgerIds?: string[];
   bankLedgerIds?: string[];
+}
+
+export interface MicrofinanceSettings {
+  samityTerm: 'Samity' | 'Group' | 'Center';
 }
 
 export interface MenuCategory {
@@ -507,6 +512,7 @@ export interface AppSettings {
   serviceJobSettings: ServiceJobSettings;
   challanSettings: ChallanSettings;
   accountingSettings: AccountingSettings;
+  microfinanceSettings: MicrofinanceSettings;
   floors: Floor[];
   tables: Table[];
   reservations: Reservation[];
