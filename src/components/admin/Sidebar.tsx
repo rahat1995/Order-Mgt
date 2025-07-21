@@ -1,6 +1,4 @@
 
-
-
 'use client';
 
 import React from 'react';
@@ -48,7 +46,8 @@ import {
   Archive,
   AppWindow,
   Locate,
-  Milestone
+  Milestone,
+  MapPin
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -134,6 +133,7 @@ const moduleLinks = [
         { href: '/admin/modules/fixedAssetManagement/locations', label: 'Asset Locations', icon: Locate },
       ]
     },
+    { key: 'addressManagement', label: 'Address Data', icon: MapPin, href: '/admin/modules/addressManagement' },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 
