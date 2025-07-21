@@ -43,6 +43,7 @@ import {
   List,
   SlidersHorizontal,
   ReceiptText,
+  HandCoins,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -109,6 +110,13 @@ const moduleLinks = [
         { href: '/admin/modules/accounting/vouchers', label: 'Vouchers', icon: ReceiptText },
         { href: '/admin/modules/accounting/types', label: 'Account Types', icon: SlidersHorizontal },
         { href: '/admin/modules/accounting/configuration', label: 'Configuration', icon: Cog },
+      ]
+    },
+    { key: 'microfinance', label: 'Microfinance', icon: HandCoins, href: '/admin/modules/microfinance',
+      subLinks: [
+        { href: '/admin/modules/microfinance/members', label: 'Members', icon: Users },
+        { href: '/admin/modules/microfinance/loan-products', label: 'Loan Products', icon: Package },
+        { href: '/admin/modules/microfinance/savings-products', label: 'Savings Products', icon: ClipboardList },
       ]
     },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },

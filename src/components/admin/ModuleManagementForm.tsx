@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList, HandCoins } from 'lucide-react';
 
 const modulesData = [
   { key: 'pos', label: 'POS', icon: ShoppingCart, description: 'Menu, order entry, and voucher management.' },
@@ -20,12 +20,13 @@ const modulesData = [
   { key: 'dueSell', label: 'Due Collection', icon: Receipt, description: 'Track and manage outstanding customer payments.' },
   { key: 'serviceJob', label: 'Service Job', icon: Wrench, description: 'Manage service and repair tasks.' },
   { key: 'challanAndBilling', label: 'Challan & Billing', icon: FileText, description: 'Handle delivery challans and invoicing.' },
-  { key: 'productManagement', label: 'Product Management', icon: Package, description: 'Manage products for challans and billing.' },
+  { key: 'productManagement', label: 'Simple Products', icon: Package, description: 'Manage products for challans and billing.' },
   { key: 'inventory', label: 'Inventory', icon: Boxes, description: 'Stock and inventory level management.' },
   { key: 'tableManagement', label: 'Table Management', icon: LayoutGrid, description: 'Manage restaurant tables and seating.' },
   { key: 'costManagement', label: 'Cost Management', icon: DollarSign, description: 'Track bills, suppliers, and expenses.' },
   { key: 'accounting', label: 'Accounting', icon: BookUser, description: 'Manage financial accounts and ledgers.' },
   { key: 'hrManagement', label: 'HR Management', icon: Users, description: 'Manage employees, payroll, and attendance.' },
+  { key: 'microfinance', label: 'Microfinance', icon: HandCoins, description: 'Manage members, loans, and savings.' },
   { key: 'userAccessControl', label: 'User Access Control', icon: ShieldCheck, description: 'Define roles and permissions for users.' },
 ] as const;
 

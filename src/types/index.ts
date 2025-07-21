@@ -7,6 +7,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -60,6 +61,7 @@ export interface ModuleSettings {
   customerLedger: boolean;
   productManagement: boolean;
   pendingBillReport: boolean;
+  microfinance: boolean;
 }
 
 export interface PosSettings {
