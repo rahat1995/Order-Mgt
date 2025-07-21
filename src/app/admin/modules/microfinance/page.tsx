@@ -49,9 +49,9 @@ const microfinanceSubModules = [
    {
     href: '/admin/modules/microfinance/configuration',
     icon: Cog,
-    title: 'Configuration',
+    title: 'Microfin Config',
     description: 'Set up global settings for the microfinance module.',
-    enabled: false,
+    enabled: true,
   },
 ];
 

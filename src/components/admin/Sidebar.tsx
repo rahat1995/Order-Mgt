@@ -117,6 +117,7 @@ const moduleLinks = [
         { href: '/admin/modules/microfinance/members', label: 'Members', icon: Users },
         { href: '/admin/modules/microfinance/loan-products', label: 'Loan Products', icon: Package },
         { href: '/admin/modules/microfinance/savings-products', label: 'Savings Products', icon: ClipboardList },
+        { href: '/admin/modules/microfinance/configuration', label: 'Configuration', icon: Cog },
       ]
     },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
