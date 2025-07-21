@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, Edit, Trash2, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,6 +29,101 @@ const entityConfig: Record<EntityType, { title: string; parent?: EntityType }> =
 
 const ITEMS_PER_PAGE = 20;
 
+const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentId }: { entityType: EntityType, onParentSelect: (parentId: string) => void, defaultParentId?: string }) => {
+    const { settings } = useSettings();
+    const { divisions, districts, upozillas, unions } = settings;
+
+    const [selectedDivision, setSelectedDivision] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedUpozilla, setSelectedUpozilla] = useState('');
+    const [selectedUnion, setSelectedUnion] = useState('');
+
+    useEffect(() => {
+        if(defaultParentId && entityType) {
+            // Pre-fill selectors if editing
+            if (entityType === 'Village') {
+                const parentUnion = unions.find(u => u.id === defaultParentId);
+                const parentUpozilla = upozillas.find(u => u.id === parentUnion?.parentId);
+                const parentDistrict = districts.find(d => d.id === parentUpozilla?.parentId);
+                const parentDivision = divisions.find(d => d.id === parentDistrict?.parentId);
+                if (parentDivision) setSelectedDivision(parentDivision.id);
+                if (parentDistrict) setSelectedDistrict(parentDistrict.id);
+                if (parentUpozilla) setSelectedUpozilla(parentUpozilla.id);
+                if (parentUnion) setSelectedUnion(parentUnion.id);
+            }
+            // Add similar logic for other types if needed...
+        }
+    }, [defaultParentId, entityType, divisions, districts, upozillas, unions]);
+
+
+    if (!entityConfig[entityType].parent) return null;
+    
+    const selectors = [];
+
+    if (['District', 'Upozilla', 'Union', 'Village'].includes(entityType)) {
+        selectors.push(
+            <div key="division-selector" className="space-y-2">
+                <Label>Division</Label>
+                <Select value={selectedDivision} onValueChange={v => { setSelectedDivision(v); setSelectedDistrict(''); setSelectedUpozilla(''); setSelectedUnion(''); }}>
+                    <SelectTrigger><SelectValue placeholder="Select Division" /></SelectTrigger>
+                    <SelectContent>{divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+        );
+    }
+
+    if (['Upozilla', 'Union', 'Village'].includes(entityType)) {
+        selectors.push(
+            <div key="district-selector" className="space-y-2">
+                <Label>District</Label>
+                <Select value={selectedDistrict} onValueChange={v => { setSelectedDistrict(v); setSelectedUpozilla(''); setSelectedUnion(''); }} disabled={!selectedDivision}>
+                    <SelectTrigger><SelectValue placeholder="Select District" /></SelectTrigger>
+                    <SelectContent>{districts.filter(d => d.parentId === selectedDivision).map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+        );
+    }
+    
+     if (['Union', 'Village'].includes(entityType)) {
+        selectors.push(
+            <div key="upozilla-selector" className="space-y-2">
+                <Label>Upozilla</Label>
+                <Select value={selectedUpozilla} onValueChange={v => { setSelectedUpozilla(v); setSelectedUnion(''); }} disabled={!selectedDistrict}>
+                    <SelectTrigger><SelectValue placeholder="Select Upozilla" /></SelectTrigger>
+                    <SelectContent>{upozillas.filter(u => u.parentId === selectedDistrict).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+        );
+    }
+
+    if (['Village'].includes(entityType)) {
+        selectors.push(
+            <div key="union-selector" className="space-y-2">
+                <Label>Union</Label>
+                <Select name="parentId" value={selectedUnion} onValueChange={v => { setSelectedUnion(v); onParentSelect(v); }} disabled={!selectedUpozilla}>
+                    <SelectTrigger><SelectValue placeholder="Select Union" /></SelectTrigger>
+                    <SelectContent>{unions.filter(u => u.parentId === selectedUpozilla).map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+        );
+    } else if (entityType === 'Union') {
+         selectors[selectors.length - 1] = React.cloneElement(selectors[selectors.length - 1], {
+            children: React.cloneElement(selectors[selectors.length-1].props.children, { name: 'parentId', onValueChange: (v: string) => { setSelectedUpozilla(v); onParentSelect(v); }})
+        });
+    } else if (entityType === 'Upozilla') {
+         selectors[selectors.length - 1] = React.cloneElement(selectors[selectors.length - 1], {
+            children: React.cloneElement(selectors[selectors.length-1].props.children, { name: 'parentId', onValueChange: (v: string) => { setSelectedDistrict(v); onParentSelect(v); }})
+        });
+    } else if (entityType === 'District') {
+         selectors[selectors.length - 1] = React.cloneElement(selectors[selectors.length - 1], {
+            children: React.cloneElement(selectors[selectors.length-1].props.children, { name: 'parentId', onValueChange: (v: string) => { setSelectedDivision(v); onParentSelect(v); }})
+        });
+    }
+
+    return <div className="space-y-4">{selectors}</div>;
+}
+
+
 function ManagementPanel({ entityType }: { entityType: EntityType }) {
     const { settings, addAddressData, updateAddressData, deleteAddressData, isLoaded } = useSettings();
     const { divisions, districts, upozillas, unions, villages } = settings;
@@ -36,6 +131,7 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
+    const [selectedParentId, setSelectedParentId] = useState('');
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -120,6 +216,11 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
 
     const handleOpenDialog = (entity: Entity | null) => {
         setEditingEntity(entity);
+        if (entity && 'parentId' in entity) {
+            setSelectedParentId(entity.parentId);
+        } else {
+            setSelectedParentId('');
+        }
         setDialogOpen(true);
     };
 
@@ -133,11 +234,9 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
         const formData = new FormData(e.currentTarget);
         const name = formData.get('name') as string;
         const id = formData.get('id') as string;
-        let parentId: string | undefined;
 
         if (config.parent) {
-            parentId = formData.get('parentId') as string;
-            if (!parentId) {
+            if (!selectedParentId) {
                 alert(`Please select a parent ${config.parent}.`);
                 return;
             }
@@ -149,7 +248,7 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
         }
         
         let entityData: any = { name, id: editingEntity ? editingEntity.id : id };
-        if (parentId) entityData.parentId = parentId;
+        if (selectedParentId) entityData.parentId = selectedParentId;
 
         if (editingEntity) {
             updateAddressData(entityType, entityData);
@@ -361,13 +460,12 @@ function ManagementPanel({ entityType }: { entityType: EntityType }) {
                         </div>
                          {config.parent && (
                             <div className="space-y-2">
-                                <Label htmlFor="parentId">Parent {config.parent}</Label>
-                                <Select name="parentId" defaultValue={(editingEntity as any)?.parentId}>
-                                    <SelectTrigger><SelectValue placeholder={`Select a ${config.parent}`} /></SelectTrigger>
-                                    <SelectContent>
-                                        {parentData.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.id})</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <Label>Parent {config.parent}</Label>
+                                <HierarchicalParentSelector 
+                                    entityType={entityType} 
+                                    onParentSelect={setSelectedParentId}
+                                    defaultParentId={(editingEntity as any)?.parentId}
+                                />
                             </div>
                         )}
                     </div>
@@ -398,5 +496,3 @@ export function AddressManagementClient() {
     </Tabs>
   );
 }
-
-    
