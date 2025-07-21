@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -54,8 +55,17 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
                 parentUpozilla = upozillas.find(u => u.id === parentUnion?.parentId);
                 parentDistrict = districts.find(d => d.id === parentUpozilla?.parentId);
                 parentDivision = divisions.find(d => d.id === parentDistrict?.parentId);
+            } else if (entityType === 'Union') {
+                parentUpozilla = upozillas.find(u => u.id === defaultParentId);
+                parentDistrict = districts.find(d => d.id === parentUpozilla?.parentId);
+                parentDivision = divisions.find(d => d.id === parentDistrict?.parentId);
+            } else if (entityType === 'Upozilla') {
+                parentDistrict = districts.find(d => d.id === defaultParentId);
+                parentDivision = divisions.find(d => d.id === parentDistrict?.parentId);
+            } else if (entityType === 'District') {
+                 parentDivision = divisions.find(d => d.id === defaultParentId);
             }
-            // Simplified logic for other types can be added if needed
+
 
             if (parentDivision) setSelectedDivision(parentDivision.id);
             if (parentDistrict) setSelectedDistrict(parentDistrict.id);
@@ -151,7 +161,6 @@ const HierarchicalParentSelector = ({ entityType, onParentSelect, defaultParentI
 
     return <div className="space-y-4">{selectors}</div>;
 }
-
 
 function ManagementPanel({ entityType }: { entityType: EntityType }) {
     const { settings, addAddressData, updateAddressData, deleteAddressData, isLoaded } = useSettings();
