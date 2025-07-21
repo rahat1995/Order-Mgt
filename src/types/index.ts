@@ -15,6 +15,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -533,6 +534,7 @@ export interface Village {
 export interface WorkingArea {
     id: string;
     name: string;
+    parentId: string; // Village ID
 }
 
 export interface AppSettings {
