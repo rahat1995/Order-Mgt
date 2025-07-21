@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -13,11 +14,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import type { Customer } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePathname } from 'next/navigation';
 
 export function CustomerManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
+  const pathname = usePathname();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  
+  const isMicrofinance = pathname.includes('/microfinance');
 
   const handleOpenDialog = (customer: Customer | null) => {
     setEditingCustomer(customer);
@@ -162,18 +167,20 @@ export function CustomerManagementClient() {
                       </SelectContent>
                     </Select>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="samityId">Samity (for Microfinance)</Label>
-                    <Select name="samityId" defaultValue={editingCustomer?.samityId}>
-                      <SelectTrigger><SelectValue placeholder="Select a samity" /></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {settings.samities.map(samity => (
-                              <SelectItem key={samity.id} value={samity.id}>{samity.name}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                </div>
+                 {isMicrofinance && (
+                    <div className="space-y-2">
+                        <Label htmlFor="samityId">Samity</Label>
+                        <Select name="samityId" defaultValue={editingCustomer?.samityId}>
+                        <SelectTrigger><SelectValue placeholder="Select a samity" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {settings.samities.map(samity => (
+                                <SelectItem key={samity.id} value={samity.id}>{samity.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                 )}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="email">Email (Optional)</Label>
                   <Input id="email" name="email" type="email" defaultValue={editingCustomer?.email} />
