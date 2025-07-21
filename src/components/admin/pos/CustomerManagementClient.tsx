@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -34,6 +35,8 @@ export function CustomerManagementClient() {
     const discountType = formData.get('discountType') as 'fixed' | 'percentage' | 'none';
     const discountValue = parseFloat(formData.get('discountValue') as string);
     const discountValidity = formData.get('discountValidity') as string;
+    const groupId = formData.get('groupId') as string;
+    const samityId = formData.get('samityId') as string;
 
     const customerData: Partial<Customer> & { name: string, mobile: string } = {
         name: formData.get('name') as string,
@@ -41,7 +44,8 @@ export function CustomerManagementClient() {
         email: formData.get('email') as string,
         address: formData.get('address') as string,
         center: formData.get('center') as string,
-        groupId: formData.get('groupId') as string,
+        groupId: groupId === 'none' ? undefined : groupId,
+        samityId: samityId === 'none' ? undefined : samityId,
         discountValidity: discountValidity || undefined,
     };
 
@@ -92,6 +96,9 @@ export function CustomerManagementClient() {
               <p className="text-sm text-muted-foreground">{customer.address}</p>
               {settings.customerGroups.find(g => g.id === customer.groupId) && (
                   <p className="text-sm text-muted-foreground">Group: {settings.customerGroups.find(g => g.id === customer.groupId)?.name}</p>
+              )}
+              {settings.samities.find(s => s.id === customer.samityId) && (
+                  <p className="text-sm text-muted-foreground">Samity: {settings.samities.find(s => s.id === customer.samityId)?.name}</p>
               )}
               {customer.discountType && customer.discountValue && (
                 <div className="mt-2 pt-2 border-t">
@@ -144,13 +151,25 @@ export function CustomerManagementClient() {
                   <Input id="center" name="center" defaultValue={editingCustomer?.center} />
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="groupId">Group (Optional)</Label>
+                    <Label htmlFor="groupId">Customer Group (Optional)</Label>
                     <Select name="groupId" defaultValue={editingCustomer?.groupId}>
                       <SelectTrigger><SelectValue placeholder="Select a group" /></SelectTrigger>
                       <SelectContent>
                           <SelectItem value="none">None</SelectItem>
                           {settings.customerGroups.map(group => (
                               <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="samityId">Samity (for Microfinance)</Label>
+                    <Select name="samityId" defaultValue={editingCustomer?.samityId}>
+                      <SelectTrigger><SelectValue placeholder="Select a samity" /></SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {settings.samities.map(samity => (
+                              <SelectItem key={samity.id} value={samity.id}>{samity.name}</SelectItem>
                           ))}
                       </SelectContent>
                     </Select>

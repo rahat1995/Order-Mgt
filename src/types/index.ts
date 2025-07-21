@@ -12,6 +12,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Floor {
@@ -146,6 +147,11 @@ export interface CustomerGroup {
   name: string;
 }
 
+export interface Samity {
+    id: string;
+    name: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -154,6 +160,7 @@ export interface Customer {
   address?: string;
   center?: string;
   groupId?: string;
+  samityId?: string; // For microfinance members
   discountType?: 'fixed' | 'percentage';
   discountValue?: number;
   discountValidity?: string; // ISO Date string
@@ -510,6 +517,7 @@ export interface AppSettings {
   customerGroups: CustomerGroup[];
   vouchers: Voucher[];
   collections: Collection[];
+  samities: Samity[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];

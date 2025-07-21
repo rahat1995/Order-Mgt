@@ -3,9 +3,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -72,6 +73,7 @@ const defaultSettings: AppSettings = {
   orders: [],
   customers: [],
   customerGroups: [],
+  samities: [],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -172,6 +174,10 @@ interface SettingsContextType {
   addCustomerGroup: (group: Omit<CustomerGroup, 'id'>) => void;
   updateCustomerGroup: (group: CustomerGroup) => void;
   deleteCustomerGroup: (groupId: string) => void;
+  // Microfinance
+  addSamity: (samity: Omit<Samity, 'id'>) => void;
+  updateSamity: (samity: Samity) => void;
+  deleteSamity: (samityId: string) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -331,6 +337,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         orders: storedSettings.orders || defaultSettings.orders,
         customers: storedSettings.customers || defaultSettings.customers,
         customerGroups: storedSettings.customerGroups || defaultSettings.customerGroups,
+        samities: storedSettings.samities || defaultSettings.samities,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
@@ -821,6 +828,15 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }
 
+  // Microfinance
+  const addSamity = (samity: Omit<Samity, 'id'>) => setSettings(prev => ({ ...prev, samities: [...prev.samities, { ...samity, id: uuidv4() }] }));
+  const updateSamity = (samity: Samity) => setSettings(prev => ({ ...prev, samities: prev.samities.map(s => s.id === samity.id ? samity : s)}));
+  const deleteSamity = (samityId: string) => {
+    if (confirm('Are you sure? Members in this Samity will no longer be grouped.')) {
+        setSettings(prev => ({...prev, samities: prev.samities.filter(s => s.id !== samityId) }));
+    }
+  };
+
 
   // Accounting
   const addAccountingVoucher = (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>): AccountingVoucher => {
@@ -942,6 +958,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
     addFixedAsset, addAssetLocation, updateAssetLocation, deleteAssetLocation,
     addAssetCategory, updateAssetCategory, deleteAssetCategory,
+    addSamity, updateSamity, deleteSamity,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
