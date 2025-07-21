@@ -9,7 +9,7 @@ const fixedAssetSubModules = [
     icon: List,
     title: 'Asset Registration',
     description: 'Add new fixed assets to the system.',
-    enabled: false,
+    enabled: true,
   },
   {
     href: '/admin/modules/fixedAssetManagement/asset-list',

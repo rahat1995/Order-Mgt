@@ -1,8 +1,9 @@
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -97,6 +98,8 @@ const defaultSettings: AppSettings = {
   // HR Management
   designations: [],
   employees: [],
+  // Fixed Asset Management
+  fixedAssets: [],
   // Accounting
   accountTypes: [],
   accountGroups: [],
@@ -235,6 +238,8 @@ interface SettingsContextType {
   addEmployee: (employee: Omit<Employee, 'id'>) => void;
   updateEmployee: (employee: Employee) => void;
   deleteEmployee: (employeeId: string) => void;
+  // Fixed Asset Management
+  addFixedAsset: (asset: Omit<FixedAsset, 'id'>) => FixedAsset;
   // Accounting
   addAccountingVoucher: (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>) => AccountingVoucher;
   deleteAccountingVoucher: (voucherId: string) => void;
@@ -340,6 +345,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         supplierPayments: storedSettings.supplierPayments || defaultSettings.supplierPayments,
         designations: storedSettings.designations || defaultSettings.designations,
         employees: storedSettings.employees || defaultSettings.employees,
+        fixedAssets: storedSettings.fixedAssets || defaultSettings.fixedAssets,
         accountTypes: storedSettings.accountTypes || defaultSettings.accountTypes,
         accountGroups: storedSettings.accountGroups || defaultSettings.accountGroups,
         accountSubGroups: storedSettings.accountSubGroups || defaultSettings.accountSubGroups,
@@ -772,6 +778,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
           setSettings(prev => ({ ...prev, employees: prev.employees.filter(e => e.id !== employeeId) }));
       }
   };
+  
+  // Fixed Asset Management
+  const addFixedAsset = (asset: Omit<FixedAsset, 'id'>): FixedAsset => {
+      const newAsset = { ...asset, id: uuidv4() };
+      setSettings(prev => ({ ...prev, fixedAssets: [...prev.fixedAssets, newAsset] }));
+      return newAsset;
+  }
 
   // Accounting
   const addAccountingVoucher = (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>): AccountingVoucher => {
@@ -891,6 +904,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSupplier, updateSupplier, deleteSupplier,
     addExpenseCategory, updateExpenseCategory, deleteExpenseCategory, addRawMaterial, updateRawMaterial, deleteRawMaterial, addSupplierBill, addSupplierPayment, addBulkSupplierPayments,
     addDesignation, updateDesignation, deleteDesignation, addEmployee, updateEmployee, deleteEmployee,
+    addFixedAsset,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
