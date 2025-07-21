@@ -11,11 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { FixedAsset } from '@/types';
 
 export function AssetRegistrationClient() {
-  const { addFixedAsset } = useSettings();
+  const { settings, addFixedAsset } = useSettings();
+  const { assetLocations, employees } = settings;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const locationId = formData.get('locationId') as string;
+    const employeeId = formData.get('employeeId') as string;
+    
     const assetData: Omit<FixedAsset, 'id'> = {
       name: formData.get('name') as string,
       purchaseDate: formData.get('purchaseDate') as string,
@@ -23,6 +27,8 @@ export function AssetRegistrationClient() {
       depreciationMethod: formData.get('depreciationMethod') as 'Straight-Line' | 'Reducing Balance',
       usefulLife: parseFloat(formData.get('usefulLife') as string),
       salvageValue: parseFloat(formData.get('salvageValue') as string),
+      locationId: locationId === 'none' ? undefined : locationId,
+      employeeId: employeeId === 'none' ? undefined : employeeId,
     };
 
     if (
@@ -85,6 +91,34 @@ export function AssetRegistrationClient() {
             <div className="space-y-2">
                 <Label htmlFor="salvageValue">Salvage Value</Label>
                 <Input id="salvageValue" name="salvageValue" type="number" step="0.01" required placeholder="0.00" />
+            </div>
+          </div>
+          <div className="border-t pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label htmlFor="locationId">Issue to Location (Branch/Office)</Label>
+                    <Select name="locationId">
+                        <SelectTrigger><SelectValue placeholder="Select a location"/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {assetLocations.map(loc => (
+                                <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="employeeId">Issue to Staff</Label>
+                    <Select name="employeeId">
+                        <SelectTrigger><SelectValue placeholder="Select an employee"/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {employees.map(emp => (
+                                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
           </div>
         </CardContent>

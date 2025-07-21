@@ -16,7 +16,7 @@ const fixedAssetSubModules = [
     icon: AppWindow,
     title: 'Asset List',
     description: 'View and manage all registered assets.',
-    enabled: false,
+    enabled: true,
   },
   {
     href: '/admin/modules/fixedAssetManagement/depreciation',
@@ -37,7 +37,7 @@ const fixedAssetSubModules = [
     icon: Locate,
     title: 'Asset Locations',
     description: 'Manage physical locations of assets.',
-    enabled: false,
+    enabled: true,
   },
   {
     href: '/admin/modules/fixedAssetManagement/asset-transfer',
