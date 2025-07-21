@@ -45,6 +45,9 @@ import {
   ReceiptText,
   HandCoins,
   Archive,
+  AppWindow,
+  Locate,
+  Milestone
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -121,7 +124,14 @@ const moduleLinks = [
         { href: '/admin/modules/microfinance/configuration', label: 'Configuration', icon: Cog },
       ]
     },
-    { key: 'fixedAssetManagement', label: 'Fixed Assets', icon: Archive, href: '/admin/modules/fixedAssetManagement' },
+    { key: 'fixedAssetManagement', label: 'Fixed Assets', icon: Archive, href: '/admin/modules/fixedAssetManagement',
+      subLinks: [
+        { href: '/admin/modules/fixedAssetManagement/asset-registration', label: 'Asset Registration', icon: List },
+        { href: '/admin/modules/fixedAssetManagement/asset-list', label: 'Asset List', icon: AppWindow },
+        { href: '/admin/modules/fixedAssetManagement/asset-categories', label: 'Asset Categories', icon: Milestone },
+        { href: '/admin/modules/fixedAssetManagement/locations', label: 'Asset Locations', icon: Locate },
+      ]
+    },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 
