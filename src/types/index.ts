@@ -1,5 +1,6 @@
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -555,6 +556,7 @@ export interface RepaymentSchedule {
   frequency: RepaymentFrequency;
   installments: number[]; // e.g., [110, 220, 330]
   gracePeriodDays: number;
+  interestRateIndex?: { [installment: number]: number };
 }
 
 export interface LoanProduct {

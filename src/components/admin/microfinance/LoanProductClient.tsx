@@ -39,12 +39,16 @@ const RepaymentScheduleForm = ({
     schedule, 
     onInstallmentAdd, 
     onInstallmentRemove, 
-    onGracePeriodChange 
+    onGracePeriodChange,
+    onInterestIndexChange,
+    isFlatRate
 }: { 
     schedule: RepaymentSchedule, 
     onInstallmentAdd: (freq: RepaymentFrequency, value: number) => void,
     onInstallmentRemove: (freq: RepaymentFrequency, value: number) => void,
     onGracePeriodChange: (freq: RepaymentFrequency, value: number) => void,
+    onInterestIndexChange: (freq: RepaymentFrequency, installment: number, value: number) => void,
+    isFlatRate: boolean;
 }) => {
     const [installmentInput, setInstallmentInput] = useState('');
     
@@ -84,12 +88,30 @@ const RepaymentScheduleForm = ({
             </div>
              <div className="flex flex-wrap gap-2">
                 {schedule.installments.map(inst => (
-                    <Badge key={inst} variant="secondary" className="flex items-center gap-1">
-                        {inst}
-                        <button type="button" onClick={() => onInstallmentRemove(schedule.frequency, inst)}>
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
+                     <div key={inst} className="flex-1 min-w-[200px]">
+                        <Card className="p-2">
+                             <div className="flex justify-between items-center">
+                                <Badge variant="secondary" className="flex items-center gap-1">
+                                    {inst} Installments
+                                </Badge>
+                                 <button type="button" onClick={() => onInstallmentRemove(schedule.frequency, inst)}>
+                                    <X className="h-3 w-3 text-muted-foreground" />
+                                </button>
+                             </div>
+                            {isFlatRate && (
+                                <div className="mt-2 space-y-1">
+                                    <Label className="text-xs">Interest Rate Index</Label>
+                                    <Input 
+                                        type="number" 
+                                        step="0.01" 
+                                        className="h-8"
+                                        defaultValue={schedule.interestRateIndex?.[inst]}
+                                        onChange={(e) => onInterestIndexChange(schedule.frequency, inst, parseFloat(e.target.value))}
+                                    />
+                                </div>
+                            )}
+                        </Card>
+                    </div>
                 ))}
             </div>
         </div>
@@ -103,13 +125,16 @@ export function LoanProductClient() {
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
 
   const [repaymentSchedules, setRepaymentSchedules] = useState<Partial<Record<RepaymentFrequency, RepaymentSchedule>>>({});
+  const [interestCalcMethod, setInterestCalcMethod] = useState<InterestCalculationMethod>('flat');
 
   const handleOpenDialog = (product: LoanProduct | null) => {
     setEditingProduct(product);
     if (product) {
       setRepaymentSchedules(product.repaymentSchedules || {});
+      setInterestCalcMethod(product.interestCalculationMethod || 'flat');
     } else {
       setRepaymentSchedules({});
+      setInterestCalcMethod('flat');
     }
     setDialogOpen(true);
   };
@@ -124,7 +149,7 @@ export function LoanProductClient() {
           const newSchedules = { ...prev };
           if (checked) {
               if (!newSchedules[frequency]) {
-                  newSchedules[frequency] = { frequency, installments: [], gracePeriodDays: 0 };
+                  newSchedules[frequency] = { frequency, installments: [], gracePeriodDays: 0, interestRateIndex: {} };
               }
           } else {
               delete newSchedules[frequency];
@@ -150,9 +175,12 @@ export function LoanProductClient() {
       setRepaymentSchedules(prev => {
           const schedule = prev[frequency];
           if (schedule) {
+              const newInterestIndex = {...schedule.interestRateIndex};
+              delete newInterestIndex[value];
+
               return {
                   ...prev,
-                  [frequency]: { ...schedule, installments: schedule.installments.filter(i => i !== value) }
+                  [frequency]: { ...schedule, installments: schedule.installments.filter(i => i !== value), interestRateIndex: newInterestIndex }
               };
           }
           return prev;
@@ -168,6 +196,25 @@ export function LoanProductClient() {
           return prev;
       });
   };
+  
+  const handleInterestIndexChange = (frequency: RepaymentFrequency, installment: number, value: number) => {
+      setRepaymentSchedules(prev => {
+        const schedule = prev[frequency];
+        if (schedule) {
+            const newInterestIndex = {...schedule.interestRateIndex};
+            if (!isNaN(value)) {
+                newInterestIndex[installment] = value;
+            } else {
+                delete newInterestIndex[installment];
+            }
+            return {
+                ...prev,
+                [frequency]: { ...schedule, interestRateIndex: newInterestIndex }
+            };
+        }
+        return prev;
+      });
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -269,7 +316,7 @@ export function LoanProductClient() {
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-            <ScrollArea className="flex-grow pr-6">
+            <ScrollArea className="flex-grow pr-6 -mr-6">
               <div className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
@@ -316,7 +363,16 @@ export function LoanProductClient() {
                     <h3 className="font-semibold text-lg">Interest</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
-                        <div className="space-y-2"><Label htmlFor="interestCalculationMethod">Interest Calculation</Label><Select name="interestCalculationMethod" defaultValue={editingProduct?.interestCalculationMethod || 'flat'}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="flat">Flat</SelectItem><SelectItem value="reducing-balance">Reducing Balance</SelectItem></SelectContent></Select></div>
+                        <div className="space-y-2">
+                            <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
+                            <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="flat">Flat</SelectItem>
+                                    <SelectItem value="reducing-balance">Reducing Balance</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
@@ -340,6 +396,8 @@ export function LoanProductClient() {
                                             onInstallmentAdd={handleInstallmentAdd}
                                             onInstallmentRemove={handleInstallmentRemove}
                                             onGracePeriodChange={handleGracePeriodChange}
+                                            onInterestIndexChange={handleInterestIndexChange}
+                                            isFlatRate={interestCalcMethod === 'flat'}
                                         />
                                     </div>
                                 )}
