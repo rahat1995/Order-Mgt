@@ -258,12 +258,12 @@ export function LoanProductClient() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <ScrollArea className="max-h-[70vh] p-4">
+          <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
+            <ScrollArea className="flex-grow pr-6 -mr-6">
               <div className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
@@ -332,7 +332,7 @@ export function LoanProductClient() {
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="mt-4 pt-4 border-t">
+            <DialogFooter className="mt-4 pt-4 border-t flex-shrink-0">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
             </DialogFooter>
