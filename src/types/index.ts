@@ -1,6 +1,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -96,6 +97,7 @@ export interface AccountingSettings {
 
 export interface MicrofinanceSettings {
   samityTerm: 'Samity' | 'Group' | 'Center';
+  primarySavingsProductId?: string;
 }
 
 export interface MenuCategory {
