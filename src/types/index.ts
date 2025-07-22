@@ -3,6 +3,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -96,9 +97,20 @@ export interface AccountingSettings {
   bankLedgerIds?: string[];
 }
 
+export interface MemberMandatoryFields {
+    dob?: boolean;
+    fatherName?: boolean;
+    motherName?: boolean;
+    spouseName?: boolean;
+    nidOrBirthCert?: boolean;
+    presentAddress?: boolean;
+    permanentAddress?: boolean;
+}
+
 export interface MicrofinanceSettings {
   samityTerm: 'Samity' | 'Group' | 'Center';
   primarySavingsProductId?: string;
+  memberMandatoryFields?: MemberMandatoryFields;
 }
 
 export interface MenuCategory {

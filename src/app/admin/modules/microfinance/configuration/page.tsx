@@ -3,12 +3,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
-import type { MicrofinanceSettings } from '@/types';
+import type { MicrofinanceSettings, MemberMandatoryFields } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Cog } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+
+
+const mandatoryFieldOptions: { key: keyof MemberMandatoryFields, label: string }[] = [
+    { key: 'dob', label: 'Date of Birth' },
+    { key: 'fatherName', label: "Father's Name" },
+    { key: 'motherName', label: "Mother's Name" },
+    { key: 'spouseName', label: "Spouse's Name" },
+    { key: 'nidOrBirthCert', label: 'NID / Birth Certificate' },
+    { key: 'presentAddress', label: 'Present Address' },
+    { key: 'permanentAddress', label: 'Permanent Address' },
+];
 
 function MicrofinanceConfigurationForm() {
   const { settings, setMicrofinanceSettings, isLoaded } = useSettings();
@@ -24,6 +36,16 @@ function MicrofinanceConfigurationForm() {
 
   const handleSelectChange = (field: keyof MicrofinanceSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMandatoryFieldChange = (field: keyof MemberMandatoryFields, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      memberMandatoryFields: {
+        ...prev.memberMandatoryFields,
+        [field]: checked,
+      },
+    }));
   };
 
   const handleSave = () => {
@@ -89,6 +111,33 @@ function MicrofinanceConfigurationForm() {
                 </div>
             </CardContent>
         </Card>
+
+         <Card>
+            <CardHeader>
+                <CardTitle>Mandatory Fields Configuration</CardTitle>
+                <CardDescription>
+                   Set which fields are required when creating a new member.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <p className="font-semibold text-sm">Always Mandatory: <span className="text-muted-foreground">Member Name, Samity, Admission Date, Mobile Number.</span></p>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    {mandatoryFieldOptions.map(({ key, label }) => (
+                        <div key={key} className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+                           <Label htmlFor={key} className="font-normal">{label}</Label>
+                           <Switch 
+                                id={key} 
+                                checked={formData.memberMandatoryFields?.[key] || false}
+                                onCheckedChange={(checked) => handleMandatoryFieldChange(key, checked)}
+                            />
+                        </div>
+                    ))}
+                 </div>
+            </CardContent>
+        </Card>
+
         <div className="flex justify-end">
             <Button onClick={handleSave}>Save All Settings</Button>
         </div>

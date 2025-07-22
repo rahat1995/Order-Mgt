@@ -15,9 +15,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -79,6 +80,15 @@ const defaultSettings: AppSettings = {
   },
   microfinanceSettings: {
     samityTerm: 'Samity',
+    memberMandatoryFields: {
+        dob: false,
+        fatherName: false,
+        motherName: false,
+        spouseName: false,
+        nidOrBirthCert: false,
+        presentAddress: false,
+        permanentAddress: false,
+    }
   },
   branches: [
     { id: 'default-ho', name: 'Head Office', code: 'HO', startDate: new Date().toISOString().split('T')[0] },
@@ -378,7 +388,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         serviceJobSettings: { ...defaultSettings.serviceJobSettings, ...storedSettings.serviceJobSettings },
         challanSettings: { ...defaultSettings.challanSettings, ...storedSettings.challanSettings },
         accountingSettings: { ...defaultSettings.accountingSettings, ...storedSettings.accountingSettings },
-        microfinanceSettings: { ...defaultSettings.microfinanceSettings, ...storedSettings.microfinanceSettings },
+        microfinanceSettings: { 
+            ...defaultSettings.microfinanceSettings, 
+            ...storedSettings.microfinanceSettings,
+            memberMandatoryFields: {
+                ...defaultSettings.microfinanceSettings.memberMandatoryFields,
+                ...storedSettings.microfinanceSettings?.memberMandatoryFields,
+            },
+        },
         branches: storedSettings.branches || defaultSettings.branches,
         floors: storedSettings.floors || defaultSettings.floors,
         tables: storedSettings.tables || defaultSettings.tables,

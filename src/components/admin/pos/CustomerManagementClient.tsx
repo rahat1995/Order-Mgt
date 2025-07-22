@@ -4,9 +4,10 @@
 
 
 
+
 'use client';
 
-import React, from 'react';
+import React, { useState } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import type { Customer } from '@/types';
+import type { Customer, MemberMandatoryFields } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePathname } from 'next/navigation';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,10 +30,17 @@ const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, 
     </div>
 );
 
+const RequiredLabel = ({ label, isRequired }: { label: string; isRequired: boolean }) => (
+    <Label htmlFor={label.toLowerCase().replace(/ /g, '-')}>
+        {label} {isRequired && <span className="text-destructive">*</span>}
+    </Label>
+);
+
 
 export function CustomerManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
-  const { samityTerm, samities, branches } = settings;
+  const { samityTerm, samities, branches, microfinanceSettings } = settings;
+  const { memberMandatoryFields } = microfinanceSettings;
   const pathname = usePathname();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -174,7 +182,7 @@ export function CustomerManagementClient() {
                     <TabsContent value="personal" className="pt-4 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="samityId">{samityTerm}</Label>
+                                <RequiredLabel label={samityTerm} isRequired={isMicrofinance} />
                                 <Select name="samityId" defaultValue={editingCustomer?.samityId} required={isMicrofinance}>
                                 <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
                                 <SelectContent>
@@ -190,36 +198,36 @@ export function CustomerManagementClient() {
                                 <Input value={editingCustomer?.code || "Auto-generated"} readOnly disabled/>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
+                                <RequiredLabel label="Full Name" isRequired={true} />
                                 <Input id="name" name="name" defaultValue={editingCustomer?.name} required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="fatherName">Father's Name</Label>
-                                <Input id="fatherName" name="fatherName" defaultValue={editingCustomer?.fatherName} />
+                                <RequiredLabel label="Father's Name" isRequired={!!memberMandatoryFields?.fatherName} />
+                                <Input id="fatherName" name="fatherName" defaultValue={editingCustomer?.fatherName} required={!!memberMandatoryFields?.fatherName} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="motherName">Mother's Name</Label>
-                                <Input id="motherName" name="motherName" defaultValue={editingCustomer?.motherName} />
+                                <RequiredLabel label="Mother's Name" isRequired={!!memberMandatoryFields?.motherName} />
+                                <Input id="motherName" name="motherName" defaultValue={editingCustomer?.motherName} required={!!memberMandatoryFields?.motherName} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="spouseName">Spouse's Name</Label>
-                                <Input id="spouseName" name="spouseName" defaultValue={editingCustomer?.spouseName} />
+                                <RequiredLabel label="Spouse's Name" isRequired={!!memberMandatoryFields?.spouseName} />
+                                <Input id="spouseName" name="spouseName" defaultValue={editingCustomer?.spouseName} required={!!memberMandatoryFields?.spouseName} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dob">Date of Birth</Label>
-                                <Input id="dob" name="dob" type="date" defaultValue={editingCustomer?.dob} />
+                                <RequiredLabel label="Date of Birth" isRequired={!!memberMandatoryFields?.dob} />
+                                <Input id="dob" name="dob" type="date" defaultValue={editingCustomer?.dob} required={!!memberMandatoryFields?.dob} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="admissionDate">Admission Date</Label>
-                                <Input id="admissionDate" name="admissionDate" type="date" defaultValue={editingCustomer?.admissionDate || new Date().toISOString().split('T')[0]} />
+                                <RequiredLabel label="Admission Date" isRequired={true} />
+                                <Input id="admissionDate" name="admissionDate" type="date" defaultValue={editingCustomer?.admissionDate || new Date().toISOString().split('T')[0]} required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="mobile">Mobile Number</Label>
+                                <RequiredLabel label="Mobile Number" isRequired={true} />
                                 <Input id="mobile" name="mobile" defaultValue={editingCustomer?.mobile} required />
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="nidOrBirthCert">NID / Birth Certificate No.</Label>
-                                <Input id="nidOrBirthCert" name="nidOrBirthCert" defaultValue={editingCustomer?.nidOrBirthCert} />
+                                <RequiredLabel label="NID / Birth Certificate No." isRequired={!!memberMandatoryFields?.nidOrBirthCert} />
+                                <Input id="nidOrBirthCert" name="nidOrBirthCert" defaultValue={editingCustomer?.nidOrBirthCert} required={!!memberMandatoryFields?.nidOrBirthCert} />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="email">Email (Optional)</Label>
@@ -230,12 +238,12 @@ export function CustomerManagementClient() {
                     <TabsContent value="address" className="pt-4 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div className="space-y-2">
-                                <Label htmlFor="presentAddress">Present Address</Label>
-                                <Textarea id="presentAddress" name="presentAddress" defaultValue={editingCustomer?.presentAddress} />
+                                <RequiredLabel label="Present Address" isRequired={!!memberMandatoryFields?.presentAddress} />
+                                <Textarea id="presentAddress" name="presentAddress" defaultValue={editingCustomer?.presentAddress} required={!!memberMandatoryFields?.presentAddress} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="permanentAddress">Permanent Address</Label>
-                                <Textarea id="permanentAddress" name="permanentAddress" defaultValue={editingCustomer?.permanentAddress} />
+                                <RequiredLabel label="Permanent Address" isRequired={!!memberMandatoryFields?.permanentAddress} />
+                                <Textarea id="permanentAddress" name="permanentAddress" defaultValue={editingCustomer?.permanentAddress} required={!!memberMandatoryFields?.permanentAddress}/>
                             </div>
                         </div>
                     </TabsContent>
