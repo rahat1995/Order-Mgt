@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -8,15 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency, OtsPayoutFrequency, OtsProvisionType } from '@/types';
+import { PlusCircle, Edit, Trash2, XCircle } from 'lucide-react';
+import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency, OtsPayoutFrequency, OtsProvisionType, FdrPayoutRule, FdrMaturityPayout } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { v4 as uuidv4 } from 'uuid';
 
 const interestFrequencies: SavingsInterestFrequency[] = ['daily', 'weekly', 'monthly', 'half-yearly', 'yearly'];
 const dpsPaymentFrequencies: DpsPaymentFrequency[] = ['daily', 'weekly', 'monthly'];
 const interestCalcMethods: SavingsInterestCalculationMethod[] = ['opening-closing-average', 'closing-balance'];
 const otsPayoutFrequencies: OtsPayoutFrequency[] = ['monthly', 'quarterly', 'half-yearly', 'yearly'];
 const otsProvisionTypes: OtsProvisionType[] = ['end_of_month', 'on_opening_anniversary'];
+const fdrMaturityPayoutOptions: FdrMaturityPayout[] = ['cash', 'transfer_to_savings'];
 
 
 export function SavingsProductClient() {
@@ -27,13 +30,19 @@ export function SavingsProductClient() {
 
   // State for the form, including the selected type
   const [selectedProductTypeId, setSelectedProductTypeId] = useState<string>('');
+  
+  // State for FDR rules
+  const [fdrPayoutRules, setFdrPayoutRules] = useState<FdrPayoutRule[]>([]);
+  const [newFdrRule, setNewFdrRule] = useState({ durationInYears: '', totalInterestRate: '' });
 
   const handleOpenDialog = (product: SavingsProduct | null) => {
     setEditingProduct(product);
     if (product) {
       setSelectedProductTypeId(product.savingsProductTypeId);
+      setFdrPayoutRules(product.fdr_payoutRules || []);
     } else {
       setSelectedProductTypeId('');
+      setFdrPayoutRules([]);
     }
     setDialogOpen(true);
   };
@@ -42,6 +51,21 @@ export function SavingsProductClient() {
     setEditingProduct(null);
     setDialogOpen(false);
   };
+  
+  const handleAddFdrRule = () => {
+      const duration = parseInt(newFdrRule.durationInYears, 10);
+      const rate = parseFloat(newFdrRule.totalInterestRate);
+      if (isNaN(duration) || isNaN(rate) || duration <= 0 || rate < 0) {
+          alert('Please enter valid duration and interest rate.');
+          return;
+      }
+      setFdrPayoutRules(prev => [...prev, { id: uuidv4(), durationInYears: duration, totalInterestRate: rate }]);
+      setNewFdrRule({ durationInYears: '', totalInterestRate: '' });
+  }
+
+  const handleRemoveFdrRule = (id: string) => {
+      setFdrPayoutRules(prev => prev.filter(rule => rule.id !== id));
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,7 +88,10 @@ export function SavingsProductClient() {
       // OTS fields
       ots_interestPayoutFrequency: formData.get('ots_interestPayoutFrequency') as OtsPayoutFrequency,
       ots_provisionType: formData.get('ots_provisionType') as OtsProvisionType,
-      ots_interestCalculationMethod: 'daily_balance', // Hardcoded as per requirement
+      ots_interestCalculationMethod: 'daily_balance',
+      // FDR fields
+      fdr_payoutRules: fdrPayoutRules,
+      fdr_maturityPayout: formData.get('fdr_maturityPayout') as FdrMaturityPayout,
     };
 
     if (!productData.name || !productData.code || !productData.savingsProductTypeId || isNaN(productData.interestRate)) {
@@ -120,6 +147,9 @@ export function SavingsProductClient() {
               {product.savingsProductTypeId === 'ots' && (
                   <p className="text-sm text-muted-foreground">Payout: {product.ots_interestPayoutFrequency}</p>
               )}
+               {product.savingsProductTypeId === 'fdr' && product.fdr_payoutRules && (
+                  <p className="text-sm text-muted-foreground">Rules: {product.fdr_payoutRules.length} term(s)</p>
+              )}
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(product)}>
@@ -142,11 +172,11 @@ export function SavingsProductClient() {
         )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Savings Product' : 'Add New Savings Product'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto pr-2">
             <div className="grid gap-6 py-4">
                <div className="space-y-2">
                 <Label htmlFor="savingsProductTypeId">Savings Type</Label>
@@ -281,12 +311,51 @@ export function SavingsProductClient() {
                      </div>
                   </div>
                 )}
+                
+                {selectedProductTypeId === 'fdr' && (
+                  <div className="p-4 border rounded-md space-y-4 bg-muted/30">
+                    <h4 className="font-semibold text-md">FDR Settings</h4>
+                    <div className="space-y-2">
+                      <Label htmlFor="fdr_maturityPayout">Maturity Payout Method</Label>
+                      <Select name="fdr_maturityPayout" defaultValue={editingProduct?.fdr_maturityPayout || 'transfer_to_savings'}>
+                        <SelectTrigger><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {fdrMaturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Payout Rules</Label>
+                      <div className="space-y-2 border-t pt-2">
+                        {fdrPayoutRules.map(rule => (
+                          <div key={rule.id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded-md">
+                            <p className="flex-1">{rule.durationInYears} Years &rarr; {rule.totalInterestRate}% Interest</p>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveFdrRule(rule.id)}>
+                              <XCircle className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 items-end pt-2">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">Duration (Years)</Label>
+                          <Input type="number" placeholder="e.g., 7" value={newFdrRule.durationInYears} onChange={e => setNewFdrRule({...newFdrRule, durationInYears: e.target.value})} />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">Total Interest Rate (%)</Label>
+                          <Input type="number" placeholder="e.g., 100 for double" value={newFdrRule.totalInterestRate} onChange={e => setNewFdrRule({...newFdrRule, totalInterestRate: e.target.value})} />
+                        </div>
+                        <Button type="button" onClick={handleAddFdrRule}>Add Rule</Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </>
             )}
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="mt-4 pt-4 border-t">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button type="submit" disabled={!selectedProductTypeId}>{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
             </DialogFooter>

@@ -5,6 +5,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -594,6 +595,13 @@ export type DpsPaymentFrequency = 'daily' | 'weekly' | 'monthly';
 export type SavingsInterestCalculationMethod = 'opening-closing-average' | 'closing-balance';
 export type OtsPayoutFrequency = 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
 export type OtsProvisionType = 'end_of_month' | 'on_opening_anniversary';
+export type FdrMaturityPayout = 'cash' | 'transfer_to_savings';
+
+export interface FdrPayoutRule {
+    id: string;
+    durationInYears: number;
+    totalInterestRate: number; // For the entire duration
+}
 
 export interface SavingsProduct {
     id: string;
@@ -601,20 +609,23 @@ export interface SavingsProduct {
     code: string;
     savingsProductTypeId: string;
     interestRate: number;
-    // For Regular Savings
+    // Regular Savings fields
     interestProvisionFrequency?: SavingsInterestFrequency;
     interestDisbursementFrequency?: SavingsInterestFrequency;
     interestCalculationMethod?: SavingsInterestCalculationMethod;
-    // For DPS
+    // DPS fields
     dps_paymentFrequency?: DpsPaymentFrequency;
     dps_durationsInYears?: number[];
     dps_prematureWithdrawalInterestRate?: number;
     dps_lateFeeType?: 'extend_duration' | 'interest_penalty';
     dps_maturityPayout?: 'cash' | 'transfer_to_savings';
-    // For OTS
+    // OTS fields
     ots_interestPayoutFrequency?: OtsPayoutFrequency;
     ots_provisionType?: OtsProvisionType;
     ots_interestCalculationMethod?: 'daily_balance';
+    // FDR fields
+    fdr_payoutRules?: FdrPayoutRule[];
+    fdr_maturityPayout?: FdrMaturityPayout;
 }
 
 
