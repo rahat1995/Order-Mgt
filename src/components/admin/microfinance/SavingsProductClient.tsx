@@ -73,15 +73,26 @@ export function SavingsProductClient() {
     const formData = new FormData(e.currentTarget);
     const productData: Omit<SavingsProduct, 'id'> = {
       name: formData.get('name') as string,
+      shortName: formData.get('shortName') as string,
       code: formData.get('code') as string,
       savingsProductTypeId: formData.get('savingsProductTypeId') as string,
       interestRate: parseFloat(formData.get('interestRate') as string),
       lienAllowed: (formData.get('lienAllowed') as string) === 'on',
       collateralAllowed: (formData.get('collateralAllowed') as string) === 'on',
+      
       // Regular Savings fields
+      depositFrequency: formData.get('depositFrequency') as DpsPaymentFrequency,
+      isProvisionApplicable: (formData.get('isProvisionApplicable') as string) === 'on',
       interestProvisionFrequency: formData.get('interestProvisionFrequency') as SavingsInterestFrequency,
       interestDisbursementFrequency: formData.get('interestDisbursementFrequency') as SavingsInterestFrequency,
+      provisionGracePeriodDays: parseInt(formData.get('provisionGracePeriodDays') as string, 10) || 0,
+      minBalance: parseFloat(formData.get('minBalance') as string),
+      maxBalance: parseFloat(formData.get('maxBalance') as string),
+      closingCharge: parseFloat(formData.get('closingCharge') as string),
       interestCalculationMethod: formData.get('interestCalculationMethod') as SavingsInterestCalculationMethod,
+      canWithdrawInterest: (formData.get('canWithdrawInterest') as string) === 'on',
+      isInterestEditableOnDisbursement: (formData.get('isInterestEditableOnDisbursement') as string) === 'on',
+
       // DPS fields
       dps_paymentFrequency: formData.get('dps_paymentFrequency') as DpsPaymentFrequency,
       dps_durationsInYears: (formData.get('dps_durationsInYears') as string)?.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)),
@@ -177,7 +188,7 @@ export function SavingsProductClient() {
         )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Savings Product' : 'Add New Savings Product'}</DialogTitle>
           </DialogHeader>
@@ -195,64 +206,98 @@ export function SavingsProductClient() {
 
             {selectedProductTypeId && (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Product Name</Label>
-                      <Input id="name" name="name" defaultValue={editingProduct?.name} required />
+                <div className="p-4 border rounded-lg space-y-4">
+                    <h4 className="font-semibold text-md">Basic Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Product Name</Label>
+                          <Input id="name" name="name" defaultValue={editingProduct?.name} required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="shortName">Short Name</Label>
+                          <Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="code">Product Code</Label>
+                          <Input id="code" name="code" defaultValue={editingProduct?.code} required />
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="code">Product Code</Label>
-                      <Input id="code" name="code" defaultValue={editingProduct?.code} required />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate (Annual %)</Label>
-                  <Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required />
-                </div>
-                
-                <div className="p-4 border rounded-md space-y-4 bg-muted/30">
-                    <h4 className="font-semibold text-md">General Settings</h4>
-                    <div className="flex items-center space-x-2">
-                        <Switch id="lienAllowed" name="lienAllowed" defaultChecked={editingProduct?.lienAllowed} />
-                        <Label htmlFor="lienAllowed">Allow account balance to be used as lien for loans</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Switch id="collateralAllowed" name="collateralAllowed" defaultChecked={editingProduct?.collateralAllowed} />
-                        <Label htmlFor="collateralAllowed">Allow account balance to be used as cash collateral for loans</Label>
+                     <div className="space-y-2">
+                      <Label htmlFor="interestRate">Interest Rate (Annual %)</Label>
+                      <Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required />
                     </div>
                 </div>
 
                 {selectedProductTypeId === 'regular-savings' && (
                   <div className="p-4 border rounded-md space-y-4 bg-muted/30">
                     <h4 className="font-semibold text-md">Regular Savings Settings</h4>
-                     <div className="space-y-2">
-                      <Label htmlFor="interestProvisionFrequency">Interest Provision Frequency</Label>
-                      <Select name="interestProvisionFrequency" defaultValue={editingProduct?.interestProvisionFrequency || 'monthly'} required>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                          {interestFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="interestDisbursementFrequency">Interest Disbursement Frequency</Label>
-                      <Select name="interestDisbursementFrequency" defaultValue={editingProduct?.interestDisbursementFrequency || 'monthly'} required>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                          {interestFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="interestCalculationMethod">Interest Calculation Method</Label>
-                      <Select name="interestCalculationMethod" defaultValue={editingProduct?.interestCalculationMethod || 'closing-balance'} required>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="closing-balance">Month Closing Balance</SelectItem>
-                          <SelectItem value="opening-closing-average">Month Opening-Closing Average</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="depositFrequency">Deposit Frequency</Label>
+                            <Select name="depositFrequency" defaultValue={editingProduct?.depositFrequency || 'monthly'}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                {dpsPaymentFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="interestCalculationMethod">Interest Calculation Method</Label>
+                            <Select name="interestCalculationMethod" defaultValue={editingProduct?.interestCalculationMethod || 'closing-balance'} required>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="closing-balance">Month Closing Balance</SelectItem>
+                                <SelectItem value="opening-closing-average">Month Opening-Closing Average</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="interestProvisionFrequency">Interest Provision Period</Label>
+                            <Select name="interestProvisionFrequency" defaultValue={editingProduct?.interestProvisionFrequency || 'monthly'} required>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                {interestFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="interestDisbursementFrequency">Interest Disbursement Period</Label>
+                            <Select name="interestDisbursementFrequency" defaultValue={editingProduct?.interestDisbursementFrequency || 'monthly'} required>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                {interestFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="provisionGracePeriodDays">Provision Grace Period (Days)</Label>
+                            <Input id="provisionGracePeriodDays" name="provisionGracePeriodDays" type="number" defaultValue={editingProduct?.provisionGracePeriodDays || 0} />
+                         </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="closingCharge">Closing Charge</Label>
+                            <Input id="closingCharge" name="closingCharge" type="number" step="0.01" defaultValue={editingProduct?.closingCharge || 0} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="minBalance">Minimum Balance</Label>
+                            <Input id="minBalance" name="minBalance" type="number" step="0.01" defaultValue={editingProduct?.minBalance} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="maxBalance">Maximum Balance</Label>
+                            <Input id="maxBalance" name="maxBalance" type="number" step="0.01" defaultValue={editingProduct?.maxBalance} />
+                         </div>
+                         <div className="flex items-center space-x-2 pt-2">
+                            <Switch id="isProvisionApplicable" name="isProvisionApplicable" defaultChecked={editingProduct?.isProvisionApplicable} />
+                            <Label htmlFor="isProvisionApplicable">Is Provision Applicable?</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Switch id="canWithdrawInterest" name="canWithdrawInterest" defaultChecked={editingProduct?.canWithdrawInterest} />
+                            <Label htmlFor="canWithdrawInterest">Allow Interest Withdrawal?</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch id="isInterestEditableOnDisbursement" name="isInterestEditableOnDisbursement" defaultChecked={editingProduct?.isInterestEditableOnDisbursement} />
+                            <Label htmlFor="isInterestEditableOnDisbursement">Interest Editable on Disbursement?</Label>
+                        </div>
+                     </div>
                   </div>
                 )}
                 
@@ -381,6 +426,18 @@ export function SavingsProductClient() {
                     </div>
                   </div>
                 )}
+                
+                <div className="p-4 border rounded-md space-y-4 bg-muted/30">
+                    <h4 className="font-semibold text-md">General Settings</h4>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="lienAllowed" name="lienAllowed" defaultChecked={editingProduct?.lienAllowed} />
+                        <Label htmlFor="lienAllowed">Allow account balance to be used as lien for loans</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="collateralAllowed" name="collateralAllowed" defaultChecked={editingProduct?.collateralAllowed} />
+                        <Label htmlFor="collateralAllowed">Allow account balance to be used as cash collateral for loans</Label>
+                    </div>
+                </div>
 
               </>
             )}

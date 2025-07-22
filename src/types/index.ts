@@ -7,6 +7,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -607,15 +608,28 @@ export interface FdrPayoutRule {
 export interface SavingsProduct {
     id: string;
     name: string;
+    shortName: string;
     code: string;
     savingsProductTypeId: string;
     interestRate: number;
+    
+    // General Settings
     lienAllowed: boolean;
     collateralAllowed: boolean;
+    
     // Regular Savings fields
+    depositFrequency?: DpsPaymentFrequency;
+    isProvisionApplicable?: boolean;
     interestProvisionFrequency?: SavingsInterestFrequency;
     interestDisbursementFrequency?: SavingsInterestFrequency;
+    provisionGracePeriodDays?: number;
+    minBalance?: number;
+    maxBalance?: number;
+    closingCharge?: number;
     interestCalculationMethod?: SavingsInterestCalculationMethod;
+    canWithdrawInterest?: boolean;
+    isInterestEditableOnDisbursement?: boolean;
+
     // DPS fields
     dps_paymentFrequency?: DpsPaymentFrequency;
     dps_durationsInYears?: number[];
