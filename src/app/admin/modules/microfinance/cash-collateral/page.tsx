@@ -1,6 +1,6 @@
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Banknote } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function CashCollateralPage() {
   return (
@@ -11,13 +11,13 @@ export default function CashCollateralPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Coming Soon</CardTitle>
+          <CardTitle>Cash Collateral Transactions</CardTitle>
           <CardDescription>
-            This section is under construction. You will be able to manage cash collaterals for loans here.
+            This section will display all collected cash collaterals from members. Functionality to record and manage these transactions is coming soon.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Future features will include recording collateral amounts, linking them to loans, and managing their status.</p>
+          <p className="text-center text-muted-foreground p-8">No cash collateral transactions recorded yet.</p>
         </CardContent>
       </Card>
     </div>
