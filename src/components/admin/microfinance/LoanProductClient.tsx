@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useState } from 'react';
@@ -12,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { PlusCircle, Edit, Trash2, X } from 'lucide-react';
 import type { LoanProduct, InterestCalculationMethod, RepaymentFrequency, Fee, RepaymentSchedule } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -123,12 +120,14 @@ export function LoanProductClient() {
   const { settings, addLoanProduct, updateLoanProduct, deleteLoanProduct, isLoaded } = useSettings();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
+  const [step, setStep] = useState(1);
 
   const [repaymentSchedules, setRepaymentSchedules] = useState<Partial<Record<RepaymentFrequency, RepaymentSchedule>>>({});
   const [interestCalcMethod, setInterestCalcMethod] = useState<InterestCalculationMethod>('flat');
 
   const handleOpenDialog = (product: LoanProduct | null) => {
     setEditingProduct(product);
+    setStep(1); // Reset to first step
     if (product) {
       setRepaymentSchedules(product.repaymentSchedules || {});
       setInterestCalcMethod(product.interestCalculationMethod || 'flat');
@@ -311,72 +310,92 @@ export function LoanProductClient() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-4xl h-[90vh]">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
+             <div className="flex items-center pt-2">
+                {[1, 2, 3].map((s) => (
+                    <React.Fragment key={s}>
+                    <div className={cn("flex flex-col items-center", s <= step ? 'text-primary' : 'text-muted-foreground')}>
+                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center border-2", s <= step ? 'border-primary bg-primary text-primary-foreground' : 'bg-muted')}>
+                            {s}
+                        </div>
+                    </div>
+                    {s < 3 && <div className={cn("flex-1 h-0.5", s < step ? 'bg-primary' : 'bg-border')} />}
+                    </React.Fragment>
+                ))}
+            </div>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
-              <ScrollArea className="flex-grow pr-4 -mr-4">
-                  <div className="space-y-6">
-                    <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg">Basic Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" defaultValue={editingProduct?.name} required /></div>
-                            <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} /></div>
-                            <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" defaultValue={editingProduct?.code} required /></div>
+          <form id="loan-product-form" onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
+                <div className="flex-grow overflow-y-auto pr-4 -mr-4 py-4">
+                  {step === 1 && (
+                      <div className="space-y-6">
+                        <div className="space-y-4 p-4 border rounded-lg">
+                            <h3 className="font-semibold text-lg">Basic Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" defaultValue={editingProduct?.name} required /></div>
+                                <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} /></div>
+                                <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" defaultValue={editingProduct?.code} required /></div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg">Loan Amount</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
-                            <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
-                            <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg">Fees & Insurance</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
-                            <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
-                            <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
-                            <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
-                            <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
-                            <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg">Cash Collateral</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                          <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
-                          <div className="flex items-center space-x-2 pb-2">
-                            <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
-                            <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
-                          </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg">Interest</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
-                            <div className="space-y-2">
-                                <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
-                                <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="flat">Flat</SelectItem>
-                                        <SelectItem value="reducing-balance">Reducing Balance</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        <div className="space-y-4 p-4 border rounded-lg">
+                            <h3 className="font-semibold text-lg">Loan Amount</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
+                                <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
+                                <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
                             </div>
                         </div>
                     </div>
+                  )}
 
-                    <div className="space-y-4 p-4 border rounded-lg">
+                  {step === 2 && (
+                       <div className="space-y-6">
+                            <div className="space-y-4 p-4 border rounded-lg">
+                                <h3 className="font-semibold text-lg">Fees & Insurance</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
+                                    <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
+                                    <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
+                                    <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
+                                    <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
+                                    <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 p-4 border rounded-lg">
+                                <h3 className="font-semibold text-lg">Cash Collateral</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
+                                <div className="flex items-center space-x-2 pb-2">
+                                    <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
+                                    <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
+                                </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 p-4 border rounded-lg">
+                                <h3 className="font-semibold text-lg">Interest</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
+                                        <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="flat">Flat</SelectItem>
+                                                <SelectItem value="reducing-balance">Reducing Balance</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                       </div>
+                  )}
+
+                  {step === 3 && (
+                       <div className="space-y-4 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg">Repayment Schedules</h3>
                         <div className="space-y-4">
                             {allFrequencies.map(freq => (
@@ -405,13 +424,16 @@ export function LoanProductClient() {
                             ))}
                         </div>
                     </div>
-                  </div>
-              </ScrollArea>
-              <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-                  <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
-              </DialogFooter>
+                  )}
+
+                </div>
           </form>
+          <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+              {step > 1 && <Button type="button" variant="secondary" onClick={() => setStep(s => s - 1)}>Back</Button>}
+              {step < 3 && <Button type="button" onClick={() => setStep(s => s + 1)}>Next</Button>}
+              {step === 3 && <Button type="submit" form="loan-product-form">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
