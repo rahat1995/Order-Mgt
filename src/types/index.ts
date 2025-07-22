@@ -1,4 +1,5 @@
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -544,6 +545,12 @@ export interface Fee {
   value: number;
 }
 
+export interface CashCollateral {
+  type: FeeType;
+  value: number;
+  isChangeable: boolean;
+}
+
 export interface RepaymentSchedule {
   frequency: RepaymentFrequency;
   installments: number[]; // e.g., [110, 220, 330]
@@ -564,6 +571,7 @@ export interface LoanProduct {
     applicationFee: Fee;
     additionalFee: Fee;
     otherFee: Fee;
+    cashCollateral: CashCollateral;
     repaymentSchedules: Partial<Record<RepaymentFrequency, RepaymentSchedule>>;
     interestRate: number;
     interestCalculationMethod: InterestCalculationMethod;

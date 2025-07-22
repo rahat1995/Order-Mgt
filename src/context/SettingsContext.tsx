@@ -8,6 +8,7 @@
 
 
 
+
 'use client';
 
 import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch } from '@/types';
@@ -146,6 +147,7 @@ const defaultSettings: AppSettings = {
       serial: 0,
   },
   lastVoucherNumbers: {},
+  lastSamitySerials: {},
 };
 
 type ChallanItemBlueprint = { 
@@ -198,7 +200,7 @@ interface SettingsContextType {
   updateCustomerGroup: (group: CustomerGroup) => void;
   deleteCustomerGroup: (groupId: string) => void;
   // Microfinance
-  addSamity: (samity: Omit<Samity, 'id'>) => void;
+  addSamity: (samity: Omit<Samity, 'id' | 'code'>) => void;
   updateSamity: (samity: Samity) => void;
   deleteSamity: (samityId: string) => void;
   addLoanProduct: (product: Omit<LoanProduct, 'id'>) => void;
@@ -415,6 +417,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
         lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
         lastVoucherNumbers: storedSettings.lastVoucherNumbers || defaultSettings.lastVoucherNumbers,
+        lastSamitySerials: storedSettings.lastSamitySerials || defaultSettings.lastSamitySerials,
       };
       setSettingsState(mergedSettings);
     } else {
@@ -926,7 +929,24 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
 
   // Microfinance
-  const addSamity = (samity: Omit<Samity, 'id'>) => setSettings(prev => ({ ...prev, samities: [...prev.samities, { ...samity, id: uuidv4() }] }));
+  const addSamity = (samity: Omit<Samity, 'id' | 'code'>) => {
+    setSettings(prev => {
+        const branchCode = prev.branches.find(b => b.id === samity.branchId)?.code || 'XX';
+        const lastSerial = prev.lastSamitySerials?.[samity.branchId] || 0;
+        const newSerial = lastSerial + 1;
+        const newCode = `${branchCode}-${String(newSerial).padStart(4, '0')}`;
+        const newSamity = { ...samity, id: uuidv4(), code: newCode };
+
+        return { 
+          ...prev, 
+          samities: [...prev.samities, newSamity],
+          lastSamitySerials: {
+            ...prev.lastSamitySerials,
+            [samity.branchId]: newSerial,
+          }
+        };
+    });
+  };
   const updateSamity = (samity: Samity) => setSettings(prev => ({ ...prev, samities: prev.samities.map(s => s.id === samity.id ? samity : s)}));
   const deleteSamity = (samityId: string) => {
     if (confirm('Are you sure? Members in this Samity will no longer be grouped.')) {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -192,6 +193,11 @@ export function LoanProductClient() {
       applicationFee: getFee('applicationFee'),
       additionalFee: getFee('additionalFee'),
       otherFee: getFee('otherFee'),
+      cashCollateral: {
+        type: formData.get('cashCollateralType') as 'fixed' | 'percentage',
+        value: parseFloat(formData.get('cashCollateral') as string) || 0,
+        isChangeable: (formData.get('cashCollateralIsChangeable') as string) === 'on',
+      },
       repaymentSchedules: repaymentSchedules,
     };
     
@@ -263,7 +269,7 @@ export function LoanProductClient() {
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-            <div className="flex-grow overflow-y-auto pr-6">
+            <ScrollArea className="flex-grow pr-6">
               <div className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
@@ -293,6 +299,17 @@ export function LoanProductClient() {
                          <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
                          <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
                      </div>
+                </div>
+                
+                <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-semibold text-lg">Cash Collateral</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                      <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
+                       <div className="flex items-center space-x-2 pb-2">
+                        <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
+                        <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
+                      </div>
+                    </div>
                 </div>
 
                  <div className="space-y-4 p-4 border rounded-lg">
@@ -331,7 +348,7 @@ export function LoanProductClient() {
                     </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
             <DialogFooter className="mt-4 pt-4 border-t flex-shrink-0">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
