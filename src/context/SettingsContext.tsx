@@ -9,9 +9,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -87,6 +88,12 @@ const defaultSettings: AppSettings = {
   customerGroups: [],
   samities: [],
   loanProducts: [],
+  savingsProductTypes: [
+    { id: 'regular-savings', name: 'Regular Savings', code: 'RS' },
+    { id: 'dps', name: 'DPS', code: 'DPS' },
+    { id: 'ots', name: 'OTS', code: 'OTS' },
+    { id: 'fdr', name: 'FDR', code: 'FDR' },
+  ],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -373,6 +380,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         customerGroups: storedSettings.customerGroups || defaultSettings.customerGroups,
         samities: storedSettings.samities || defaultSettings.samities,
         loanProducts: storedSettings.loanProducts || defaultSettings.loanProducts,
+        savingsProductTypes: storedSettings.savingsProductTypes?.length ? storedSettings.savingsProductTypes : defaultSettings.savingsProductTypes,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
