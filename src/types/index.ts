@@ -2,6 +2,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -586,6 +587,20 @@ export interface SavingsProductType {
     code: string;
 }
 
+export type SavingsInterestFrequency = 'daily' | 'weekly' | 'monthly' | 'half-yearly' | 'yearly';
+export type SavingsInterestCalculationMethod = 'opening-closing-average' | 'closing-balance';
+
+export interface SavingsProduct {
+    id: string;
+    name: string;
+    code: string;
+    savingsProductTypeId: string;
+    interestRate: number;
+    interestProvisionFrequency: SavingsInterestFrequency;
+    interestDisbursementFrequency: SavingsInterestFrequency;
+    interestCalculationMethod: SavingsInterestCalculationMethod;
+}
+
 
 export interface AppSettings {
   organization: OrganizationInfo;
@@ -610,6 +625,7 @@ export interface AppSettings {
   samities: Samity[];
   loanProducts: LoanProduct[];
   savingsProductTypes: SavingsProductType[];
+  savingsProducts: SavingsProduct[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];

@@ -10,9 +10,10 @@
 
 
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -94,6 +95,7 @@ const defaultSettings: AppSettings = {
     { id: 'ots', name: 'OTS', code: 'OTS' },
     { id: 'fdr', name: 'FDR', code: 'FDR' },
   ],
+  savingsProducts: [],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -213,6 +215,9 @@ interface SettingsContextType {
   addLoanProduct: (product: Omit<LoanProduct, 'id'>) => void;
   updateLoanProduct: (product: LoanProduct) => void;
   deleteLoanProduct: (productId: string) => void;
+  addSavingsProduct: (product: Omit<SavingsProduct, 'id'>) => void;
+  updateSavingsProduct: (product: SavingsProduct) => void;
+  deleteSavingsProduct: (productId: string) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -381,6 +386,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         samities: storedSettings.samities || defaultSettings.samities,
         loanProducts: storedSettings.loanProducts || defaultSettings.loanProducts,
         savingsProductTypes: storedSettings.savingsProductTypes?.length ? storedSettings.savingsProductTypes : defaultSettings.savingsProductTypes,
+        savingsProducts: storedSettings.savingsProducts || defaultSettings.savingsProducts,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
@@ -968,6 +974,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setSettings(prev => ({ ...prev, loanProducts: prev.loanProducts.filter(p => p.id !== productId) }));
       }
   };
+  const addSavingsProduct = (product: Omit<SavingsProduct, 'id'>) => setSettings(prev => ({...prev, savingsProducts: [...prev.savingsProducts, { ...product, id: uuidv4() }] }));
+  const updateSavingsProduct = (product: SavingsProduct) => setSettings(prev => ({...prev, savingsProducts: prev.savingsProducts.map(p => p.id === product.id ? product : p)}));
+  const deleteSavingsProduct = (productId: string) => {
+      if (confirm('Are you sure you want to delete this savings product?')) {
+        setSettings(prev => ({...prev, savingsProducts: prev.savingsProducts.filter(p => p.id !== productId)}));
+      }
+  };
 
 
   // Accounting
@@ -1093,6 +1106,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAddressData, updateAddressData, deleteAddressData,
     addSamity, updateSamity, deleteSamity,
     addLoanProduct, updateLoanProduct, deleteLoanProduct,
+    addSavingsProduct, updateSavingsProduct, deleteSavingsProduct,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,

@@ -1,25 +1,19 @@
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SavingsProductClient } from "@/components/admin/microfinance/SavingsProductClient";
 import { ClipboardList } from "lucide-react";
 
 export default function SavingsProductsPage() {
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
         <ClipboardList className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold">Savings Products</h1>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Coming Soon</CardTitle>
-          <CardDescription>
-            This section is under construction. You will be able to define and manage various savings products for your members.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Future features will include setting interest rates, minimum balances, and withdrawal rules.</p>
-        </CardContent>
-      </Card>
+       <p className="text-muted-foreground">
+        Define and manage the various savings products offered by your organization, based on the core savings types.
+      </p>
+      <div className="h-[1px] w-full bg-border" />
+      <SavingsProductClient />
     </div>
   );
 }
