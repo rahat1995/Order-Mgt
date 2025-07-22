@@ -96,9 +96,13 @@ export function SavingsProductClient() {
       // DPS fields
       dps_paymentFrequency: formData.get('dps_paymentFrequency') as DpsPaymentFrequency,
       dps_durationsInYears: (formData.get('dps_durationsInYears') as string)?.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)),
+      dps_isProvisionApplicable: (formData.get('dps_isProvisionApplicable') as string) === 'on',
+      dps_provisionFrequency: formData.get('dps_provisionFrequency') as SavingsInterestFrequency,
       dps_prematureWithdrawalInterestRate: parseFloat(formData.get('dps_prematureWithdrawalInterestRate') as string),
       dps_lateFeeType: formData.get('dps_lateFeeType') as 'extend_duration' | 'interest_penalty',
+      dps_isInterestEditableOnDisbursement: (formData.get('dps_isInterestEditableOnDisbursement') as string) === 'on',
       dps_maturityPayout: formData.get('dps_maturityPayout') as MaturityPayoutMethod,
+      dps_closingCharge: parseFloat(formData.get('dps_closingCharge') as string),
       // OTS fields
       ots_interestPayoutFrequency: formData.get('ots_interestPayoutFrequency') as OtsPayoutFrequency,
       ots_provisionType: formData.get('ots_provisionType') as OtsProvisionType,
@@ -323,6 +327,10 @@ export function SavingsProductClient() {
                         <Input id="dps_prematureWithdrawalInterestRate" name="dps_prematureWithdrawalInterestRate" type="number" step="0.01" defaultValue={editingProduct?.dps_prematureWithdrawalInterestRate} />
                       </div>
                        <div className="space-y-2">
+                        <Label htmlFor="dps_closingCharge">Closing Charge</Label>
+                        <Input id="dps_closingCharge" name="dps_closingCharge" type="number" step="0.01" defaultValue={editingProduct?.dps_closingCharge} />
+                      </div>
+                       <div className="space-y-2">
                         <Label htmlFor="dps_lateFeeType">Late Fee Handling</Label>
                         <Select name="dps_lateFeeType" defaultValue={editingProduct?.dps_lateFeeType || 'extend_duration'}>
                           <SelectTrigger><SelectValue/></SelectTrigger>
@@ -341,6 +349,27 @@ export function SavingsProductClient() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Switch id="dps_isProvisionApplicable" name="dps_isProvisionApplicable" defaultChecked={editingProduct?.dps_isProvisionApplicable} />
+                                <Label htmlFor="dps_isProvisionApplicable">Is Provision Applicable?</Label>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dps_provisionFrequency">Provision Period</Label>
+                            <Select name="dps_provisionFrequency" defaultValue={editingProduct?.dps_provisionFrequency || 'yearly'}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {['monthly', 'quarterly', 'half-yearly', 'yearly'].map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center space-x-2 md:col-span-2">
+                            <Switch id="dps_isInterestEditableOnDisbursement" name="dps_isInterestEditableOnDisbursement" defaultChecked={editingProduct?.dps_isInterestEditableOnDisbursement} />
+                            <Label htmlFor="dps_isInterestEditableOnDisbursement">Interest is Editable on Disbursement</Label>
+                        </div>
                     </div>
                   </div>
                 )}

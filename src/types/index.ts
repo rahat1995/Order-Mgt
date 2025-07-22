@@ -1,13 +1,4 @@
 
-
-
-
-
-
-
-
-
-
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -633,9 +624,13 @@ export interface SavingsProduct {
     // DPS fields
     dps_paymentFrequency?: DpsPaymentFrequency;
     dps_durationsInYears?: number[];
+    dps_isProvisionApplicable?: boolean;
+    dps_provisionFrequency?: SavingsInterestFrequency;
     dps_prematureWithdrawalInterestRate?: number;
     dps_lateFeeType?: 'extend_duration' | 'interest_penalty';
+    dps_isInterestEditableOnDisbursement?: boolean;
     dps_maturityPayout?: MaturityPayoutMethod;
+    dps_closingCharge?: number;
     // OTS fields
     ots_interestPayoutFrequency?: OtsPayoutFrequency;
     ots_provisionType?: OtsProvisionType;
