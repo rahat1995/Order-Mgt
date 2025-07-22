@@ -312,11 +312,11 @@ export function LoanProductClient() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
-            <ScrollArea className="flex-grow pr-6 -mr-6">
+          <form onSubmit={handleSubmit} className="flex-grow overflow-y-hidden flex flex-col">
+            <ScrollArea className="flex-grow pr-4 -mr-4">
               <div className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
