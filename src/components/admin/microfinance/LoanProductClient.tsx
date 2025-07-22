@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -232,7 +233,7 @@ export function LoanProductClient() {
       maxAmount: parseFloat(formData.get('maxAmount') as string) || 0,
       defaultAmount: parseFloat(formData.get('defaultAmount') as string) || 0,
       interestRate: parseFloat(formData.get('interestRate') as string),
-      interestCalculationMethod: formData.get('interestCalculationMethod') as InterestCalculationMethod,
+      interestCalculationMethod: interestCalcMethod,
       insurance: getFee('insurance'),
       processingFee: getFee('processingFee'),
       formFee: getFee('formFee'),
