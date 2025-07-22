@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog, UserCheck, Banknote } from 'lucide-react';
+import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog, UserCheck, Banknote, ListChecks } from 'lucide-react';
 
 const microfinanceSubModules = [
   {
@@ -16,6 +16,13 @@ const microfinanceSubModules = [
     icon: Package,
     title: 'Loan Products',
     description: 'Define different types of loan products.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/microfinance/savings-product-types',
+    icon: ListChecks,
+    title: 'Savings Product Types',
+    description: 'Define the fundamental types of savings accounts.',
     enabled: true,
   },
   {

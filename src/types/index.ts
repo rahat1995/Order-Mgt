@@ -1,6 +1,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -579,6 +580,13 @@ export interface LoanProduct {
     interestCalculationMethod: InterestCalculationMethod;
 }
 
+export interface SavingsProductType {
+    id: string;
+    name: string;
+    code: string;
+}
+
+
 export interface AppSettings {
   organization: OrganizationInfo;
   theme: Theme;
@@ -601,6 +609,7 @@ export interface AppSettings {
   collections: Collection[];
   samities: Samity[];
   loanProducts: LoanProduct[];
+  savingsProductTypes: SavingsProductType[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];
