@@ -10,16 +10,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, XCircle } from 'lucide-react';
-import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency, OtsPayoutFrequency, OtsProvisionType, FdrPayoutRule, FdrMaturityPayout } from '@/types';
+import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency, OtsPayoutFrequency, OtsProvisionType, FdrPayoutRule, MaturityPayoutMethod } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
+import { Switch } from '@/components/ui/switch';
 
 const interestFrequencies: SavingsInterestFrequency[] = ['daily', 'weekly', 'monthly', 'half-yearly', 'yearly'];
 const dpsPaymentFrequencies: DpsPaymentFrequency[] = ['daily', 'weekly', 'monthly'];
 const interestCalcMethods: SavingsInterestCalculationMethod[] = ['opening-closing-average', 'closing-balance'];
 const otsPayoutFrequencies: OtsPayoutFrequency[] = ['monthly', 'quarterly', 'half-yearly', 'yearly'];
 const otsProvisionTypes: OtsProvisionType[] = ['end_of_month', 'on_opening_anniversary'];
-const fdrMaturityPayoutOptions: FdrMaturityPayout[] = ['cash', 'transfer_to_savings'];
+const maturityPayoutOptions: MaturityPayoutMethod[] = ['cash', 'transfer_to_savings'];
 
 
 export function SavingsProductClient() {
@@ -75,6 +76,8 @@ export function SavingsProductClient() {
       code: formData.get('code') as string,
       savingsProductTypeId: formData.get('savingsProductTypeId') as string,
       interestRate: parseFloat(formData.get('interestRate') as string),
+      lienAllowed: (formData.get('lienAllowed') as string) === 'on',
+      collateralAllowed: (formData.get('collateralAllowed') as string) === 'on',
       // Regular Savings fields
       interestProvisionFrequency: formData.get('interestProvisionFrequency') as SavingsInterestFrequency,
       interestDisbursementFrequency: formData.get('interestDisbursementFrequency') as SavingsInterestFrequency,
@@ -84,14 +87,16 @@ export function SavingsProductClient() {
       dps_durationsInYears: (formData.get('dps_durationsInYears') as string)?.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)),
       dps_prematureWithdrawalInterestRate: parseFloat(formData.get('dps_prematureWithdrawalInterestRate') as string),
       dps_lateFeeType: formData.get('dps_lateFeeType') as 'extend_duration' | 'interest_penalty',
-      dps_maturityPayout: formData.get('dps_maturityPayout') as 'cash' | 'transfer_to_savings',
+      dps_maturityPayout: formData.get('dps_maturityPayout') as MaturityPayoutMethod,
       // OTS fields
       ots_interestPayoutFrequency: formData.get('ots_interestPayoutFrequency') as OtsPayoutFrequency,
       ots_provisionType: formData.get('ots_provisionType') as OtsProvisionType,
       ots_interestCalculationMethod: 'daily_balance',
+      ots_interestDisbursementMethod: formData.get('ots_interestDisbursementMethod') as MaturityPayoutMethod,
       // FDR fields
       fdr_payoutRules: fdrPayoutRules,
-      fdr_maturityPayout: formData.get('fdr_maturityPayout') as FdrMaturityPayout,
+      fdr_maturityPayout: formData.get('fdr_maturityPayout') as MaturityPayoutMethod,
+      fdr_prematureWithdrawalInterestRate: parseFloat(formData.get('fdr_prematureWithdrawalInterestRate') as string),
     };
 
     if (!productData.name || !productData.code || !productData.savingsProductTypeId || isNaN(productData.interestRate)) {
@@ -205,6 +210,18 @@ export function SavingsProductClient() {
                   <Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required />
                 </div>
                 
+                <div className="p-4 border rounded-md space-y-4 bg-muted/30">
+                    <h4 className="font-semibold text-md">General Settings</h4>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="lienAllowed" name="lienAllowed" defaultChecked={editingProduct?.lienAllowed} />
+                        <Label htmlFor="lienAllowed">Allow account balance to be used as lien for loans</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Switch id="collateralAllowed" name="collateralAllowed" defaultChecked={editingProduct?.collateralAllowed} />
+                        <Label htmlFor="collateralAllowed">Allow account balance to be used as cash collateral for loans</Label>
+                    </div>
+                </div>
+
                 {selectedProductTypeId === 'regular-savings' && (
                   <div className="p-4 border rounded-md space-y-4 bg-muted/30">
                     <h4 className="font-semibold text-md">Regular Savings Settings</h4>
@@ -275,8 +292,7 @@ export function SavingsProductClient() {
                          <Select name="dps_maturityPayout" defaultValue={editingProduct?.dps_maturityPayout || 'cash'}>
                           <SelectTrigger><SelectValue/></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="cash">Cash Payout</SelectItem>
-                            <SelectItem value="transfer_to_savings">Transfer to Primary Account</SelectItem>
+                            {maturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -308,6 +324,15 @@ export function SavingsProductClient() {
                             </SelectContent>
                             </Select>
                         </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="ots_interestDisbursementMethod">Interest Disbursement Method</Label>
+                            <Select name="ots_interestDisbursementMethod" defaultValue={editingProduct?.ots_interestDisbursementMethod || 'transfer_to_savings'}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {maturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
                      </div>
                   </div>
                 )}
@@ -315,15 +340,21 @@ export function SavingsProductClient() {
                 {selectedProductTypeId === 'fdr' && (
                   <div className="p-4 border rounded-md space-y-4 bg-muted/30">
                     <h4 className="font-semibold text-md">FDR Settings</h4>
-                    <div className="space-y-2">
-                      <Label htmlFor="fdr_maturityPayout">Maturity Payout Method</Label>
-                      <Select name="fdr_maturityPayout" defaultValue={editingProduct?.fdr_maturityPayout || 'transfer_to_savings'}>
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                          {fdrMaturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <Label htmlFor="fdr_maturityPayout">Maturity Payout Method</Label>
+                        <Select name="fdr_maturityPayout" defaultValue={editingProduct?.fdr_maturityPayout || 'transfer_to_savings'}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                            {maturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="fdr_prematureWithdrawalInterestRate">Premature Withdrawal Rate (%)</Label>
+                            <Input id="fdr_prematureWithdrawalInterestRate" name="fdr_prematureWithdrawalInterestRate" type="number" step="0.01" defaultValue={editingProduct?.fdr_prematureWithdrawalInterestRate} />
+                        </div>
+                     </div>
                     <div className="space-y-2">
                       <Label>Payout Rules</Label>
                       <div className="space-y-2 border-t pt-2">
