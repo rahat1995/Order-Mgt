@@ -72,7 +72,7 @@ export function SavingsProductTypeClient() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {savingsProductTypes.length > 0 ? (
+                {savingsProductTypes && savingsProductTypes.length > 0 ? (
                 savingsProductTypes.map(type => (
                     <TableRow key={type.id}>
                         <TableCell className="font-medium">{type.name}</TableCell>
