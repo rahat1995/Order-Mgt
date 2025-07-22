@@ -312,105 +312,105 @@ export function LoanProductClient() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+          <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex-grow overflow-y-hidden flex flex-col">
-            <ScrollArea className="flex-grow pr-4 -mr-4">
-              <div className="space-y-6">
-                <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Basic Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" defaultValue={editingProduct?.name} required /></div>
-                        <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} /></div>
-                        <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" defaultValue={editingProduct?.code} required /></div>
-                    </div>
-                </div>
-
-                 <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Loan Amount</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
-                        <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
-                        <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
-                    </div>
-                </div>
-
-                 <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Fees & Insurance</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                         <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
-                         <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
-                         <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
-                         <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
-                         <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
-                         <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
-                     </div>
-                </div>
-                
-                <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Cash Collateral</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                      <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
-                       <div className="flex items-center space-x-2 pb-2">
-                        <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
-                        <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
-                      </div>
-                    </div>
-                </div>
-
-                 <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Interest</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
-                        <div className="space-y-2">
-                            <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
-                            <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
-                                <SelectTrigger><SelectValue/></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="flat">Flat</SelectItem>
-                                    <SelectItem value="reducing-balance">Reducing Balance</SelectItem>
-                                </SelectContent>
-                            </Select>
+          <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
+              <ScrollArea className="flex-grow pr-4 -mr-4">
+                  <div className="space-y-6">
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" defaultValue={editingProduct?.name} required /></div>
+                            <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} /></div>
+                            <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" defaultValue={editingProduct?.code} required /></div>
                         </div>
                     </div>
-                </div>
 
-                 <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold text-lg">Repayment Schedules</h3>
-                     <div className="space-y-4">
-                        {allFrequencies.map(freq => (
-                            <div key={freq} className="p-3 border rounded-md">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor={`switch-${freq}`} className="capitalize font-medium">{freq}</Label>
-                                    <Switch 
-                                        id={`switch-${freq}`} 
-                                        checked={!!repaymentSchedules[freq]}
-                                        onCheckedChange={(checked) => handleToggleSchedule(freq, checked)}
-                                    />
-                                </div>
-                                {repaymentSchedules[freq] && (
-                                    <div className="mt-4">
-                                        <RepaymentScheduleForm 
-                                            schedule={repaymentSchedules[freq]!}
-                                            onInstallmentAdd={handleInstallmentAdd}
-                                            onInstallmentRemove={handleInstallmentRemove}
-                                            onGracePeriodChange={handleGracePeriodChange}
-                                            onInterestIndexChange={handleInterestIndexChange}
-                                            isFlatRate={interestCalcMethod === 'flat'}
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Loan Amount</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
+                            <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
+                            <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Fees & Insurance</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
+                            <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
+                            <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
+                            <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
+                            <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
+                            <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Cash Collateral</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                          <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
+                          <div className="flex items-center space-x-2 pb-2">
+                            <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
+                            <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
+                          </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Interest</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
+                            <div className="space-y-2">
+                                <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
+                                <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="flat">Flat</SelectItem>
+                                        <SelectItem value="reducing-balance">Reducing Balance</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">Repayment Schedules</h3>
+                        <div className="space-y-4">
+                            {allFrequencies.map(freq => (
+                                <div key={freq} className="p-3 border rounded-md">
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor={`switch-${freq}`} className="capitalize font-medium">{freq}</Label>
+                                        <Switch 
+                                            id={`switch-${freq}`} 
+                                            checked={!!repaymentSchedules[freq]}
+                                            onCheckedChange={(checked) => handleToggleSchedule(freq, checked)}
                                         />
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                    {repaymentSchedules[freq] && (
+                                        <div className="mt-4">
+                                            <RepaymentScheduleForm 
+                                                schedule={repaymentSchedules[freq]!}
+                                                onInstallmentAdd={handleInstallmentAdd}
+                                                onInstallmentRemove={handleInstallmentRemove}
+                                                onGracePeriodChange={handleGracePeriodChange}
+                                                onInterestIndexChange={handleInterestIndexChange}
+                                                isFlatRate={interestCalcMethod === 'flat'}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter className="mt-4 pt-4 border-t flex-shrink-0">
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-              <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
-            </DialogFooter>
+                  </div>
+              </ScrollArea>
+              <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+                  <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
+              </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
