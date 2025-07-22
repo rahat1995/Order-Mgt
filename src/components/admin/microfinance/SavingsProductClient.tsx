@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency } from '@/types';
+import type { SavingsProduct, SavingsInterestFrequency, SavingsInterestCalculationMethod, DpsPaymentFrequency, OtsPayoutFrequency, OtsProvisionType } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
 const interestFrequencies: SavingsInterestFrequency[] = ['daily', 'weekly', 'monthly', 'half-yearly', 'yearly'];
 const dpsPaymentFrequencies: DpsPaymentFrequency[] = ['daily', 'weekly', 'monthly'];
 const interestCalcMethods: SavingsInterestCalculationMethod[] = ['opening-closing-average', 'closing-balance'];
+const otsPayoutFrequencies: OtsPayoutFrequency[] = ['monthly', 'quarterly', 'half-yearly', 'yearly'];
+const otsProvisionTypes: OtsProvisionType[] = ['end_of_month', 'on_opening_anniversary'];
+
 
 export function SavingsProductClient() {
   const { settings, addSavingsProduct, updateSavingsProduct, deleteSavingsProduct, isLoaded } = useSettings();
@@ -59,6 +61,10 @@ export function SavingsProductClient() {
       dps_prematureWithdrawalInterestRate: parseFloat(formData.get('dps_prematureWithdrawalInterestRate') as string),
       dps_lateFeeType: formData.get('dps_lateFeeType') as 'extend_duration' | 'interest_penalty',
       dps_maturityPayout: formData.get('dps_maturityPayout') as 'cash' | 'transfer_to_savings',
+      // OTS fields
+      ots_interestPayoutFrequency: formData.get('ots_interestPayoutFrequency') as OtsPayoutFrequency,
+      ots_provisionType: formData.get('ots_provisionType') as OtsProvisionType,
+      ots_interestCalculationMethod: 'daily_balance', // Hardcoded as per requirement
     };
 
     if (!productData.name || !productData.code || !productData.savingsProductTypeId || isNaN(productData.interestRate)) {
@@ -111,6 +117,9 @@ export function SavingsProductClient() {
               {product.savingsProductTypeId === 'dps' && product.dps_durationsInYears && (
                   <p className="text-sm text-muted-foreground">Durations: {product.dps_durationsInYears.join(', ')} years</p>
               )}
+              {product.savingsProductTypeId === 'ots' && (
+                  <p className="text-sm text-muted-foreground">Payout: {product.ots_interestPayoutFrequency}</p>
+              )}
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(product)}>
@@ -162,7 +171,7 @@ export function SavingsProductClient() {
                     </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                  <Label htmlFor="interestRate">Interest Rate (Annual %)</Label>
                   <Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required />
                 </div>
                 
@@ -242,6 +251,34 @@ export function SavingsProductClient() {
                         </Select>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {selectedProductTypeId === 'ots' && (
+                  <div className="p-4 border rounded-md space-y-4 bg-muted/30">
+                    <h4 className="font-semibold text-md">OTS Settings</h4>
+                    <p className="text-sm text-muted-foreground">Interest for OTS is always calculated on a daily basis.</p>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="ots_interestPayoutFrequency">Interest Payout Frequency</Label>
+                            <Select name="ots_interestPayoutFrequency" defaultValue={editingProduct?.ots_interestPayoutFrequency || 'monthly'}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                {otsPayoutFrequencies.map(freq => <SelectItem key={freq} value={freq} className="capitalize">{freq}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ots_provisionType">Interest Provision Type</Label>
+                            <Select name="ots_provisionType" defaultValue={editingProduct?.ots_provisionType || 'end_of_month'}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="end_of_month">End of Month</SelectItem>
+                                <SelectItem value="on_opening_anniversary">On Anniversary Date</SelectItem>
+                            </SelectContent>
+                            </Select>
+                        </div>
+                     </div>
                   </div>
                 )}
 

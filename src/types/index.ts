@@ -4,6 +4,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -591,6 +592,8 @@ export interface SavingsProductType {
 export type SavingsInterestFrequency = 'daily' | 'weekly' | 'monthly' | 'half-yearly' | 'yearly';
 export type DpsPaymentFrequency = 'daily' | 'weekly' | 'monthly';
 export type SavingsInterestCalculationMethod = 'opening-closing-average' | 'closing-balance';
+export type OtsPayoutFrequency = 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
+export type OtsProvisionType = 'end_of_month' | 'on_opening_anniversary';
 
 export interface SavingsProduct {
     id: string;
@@ -608,6 +611,10 @@ export interface SavingsProduct {
     dps_prematureWithdrawalInterestRate?: number;
     dps_lateFeeType?: 'extend_duration' | 'interest_penalty';
     dps_maturityPayout?: 'cash' | 'transfer_to_savings';
+    // For OTS
+    ots_interestPayoutFrequency?: OtsPayoutFrequency;
+    ots_provisionType?: OtsProvisionType;
+    ots_interestCalculationMethod?: 'daily_balance';
 }
 
 
