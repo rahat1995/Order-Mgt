@@ -3,9 +3,10 @@
 
 
 
+
 'use client';
 
-import React, { useState } from 'react';
+import React, from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,10 +17,22 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import type { Customer } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePathname } from 'next/navigation';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+
+const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, name: string, defaultValue?: string, hint: string }) => (
+    <div className="space-y-2">
+        <Label htmlFor={name}>{label}</Label>
+        <Input id={name} name={name} placeholder="https://placehold.co/400x400.png" defaultValue={defaultValue} />
+        <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
+);
+
 
 export function CustomerManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
-  const { samityTerm } = settings.microfinanceSettings;
+  const { samityTerm, samities, branches } = settings;
   const pathname = usePathname();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -39,36 +52,47 @@ export function CustomerManagementClient() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const discountType = formData.get('discountType') as 'fixed' | 'percentage' | 'none';
-    const discountValue = parseFloat(formData.get('discountValue') as string);
-    const discountValidity = formData.get('discountValidity') as string;
-    const groupId = formData.get('groupId') as string;
     const samityId = formData.get('samityId') as string;
+    const branchId = samities.find(s => s.id === samityId)?.branchId;
 
-    const customerData: Partial<Customer> & { name: string, mobile: string } = {
+
+    const customerData: Omit<Customer, 'id' | 'code'> & { code?: string } = {
         name: formData.get('name') as string,
         mobile: formData.get('mobile') as string,
         email: formData.get('email') as string,
-        address: formData.get('address') as string,
         center: formData.get('center') as string,
-        groupId: groupId === 'none' ? undefined : groupId,
         samityId: samityId === 'none' ? undefined : samityId,
-        discountValidity: discountValidity || undefined,
+        dob: formData.get('dob') as string,
+        admissionDate: formData.get('admissionDate') as string,
+        fatherName: formData.get('fatherName') as string,
+        spouseName: formData.get('spouseName') as string,
+        motherName: formData.get('motherName') as string,
+        presentAddress: formData.get('presentAddress') as string,
+        permanentAddress: formData.get('permanentAddress') as string,
+        nidOrBirthCert: formData.get('nidOrBirthCert') as string,
+        nomineeName: formData.get('nomineeName') as string,
+        nomineeRelation: formData.get('nomineeRelation') as string,
+        photo: formData.get('photo') as string,
+        nidPhoto: formData.get('nidPhoto') as string,
+        guarantorPhoto: formData.get('guarantorPhoto') as string,
+        guarantorNidPhoto: formData.get('guarantorNidPhoto') as string,
     };
-
-    if (discountType !== 'none' && !isNaN(discountValue) && discountValue > 0) {
-        customerData.discountType = discountType;
-        customerData.discountValue = discountValue;
-    } else {
-        customerData.discountType = undefined;
-        customerData.discountValue = undefined;
+    
+    // Add branchId to the data if a samity is selected
+    if (branchId) {
+        (customerData as any).branchId = branchId;
     }
 
 
     if (!customerData.name || !customerData.mobile) return;
+    if (isMicrofinance && !customerData.samityId) {
+        alert(`Please select a ${samityTerm}.`);
+        return;
+    }
+
 
     if (editingCustomer) {
-      updateCustomer({ ...editingCustomer, ...customerData });
+      updateCustomer({ ...editingCustomer, ...customerData, code: editingCustomer.code });
     } else {
       addCustomer(customerData as Omit<Customer, 'id'>);
     }
@@ -91,39 +115,38 @@ export function CustomerManagementClient() {
 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {settings.customers.map(customer => (
-          <Card key={customer.id}>
-            <CardHeader>
-              <CardTitle>{customer.name}</CardTitle>
-              <CardDescription>{customer.mobile}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {customer.center && <p className="text-sm font-semibold text-primary">{customer.center}</p>}
-              <p className="text-sm text-muted-foreground">{customer.email}</p>
-              <p className="text-sm text-muted-foreground">{customer.address}</p>
-              {settings.customerGroups.find(g => g.id === customer.groupId) && (
-                  <p className="text-sm text-muted-foreground">Group: {settings.customerGroups.find(g => g.id === customer.groupId)?.name}</p>
-              )}
-              {settings.samities.find(s => s.id === customer.samityId) && (
-                  <p className="text-sm text-muted-foreground">{samityTerm}: {settings.samities.find(s => s.id === customer.samityId)?.name}</p>
-              )}
-              {customer.discountType && customer.discountValue && (
-                <div className="mt-2 pt-2 border-t">
-                    <p className="text-sm font-semibold text-green-600">Loyalty Discount: {customer.discountType === 'fixed' ? `৳${customer.discountValue}` : `${customer.discountValue}%`}</p>
-                    {customer.discountValidity && <p className="text-xs text-muted-foreground">Valid until: {new Date(customer.discountValidity).toLocaleDateString()}</p>}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(customer)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteCustomer(customer.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        {settings.customers.map(customer => {
+            const samity = settings.samities.find(s => s.id === customer.samityId);
+            const branch = samity ? settings.branches.find(b => b.id === samity.branchId) : null;
+            return (
+              <Card key={customer.id} className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {customer.photo ? <img src={customer.photo} alt={customer.name} className="h-10 w-10 rounded-full object-cover" data-ai-hint="person" /> : null}
+                    {customer.name}
+                  </CardTitle>
+                  <CardDescription>
+                      {isMicrofinance && customer.code ? `Code: ${customer.code} | ` : ''} 
+                      {customer.mobile}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  {branch && <p className="text-sm font-semibold text-primary">{branch.name}</p>}
+                  {samity && <p className="text-sm text-muted-foreground">{samityTerm}: {samity.name}</p>}
+                  {customer.fatherName && <p className="text-sm text-muted-foreground">Father: {customer.fatherName}</p>}
+                  {customer.presentAddress && <p className="text-sm text-muted-foreground">Address: {customer.presentAddress}</p>}
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialog(customer)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteCustomer(customer.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
+        })}
       </div>
         {settings.customers.length === 0 && (
           <Card className="text-center py-12 col-span-full">
@@ -135,91 +158,110 @@ export function CustomerManagementClient() {
         )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
-            <DialogDescription>
-              {editingCustomer ? 'Update the customer\'s details.' : 'Enter the details for the new customer.'}
-            </DialogDescription>
+            <DialogTitle>{editingCustomer ? 'Edit Member/Customer' : 'Add New Member/Customer'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" defaultValue={editingCustomer?.name} required />
+          <form onSubmit={handleSubmit} className="flex-grow overflow-hidden flex flex-col">
+           <Tabs defaultValue="personal" className="flex-grow flex flex-col overflow-hidden">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="personal">Personal</TabsTrigger>
+                    <TabsTrigger value="address">Address</TabsTrigger>
+                    <TabsTrigger value="nominee">Nominee</TabsTrigger>
+                    <TabsTrigger value="photos">Photos</TabsTrigger>
+                </TabsList>
+                <div className="flex-grow overflow-y-auto pr-2">
+                    <TabsContent value="personal" className="pt-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="samityId">{samityTerm}</Label>
+                                <Select name="samityId" defaultValue={editingCustomer?.samityId} required={isMicrofinance}>
+                                <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {settings.samities.map(samity => (
+                                        <SelectItem key={samity.id} value={samity.id}>{samity.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Member Code</Label>
+                                <Input value={editingCustomer?.code || "Auto-generated"} readOnly disabled/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input id="name" name="name" defaultValue={editingCustomer?.name} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="fatherName">Father's Name</Label>
+                                <Input id="fatherName" name="fatherName" defaultValue={editingCustomer?.fatherName} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="motherName">Mother's Name</Label>
+                                <Input id="motherName" name="motherName" defaultValue={editingCustomer?.motherName} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="spouseName">Spouse's Name</Label>
+                                <Input id="spouseName" name="spouseName" defaultValue={editingCustomer?.spouseName} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="dob">Date of Birth</Label>
+                                <Input id="dob" name="dob" type="date" defaultValue={editingCustomer?.dob} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="admissionDate">Admission Date</Label>
+                                <Input id="admissionDate" name="admissionDate" type="date" defaultValue={editingCustomer?.admissionDate || new Date().toISOString().split('T')[0]} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="mobile">Mobile Number</Label>
+                                <Input id="mobile" name="mobile" defaultValue={editingCustomer?.mobile} required />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="nidOrBirthCert">NID / Birth Certificate No.</Label>
+                                <Input id="nidOrBirthCert" name="nidOrBirthCert" defaultValue={editingCustomer?.nidOrBirthCert} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="email">Email (Optional)</Label>
+                                <Input id="email" name="email" type="email" defaultValue={editingCustomer?.email} />
+                            </div>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="address" className="pt-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="presentAddress">Present Address</Label>
+                                <Textarea id="presentAddress" name="presentAddress" defaultValue={editingCustomer?.presentAddress} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="permanentAddress">Permanent Address</Label>
+                                <Textarea id="permanentAddress" name="permanentAddress" defaultValue={editingCustomer?.permanentAddress} />
+                            </div>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="nominee" className="pt-4 space-y-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="nomineeName">Nominee's Name</Label>
+                                <Input id="nomineeName" name="nomineeName" defaultValue={editingCustomer?.nomineeName} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="nomineeRelation">Relation with Nominee</Label>
+                                <Input id="nomineeRelation" name="nomineeRelation" defaultValue={editingCustomer?.nomineeRelation} />
+                            </div>
+                         </div>
+                    </TabsContent>
+                    <TabsContent value="photos" className="pt-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <PhotoUploadField label="Member's Photo" name="photo" defaultValue={editingCustomer?.photo} hint="URL for the member's photograph." />
+                           <PhotoUploadField label="NID Photo" name="nidPhoto" defaultValue={editingCustomer?.nidPhoto} hint="URL for the member's National ID card." />
+                           <PhotoUploadField label="Guarantor's Photo" name="guarantorPhoto" defaultValue={editingCustomer?.guarantorPhoto} hint="URL for the guarantor's photograph." />
+                           <PhotoUploadField label="Guarantor's NID Photo" name="guarantorNidPhoto" defaultValue={editingCustomer?.guarantorNidPhoto} hint="URL for the guarantor's NID card." />
+                        </div>
+                    </TabsContent>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mobile">Mobile Number</Label>
-                  <Input id="mobile" name="mobile" defaultValue={editingCustomer?.mobile} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="center">Center (Optional)</Label>
-                  <Input id="center" name="center" defaultValue={editingCustomer?.center} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="groupId">Customer Group (Optional)</Label>
-                    <Select name="groupId" defaultValue={editingCustomer?.groupId}>
-                      <SelectTrigger><SelectValue placeholder="Select a group" /></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {settings.customerGroups.map(group => (
-                              <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                </div>
-                 {isMicrofinance && (
-                    <div className="space-y-2">
-                        <Label htmlFor="samityId">{samityTerm}</Label>
-                        <Select name="samityId" defaultValue={editingCustomer?.samityId}>
-                        <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {settings.samities.map(samity => (
-                                <SelectItem key={samity.id} value={samity.id}>{samity.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                 )}
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="email">Email (Optional)</Label>
-                  <Input id="email" name="email" type="email" defaultValue={editingCustomer?.email} />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Address (Optional)</Label>
-                  <Input id="address" name="address" defaultValue={editingCustomer?.address} />
-                </div>
-              </div>
-
-              <div className="border-t pt-4 mt-2">
-                  <Label className="text-base font-semibold">Loyalty Discount</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Set an automatic discount for this customer.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                          <Label htmlFor="discountType">Type</Label>
-                          <Select name="discountType" defaultValue={editingCustomer?.discountType || 'none'}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="none">None</SelectItem>
-                                  <SelectItem value="fixed">Fixed (৳)</SelectItem>
-                                  <SelectItem value="percentage">Percentage (%)</SelectItem>
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      <div>
-                          <Label htmlFor="discountValue">Value</Label>
-                          <Input id="discountValue" name="discountValue" type="number" step="0.01" defaultValue={editingCustomer?.discountValue} />
-                      </div>
-                      <div>
-                          <Label htmlFor="discountValidity">Validity Date</Label>
-                          <Input id="discountValidity" name="discountValidity" type="date" defaultValue={editingCustomer?.discountValidity} />
-                      </div>
-                  </div>
-              </div>
-            </div>
-            <DialogFooter>
+            </Tabs>
+            <DialogFooter className="mt-4 pt-4 border-t">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button type="submit">{editingCustomer ? 'Save Changes' : 'Create Customer'}</Button>
             </DialogFooter>

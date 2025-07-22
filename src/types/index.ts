@@ -2,6 +2,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -165,10 +166,27 @@ export interface Customer {
   name: string;
   mobile: string;
   email?: string;
-  address?: string;
+  address?: string; // Legacy/general address
   center?: string;
   groupId?: string;
-  samityId?: string; // For microfinance members
+  // Microfinance specific fields
+  code?: string; // Auto-generated member code
+  samityId?: string; 
+  dob?: string; // date of birth
+  admissionDate?: string;
+  fatherName?: string;
+  spouseName?: string;
+  motherName?: string;
+  presentAddress?: string;
+  permanentAddress?: string;
+  nidOrBirthCert?: string;
+  nomineeName?: string;
+  nomineeRelation?: string;
+  photo?: string; // URL
+  nidPhoto?: string; // URL
+  guarantorPhoto?: string; // URL
+  guarantorNidPhoto?: string; // URL
+  // Discount fields
   discountType?: 'fixed' | 'percentage';
   discountValue?: number;
   discountValidity?: string; // ISO Date string
@@ -737,5 +755,8 @@ export interface AppSettings {
   };
   lastSamitySerials: {
     [branchId: string]: number;
+  };
+  lastMemberSerials: {
+      [samityId: string]: number;
   };
 }

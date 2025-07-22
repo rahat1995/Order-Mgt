@@ -14,6 +14,7 @@
 
 
 
+
 'use client';
 
 import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule } from '@/types';
@@ -56,8 +57,8 @@ const defaultSettings: AppSettings = {
     advancedItemOptions: true,
     showItemsByCategory: true,
     showPrintWithKitchenButton: true,
-    maxDiscountAmount: 0,
     maxDiscountPercentage: 0,
+    maxDiscountAmount: 0,
     enableOrderTypes: true,
     allowQuantityEdit: true,
     allowPriceEdit: true,
@@ -160,6 +161,7 @@ const defaultSettings: AppSettings = {
   },
   lastVoucherNumbers: {},
   lastSamitySerials: {},
+  lastMemberSerials: {},
 };
 
 type ChallanItemBlueprint = { 
@@ -435,6 +437,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
         lastVoucherNumbers: storedSettings.lastVoucherNumbers || defaultSettings.lastVoucherNumbers,
         lastSamitySerials: storedSettings.lastSamitySerials || defaultSettings.lastSamitySerials,
+        lastMemberSerials: storedSettings.lastMemberSerials || defaultSettings.lastMemberSerials,
       };
       setSettingsState(mergedSettings);
     } else {
@@ -587,10 +590,37 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
   // Customer Management
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
-    const newCustomer = { ...customer, id: uuidv4() };
-    setSettings(prev => ({ ...prev, customers: [...prev.customers, newCustomer] }));
-    return newCustomer;
+    let newCustomerWithCode: Customer;
+
+    setSettings(prev => {
+        let memberCode = '';
+        const updatedSerials = { ...prev.lastMemberSerials };
+
+        if (customer.samityId) {
+            const samity = prev.samities.find(s => s.id === customer.samityId);
+            if (samity) {
+                const branchCode = prev.branches.find(b => b.id === samity.branchId)?.code || 'XX';
+                const samityCode = samity.code.split('-').pop() || '0000';
+                const lastSerial = prev.lastMemberSerials?.[customer.samityId] || 0;
+                const newSerial = lastSerial + 1;
+                memberCode = `${branchCode}-${samityCode}-${String(newSerial).padStart(3, '0')}`;
+                updatedSerials[customer.samityId] = newSerial;
+            }
+        }
+
+        newCustomerWithCode = { ...customer, id: uuidv4(), code: memberCode };
+        
+        return { 
+            ...prev, 
+            customers: [...prev.customers, newCustomerWithCode],
+            lastMemberSerials: updatedSerials,
+        };
+    });
+
+    // @ts-ignore
+    return newCustomerWithCode;
   };
+
   const updateCustomer = (updatedCustomer: Customer) => setSettings(prev => ({ ...prev, customers: prev.customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c) }));
   const deleteCustomer = (customerId: string) => {
     if (confirm('Are you sure?')) {
