@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog } from 'lucide-react';
+import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog, UserCheck, Banknote } from 'lucide-react';
 
 const microfinanceSubModules = [
   {
@@ -31,6 +31,20 @@ const microfinanceSubModules = [
     title: 'Loan Applications',
     description: 'Manage and process member loan applications.',
     enabled: false,
+  },
+  {
+    href: '/admin/modules/microfinance/guarantor',
+    icon: UserCheck,
+    title: 'Guarantor Management',
+    description: 'Manage guarantors for loan applications.',
+    enabled: true,
+  },
+    {
+    href: '/admin/modules/microfinance/cash-collateral',
+    icon: Banknote,
+    title: 'Cash Collateral',
+    description: 'Manage cash collaterals for loans.',
+    enabled: true,
   },
   {
     href: '/admin/modules/microfinance/collections',
