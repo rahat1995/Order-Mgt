@@ -262,8 +262,8 @@ export function LoanProductClient() {
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Loan Product' : 'Add New Loan Product'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
-            <ScrollArea className="flex-grow pr-6 -mr-6">
+          <form onSubmit={handleSubmit} className="flex-grow overflow-hidden">
+            <ScrollArea className="h-full pr-6">
               <div className="space-y-6">
                 <div className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold text-lg">Basic Information</h3>
