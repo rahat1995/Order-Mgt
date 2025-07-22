@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const allFrequencies: RepaymentFrequency[] = ['daily', 'weekly', 'monthly', 'quarterly', 'one-time'];
 
-const FeeInput = ({ label, name, defaultValue, defaultType }: { label: string, name: string, defaultValue?: number, defaultType?: 'fixed' | 'percentage' }) => (
+const FeeInput = ({ label, name, value, onValueChange, typeValue, onTypeChange }: { 
+    label: string, 
+    name: string, 
+    value?: number, 
+    onValueChange: (name: string, value: number) => void,
+    typeValue?: 'fixed' | 'percentage',
+    onTypeChange: (name: string, value: 'fixed' | 'percentage') => void
+}) => (
     <div className="space-y-2">
         <Label htmlFor={name}>{label}</Label>
         <div className="flex gap-2">
-            <Input id={name} name={name} type="number" step="0.01" defaultValue={defaultValue} />
-            <Select name={`${name}Type`} defaultValue={defaultType || 'fixed'}>
+            <Input 
+                id={name} 
+                name={name} 
+                type="number" 
+                step="0.01" 
+                value={value} 
+                onChange={(e) => onValueChange(name, parseFloat(e.target.value) || 0)}
+            />
+            <Select 
+                name={`${name}Type`} 
+                value={typeValue || 'fixed'} 
+                onValueChange={(v: 'fixed' | 'percentage') => onTypeChange(`${name}Type`, v)}
+            >
                 <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="fixed">Fixed</SelectItem>
@@ -79,7 +99,7 @@ const RepaymentScheduleForm = ({
                         id={`${schedule.frequency}GracePeriod`}
                         name={`${schedule.frequency}GracePeriod`}
                         type="number" 
-                        defaultValue={schedule.gracePeriodDays} 
+                        value={schedule.gracePeriodDays} 
                         onChange={(e) => onGracePeriodChange(schedule.frequency, parseInt(e.target.value, 10) || 0)}
                     />
                 </div>
@@ -103,7 +123,7 @@ const RepaymentScheduleForm = ({
                                         type="number" 
                                         step="0.01" 
                                         className="h-8"
-                                        defaultValue={schedule.interestRateIndex?.[inst]}
+                                        value={schedule.interestRateIndex?.[inst] || ''}
                                         onChange={(e) => onInterestIndexChange(schedule.frequency, inst, parseFloat(e.target.value))}
                                     />
                                 </div>
@@ -117,24 +137,42 @@ const RepaymentScheduleForm = ({
 };
 
 
+const getEmptyLoanProduct = (): Omit<LoanProduct, 'id'> => ({
+    name: '',
+    shortName: '',
+    code: '',
+    minAmount: 0,
+    maxAmount: 0,
+    defaultAmount: 0,
+    interestRate: 0,
+    interestCalculationMethod: 'flat',
+    insurance: { type: 'fixed', value: 0 },
+    processingFee: { type: 'fixed', value: 0 },
+    formFee: { type: 'fixed', value: 0 },
+    applicationFee: { type: 'fixed', value: 0 },
+    additionalFee: { type: 'fixed', value: 0 },
+    otherFee: { type: 'fixed', value: 0 },
+    cashCollateral: { type: 'fixed', value: 0, isChangeable: false },
+    repaymentSchedules: {},
+});
+
 export function LoanProductClient() {
   const { settings, addLoanProduct, updateLoanProduct, deleteLoanProduct, isLoaded } = useSettings();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
   const [step, setStep] = useState(1);
-
-  const [repaymentSchedules, setRepaymentSchedules] = useState<Partial<Record<RepaymentFrequency, RepaymentSchedule>>>({});
-  const [interestCalcMethod, setInterestCalcMethod] = useState<InterestCalculationMethod>('flat');
+  const [formData, setFormData] = useState<Omit<LoanProduct, 'id'>>(getEmptyLoanProduct());
 
   const handleOpenDialog = (product: LoanProduct | null) => {
     setEditingProduct(product);
-    setStep(1); // Reset to first step
+    setStep(1);
     if (product) {
-      setRepaymentSchedules(product.repaymentSchedules || {});
-      setInterestCalcMethod(product.interestCalculationMethod || 'flat');
+        setFormData({
+            ...getEmptyLoanProduct(),
+            ...product
+        });
     } else {
-      setRepaymentSchedules({});
-      setInterestCalcMethod('flat');
+        setFormData(getEmptyLoanProduct());
     }
     setDialogOpen(true);
   };
@@ -144,62 +182,71 @@ export function LoanProductClient() {
     setDialogOpen(false);
   };
   
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
+  };
+  
+  const handleFeeValueChange = (name: string, value: number) => {
+      setFormData(prev => ({...prev, [name]: {...(prev as any)[name], value}}));
+  };
+  const handleFeeTypeChange = (nameWith_Type: string, type: 'fixed' | 'percentage') => {
+      const name = nameWith_Type.replace('Type', '');
+      setFormData(prev => ({...prev, [name]: {...(prev as any)[name], type}}));
+  };
+
   const handleToggleSchedule = (frequency: RepaymentFrequency, checked: boolean) => {
-      setRepaymentSchedules(prev => {
-          const newSchedules = { ...prev };
-          if (checked) {
-              if (!newSchedules[frequency]) {
-                  newSchedules[frequency] = { frequency, installments: [], gracePeriodDays: 0, interestRateIndex: {} };
-              }
-          } else {
-              delete newSchedules[frequency];
-          }
-          return newSchedules;
-      });
+    setFormData(prev => {
+        const newSchedules = { ...prev.repaymentSchedules };
+        if (checked) {
+            if (!newSchedules[frequency]) {
+                newSchedules[frequency] = { frequency, installments: [], gracePeriodDays: 0, interestRateIndex: {} };
+            }
+        } else {
+            delete newSchedules[frequency];
+        }
+        return { ...prev, repaymentSchedules: newSchedules };
+    });
   };
 
   const handleInstallmentAdd = (frequency: RepaymentFrequency, value: number) => {
-      setRepaymentSchedules(prev => {
-          const schedule = prev[frequency];
-          if (schedule && !schedule.installments.includes(value)) {
-              return {
-                  ...prev,
-                  [frequency]: { ...schedule, installments: [...schedule.installments, value].sort((a,b) => a - b) }
-              };
-          }
-          return prev;
-      });
+    setFormData(prev => {
+        const schedule = prev.repaymentSchedules[frequency];
+        if (schedule && !schedule.installments.includes(value)) {
+            const newSchedules = { ...prev.repaymentSchedules, [frequency]: { ...schedule, installments: [...schedule.installments, value].sort((a,b) => a - b) } };
+            return { ...prev, repaymentSchedules: newSchedules };
+        }
+        return prev;
+    });
   };
 
   const handleInstallmentRemove = (frequency: RepaymentFrequency, value: number) => {
-      setRepaymentSchedules(prev => {
-          const schedule = prev[frequency];
-          if (schedule) {
-              const newInterestIndex = {...schedule.interestRateIndex};
-              delete newInterestIndex[value];
-
-              return {
-                  ...prev,
-                  [frequency]: { ...schedule, installments: schedule.installments.filter(i => i !== value), interestRateIndex: newInterestIndex }
-              };
-          }
-          return prev;
-      });
+    setFormData(prev => {
+        const schedule = prev.repaymentSchedules[frequency];
+        if (schedule) {
+            const newInterestIndex = {...schedule.interestRateIndex};
+            delete newInterestIndex[value];
+            const newSchedules = { ...prev.repaymentSchedules, [frequency]: { ...schedule, installments: schedule.installments.filter(i => i !== value), interestRateIndex: newInterestIndex }};
+            return { ...prev, repaymentSchedules: newSchedules };
+        }
+        return prev;
+    });
   };
   
   const handleGracePeriodChange = (frequency: RepaymentFrequency, value: number) => {
-      setRepaymentSchedules(prev => {
-          const schedule = prev[frequency];
-          if (schedule) {
-              return { ...prev, [frequency]: { ...schedule, gracePeriodDays: value } };
-          }
-          return prev;
-      });
+    setFormData(prev => {
+        const schedule = prev.repaymentSchedules[frequency];
+        if (schedule) {
+            const newSchedules = { ...prev.repaymentSchedules, [frequency]: { ...schedule, gracePeriodDays: value } };
+            return { ...prev, repaymentSchedules: newSchedules };
+        }
+        return prev;
+    });
   };
   
   const handleInterestIndexChange = (frequency: RepaymentFrequency, installment: number, value: number) => {
-      setRepaymentSchedules(prev => {
-        const schedule = prev[frequency];
+    setFormData(prev => {
+        const schedule = prev.repaymentSchedules[frequency];
         if (schedule) {
             const newInterestIndex = {...schedule.interestRateIndex};
             if (!isNaN(value)) {
@@ -207,10 +254,8 @@ export function LoanProductClient() {
             } else {
                 delete newInterestIndex[installment];
             }
-            return {
-                ...prev,
-                [frequency]: { ...schedule, interestRateIndex: newInterestIndex }
-            };
+            const newSchedules = { ...prev.repaymentSchedules, [frequency]: { ...schedule, interestRateIndex: newInterestIndex } };
+            return { ...prev, repaymentSchedules: newSchedules };
         }
         return prev;
       });
@@ -218,45 +263,16 @@ export function LoanProductClient() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
     
-    const getFee = (name: string): Fee => ({
-        type: formData.get(`${name}Type`) as 'fixed' | 'percentage',
-        value: parseFloat(formData.get(name) as string) || 0,
-    });
-    
-    const productData: Omit<LoanProduct, 'id'> = {
-      name: formData.get('name') as string,
-      shortName: formData.get('shortName') as string,
-      code: formData.get('code') as string,
-      minAmount: parseFloat(formData.get('minAmount') as string) || 0,
-      maxAmount: parseFloat(formData.get('maxAmount') as string) || 0,
-      defaultAmount: parseFloat(formData.get('defaultAmount') as string) || 0,
-      interestRate: parseFloat(formData.get('interestRate') as string),
-      interestCalculationMethod: interestCalcMethod,
-      insurance: getFee('insurance'),
-      processingFee: getFee('processingFee'),
-      formFee: getFee('formFee'),
-      applicationFee: getFee('applicationFee'),
-      additionalFee: getFee('additionalFee'),
-      otherFee: getFee('otherFee'),
-      cashCollateral: {
-        type: formData.get('cashCollateralType') as 'fixed' | 'percentage',
-        value: parseFloat(formData.get('cashCollateral') as string) || 0,
-        isChangeable: (formData.get('cashCollateralIsChangeable') as string) === 'on',
-      },
-      repaymentSchedules: repaymentSchedules,
-    };
-    
-    if (!productData.name || !productData.code || isNaN(productData.interestRate)) {
+    if (!formData.name || !formData.code || isNaN(formData.interestRate)) {
       alert("Please fill all required fields: Name, Code, and Interest Rate.");
       return;
     }
 
     if (editingProduct) {
-      updateLoanProduct({ ...editingProduct, ...productData });
+      updateLoanProduct({ ...editingProduct, ...formData });
     } else {
-      addLoanProduct(productData);
+      addLoanProduct(formData);
     }
     handleCloseDialog();
   };
@@ -334,18 +350,18 @@ export function LoanProductClient() {
                         <div className="space-y-4 p-4 border rounded-lg">
                             <h3 className="font-semibold text-lg">Basic Information</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" defaultValue={editingProduct?.name} required /></div>
-                                <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" defaultValue={editingProduct?.shortName} /></div>
-                                <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" defaultValue={editingProduct?.code} required /></div>
+                                <div className="space-y-2"><Label htmlFor="name">Product Name</Label><Input id="name" name="name" value={formData.name} onChange={handleInputChange} required /></div>
+                                <div className="space-y-2"><Label htmlFor="shortName">Short Name</Label><Input id="shortName" name="shortName" value={formData.shortName} onChange={handleInputChange} /></div>
+                                <div className="space-y-2"><Label htmlFor="code">Code</Label><Input id="code" name="code" value={formData.code} onChange={handleInputChange} required /></div>
                             </div>
                         </div>
 
                         <div className="space-y-4 p-4 border rounded-lg">
                             <h3 className="font-semibold text-lg">Loan Amount</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" defaultValue={editingProduct?.minAmount || 0} /></div>
-                                <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" defaultValue={editingProduct?.maxAmount || 0} /></div>
-                                <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" defaultValue={editingProduct?.defaultAmount || 0} /></div>
+                                <div className="space-y-2"><Label htmlFor="minAmount">Min Amount</Label><Input id="minAmount" name="minAmount" type="number" value={formData.minAmount} onChange={handleInputChange}/></div>
+                                <div className="space-y-2"><Label htmlFor="maxAmount">Max Amount</Label><Input id="maxAmount" name="maxAmount" type="number" value={formData.maxAmount} onChange={handleInputChange} /></div>
+                                <div className="space-y-2"><Label htmlFor="defaultAmount">Default/Avg Amount</Label><Input id="defaultAmount" name="defaultAmount" type="number" value={formData.defaultAmount} onChange={handleInputChange} /></div>
                             </div>
                         </div>
                     </div>
@@ -356,21 +372,21 @@ export function LoanProductClient() {
                             <div className="space-y-4 p-4 border rounded-lg">
                                 <h3 className="font-semibold text-lg">Fees & Insurance</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <FeeInput label="Insurance" name="insurance" defaultValue={editingProduct?.insurance.value} defaultType={editingProduct?.insurance.type} />
-                                    <FeeInput label="Processing Fee" name="processingFee" defaultValue={editingProduct?.processingFee.value} defaultType={editingProduct?.processingFee.type} />
-                                    <FeeInput label="Form Fee" name="formFee" defaultValue={editingProduct?.formFee.value} defaultType={editingProduct?.formFee.type} />
-                                    <FeeInput label="Application Fee" name="applicationFee" defaultValue={editingProduct?.applicationFee.value} defaultType={editingProduct?.applicationFee.type} />
-                                    <FeeInput label="Additional Fee" name="additionalFee" defaultValue={editingProduct?.additionalFee.value} defaultType={editingProduct?.additionalFee.type} />
-                                    <FeeInput label="Other Fee" name="otherFee" defaultValue={editingProduct?.otherFee.value} defaultType={editingProduct?.otherFee.type} />
+                                    <FeeInput label="Insurance" name="insurance" value={formData.insurance.value} onValueChange={handleFeeValueChange} typeValue={formData.insurance.type} onTypeChange={handleFeeTypeChange} />
+                                    <FeeInput label="Processing Fee" name="processingFee" value={formData.processingFee.value} onValueChange={handleFeeValueChange} typeValue={formData.processingFee.type} onTypeChange={handleFeeTypeChange} />
+                                    <FeeInput label="Form Fee" name="formFee" value={formData.formFee.value} onValueChange={handleFeeValueChange} typeValue={formData.formFee.type} onTypeChange={handleFeeTypeChange} />
+                                    <FeeInput label="Application Fee" name="applicationFee" value={formData.applicationFee.value} onValueChange={handleFeeValueChange} typeValue={formData.applicationFee.type} onTypeChange={handleFeeTypeChange} />
+                                    <FeeInput label="Additional Fee" name="additionalFee" value={formData.additionalFee.value} onValueChange={handleFeeValueChange} typeValue={formData.additionalFee.type} onTypeChange={handleFeeTypeChange} />
+                                    <FeeInput label="Other Fee" name="otherFee" value={formData.otherFee.value} onValueChange={handleFeeValueChange} typeValue={formData.otherFee.type} onTypeChange={handleFeeTypeChange} />
                                 </div>
                             </div>
                             
                             <div className="space-y-4 p-4 border rounded-lg">
                                 <h3 className="font-semibold text-lg">Cash Collateral</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                                <FeeInput label="Collateral Amount" name="cashCollateral" defaultValue={editingProduct?.cashCollateral.value} defaultType={editingProduct?.cashCollateral.type} />
+                                <FeeInput label="Collateral Amount" name="cashCollateral" value={formData.cashCollateral.value} onValueChange={(name, value) => setFormData(p => ({...p, cashCollateral: {...p.cashCollateral, value}}))} typeValue={formData.cashCollateral.type} onTypeChange={(name, type) => setFormData(p => ({...p, cashCollateral: {...p.cashCollateral, type}}))} />
                                 <div className="flex items-center space-x-2 pb-2">
-                                    <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" defaultChecked={editingProduct?.cashCollateral.isChangeable} />
+                                    <Switch id="cashCollateralIsChangeable" name="cashCollateralIsChangeable" checked={formData.cashCollateral.isChangeable} onCheckedChange={(checked) => setFormData(p => ({...p, cashCollateral: {...p.cashCollateral, isChangeable: checked}}))} />
                                     <Label htmlFor="cashCollateralIsChangeable">Allow override at disbursement</Label>
                                 </div>
                                 </div>
@@ -379,10 +395,10 @@ export function LoanProductClient() {
                             <div className="space-y-4 p-4 border rounded-lg">
                                 <h3 className="font-semibold text-lg">Interest</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" defaultValue={editingProduct?.interestRate} required /></div>
+                                    <div className="space-y-2"><Label htmlFor="interestRate">Interest Rate (%)</Label><Input id="interestRate" name="interestRate" type="number" step="0.01" value={formData.interestRate} onChange={handleInputChange} required /></div>
                                     <div className="space-y-2">
                                         <Label htmlFor="interestCalculationMethod">Interest Calculation</Label>
-                                        <Select name="interestCalculationMethod" value={interestCalcMethod} onValueChange={(v) => setInterestCalcMethod(v as InterestCalculationMethod)}>
+                                        <Select name="interestCalculationMethod" value={formData.interestCalculationMethod} onValueChange={(v) => setFormData(p => ({...p, interestCalculationMethod: v as InterestCalculationMethod}))}>
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="flat">Flat</SelectItem>
@@ -405,19 +421,19 @@ export function LoanProductClient() {
                                         <Label htmlFor={`switch-${freq}`} className="capitalize font-medium">{freq}</Label>
                                         <Switch 
                                             id={`switch-${freq}`} 
-                                            checked={!!repaymentSchedules[freq]}
+                                            checked={!!formData.repaymentSchedules[freq]}
                                             onCheckedChange={(checked) => handleToggleSchedule(freq, checked)}
                                         />
                                     </div>
-                                    {repaymentSchedules[freq] && (
+                                    {formData.repaymentSchedules[freq] && (
                                         <div className="mt-4">
                                             <RepaymentScheduleForm 
-                                                schedule={repaymentSchedules[freq]!}
+                                                schedule={formData.repaymentSchedules[freq]!}
                                                 onInstallmentAdd={handleInstallmentAdd}
                                                 onInstallmentRemove={handleInstallmentRemove}
                                                 onGracePeriodChange={handleGracePeriodChange}
                                                 onInterestIndexChange={handleInterestIndexChange}
-                                                isFlatRate={interestCalcMethod === 'flat'}
+                                                isFlatRate={formData.interestCalculationMethod === 'flat'}
                                             />
                                         </div>
                                     )}
