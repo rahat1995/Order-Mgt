@@ -5,6 +5,7 @@
 
 
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -31,7 +32,7 @@ const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, 
 );
 
 const RequiredLabel = ({ label, isRequired }: { label: string; isRequired: boolean }) => (
-    <Label htmlFor={label.toLowerCase().replace(/ /g, '-')}>
+    <Label htmlFor={(label || '').toLowerCase().replace(/ /g, '-')}>
         {label} {isRequired && <span className="text-destructive">*</span>}
     </Label>
 );
