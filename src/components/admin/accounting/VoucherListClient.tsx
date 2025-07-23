@@ -1,20 +1,47 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { AccountingVoucher, LedgerAccount } from '@/types';
+import type { AccountingVoucher, LedgerAccount, OrganizationInfo } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2, Printer } from 'lucide-react';
+import { VoucherPrint } from './print/VoucherPrint';
 
 export function VoucherListClient() {
   const { settings, deleteAccountingVoucher, isLoaded } = useSettings();
-  const { accountingVouchers, ledgerAccounts } = settings;
+  const { accountingVouchers, ledgerAccounts, organization } = settings;
   const [viewingVoucher, setViewingVoucher] = useState<AccountingVoucher | null>(null);
+  const [voucherToPrint, setVoucherToPrint] = useState<AccountingVoucher | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const printInNewWindow = (contentRef: React.RefObject<HTMLDivElement>, title: string) => {
+    if (!contentRef.current) return;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Could not open print window. Please disable your popup blocker.');
+      return;
+    }
+    const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(el => el.outerHTML).join('\n');
+    printWindow.document.write(`<html><head><title>${title}</title>${styleTags}</head><body>${contentRef.current.innerHTML}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 500);
+  };
+  
+  useEffect(() => {
+    if (voucherToPrint && printRef.current) {
+      const timer = setTimeout(() => {
+        printInNewWindow(printRef, `Voucher - ${voucherToPrint.voucherNumber}`);
+        setVoucherToPrint(null);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [voucherToPrint]);
 
   const getLedgerName = (ledgerId: string): string => {
       return ledgerAccounts.find(l => l.id === ledgerId)?.name || 'Unknown Ledger';
@@ -37,9 +64,19 @@ export function VoucherListClient() {
   
   const sortedVouchers = [...accountingVouchers].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-
   return (
     <>
+      <div className="hidden">
+        {voucherToPrint && (
+            <div ref={printRef}>
+                <VoucherPrint 
+                    voucher={voucherToPrint}
+                    organization={organization}
+                    ledgerAccounts={ledgerAccounts}
+                />
+            </div>
+        )}
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Voucher History</CardTitle>
@@ -68,8 +105,8 @@ export function VoucherListClient() {
                         <TableCell className="text-sm text-muted-foreground truncate max-w-xs">{voucher.narration}</TableCell>
                         <TableCell className="text-right font-semibold">৳{totalDebit.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingVoucher(voucher)}>
-                                <Eye className="h-4 w-4" />
+                             <Button variant="outline" size="sm" onClick={() => setVoucherToPrint(voucher)}>
+                                <Printer className="mr-2 h-4 w-4" /> Print
                             </Button>
                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteAccountingVoucher(voucher.id)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -86,50 +123,6 @@ export function VoucherListClient() {
           </Table>
         </CardContent>
       </Card>
-
-      <Dialog open={!!viewingVoucher} onOpenChange={(open) => !open && setViewingVoucher(null)}>
-        <DialogContent className="max-w-2xl">
-            {viewingVoucher && (
-                <>
-                    <DialogHeader>
-                        <DialogTitle>Voucher Details: {viewingVoucher.voucherNumber}</DialogTitle>
-                        <DialogDescription>
-                            {viewingVoucher.type} voucher recorded on {new Date(viewingVoucher.date).toLocaleDateString()}.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        {viewingVoucher.narration && <p className="text-sm p-2 bg-muted rounded-md"><strong>Narration:</strong> {viewingVoucher.narration}</p>}
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Ledger</TableHead>
-                                    <TableHead className="text-right">Debit</TableHead>
-                                    <TableHead className="text-right">Credit</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {viewingVoucher.transactions.map(tx => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell>
-                                            <p>{getLedgerName(tx.ledgerId)}</p>
-                                            {tx.narration && <p className="text-xs text-muted-foreground pl-2">- {tx.narration}</p>}
-                                        </TableCell>
-                                        <TableCell className="text-right">{tx.isDebit ? `৳${tx.amount.toFixed(2)}` : '-'}</TableCell>
-                                        <TableCell className="text-right">{!tx.isDebit ? `৳${tx.amount.toFixed(2)}` : '-'}</TableCell>
-                                    </TableRow>
-                                ))}
-                                 <TableRow className="font-bold bg-muted">
-                                    <TableCell>Total</TableCell>
-                                    <TableCell className="text-right">৳{getVoucherTotals(viewingVoucher).totalDebit.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">৳{getVoucherTotals(viewingVoucher).totalCredit.toFixed(2)}</TableCell>
-                                 </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
-                </>
-            )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
