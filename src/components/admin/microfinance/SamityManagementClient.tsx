@@ -19,7 +19,7 @@ const meetingDays = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Th
 
 export function SamityManagementClient() {
   const { settings, addSamity, updateSamity, deleteSamity, isLoaded } = useSettings();
-  const { samities, microfinanceSettings, branches, workingAreas } = settings;
+  const { samities, microfinanceSettings, branches, workingAreas, employees } = settings;
   const { samityTerm } = microfinanceSettings;
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,12 +42,13 @@ export function SamityManagementClient() {
       name: formData.get('name') as string,
       branchId: formData.get('branchId') as string,
       workingAreaId: formData.get('workingAreaId') as string,
+      fieldOfficerId: formData.get('fieldOfficerId') as string,
       meetingDay: formData.get('meetingDay') as Samity['meetingDay'],
       openingDate: formData.get('openingDate') as string,
       maxMembers: parseInt(formData.get('maxMembers') as string, 10),
     };
 
-    if (!samityData.name || !samityData.branchId || !samityData.workingAreaId || isNaN(samityData.maxMembers)) {
+    if (!samityData.name || !samityData.branchId || !samityData.workingAreaId || !samityData.fieldOfficerId || isNaN(samityData.maxMembers)) {
       alert("Please fill all required fields.");
       return;
     }
@@ -90,6 +91,7 @@ export function SamityManagementClient() {
                 <TableHead>Code</TableHead>
                 <TableHead>{samityTerm} Name</TableHead>
                 <TableHead>Branch</TableHead>
+                <TableHead>Field Officer</TableHead>
                 <TableHead>Meeting Day</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -98,11 +100,13 @@ export function SamityManagementClient() {
               {samities.length > 0 ? (
                 samities.map(samity => {
                   const branch = branches.find(b => b.id === samity.branchId);
+                  const officer = employees.find(e => e.id === samity.fieldOfficerId);
                   return (
                     <TableRow key={samity.id}>
                       <TableCell className="font-mono">{samity.code}</TableCell>
                       <TableCell className="font-medium">{samity.name}</TableCell>
                       <TableCell>{branch?.name || 'N/A'}</TableCell>
+                      <TableCell>{officer?.name || 'N/A'}</TableCell>
                       <TableCell>{samity.meetingDay}</TableCell>
                       <TableCell>
                          <div className="flex items-center gap-2">
@@ -119,7 +123,7 @@ export function SamityManagementClient() {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">No {samityTerm}s found. Click "Add {samityTerm}" to start.</TableCell>
+                  <TableCell colSpan={6} className="h-24 text-center">No {samityTerm}s found. Click "Add {samityTerm}" to start.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -155,6 +159,15 @@ export function SamityManagementClient() {
                       <SelectTrigger><SelectValue placeholder="Select a working area"/></SelectTrigger>
                       <SelectContent>
                           {workingAreas.map(wa => <SelectItem key={wa.id} value={wa.id}>{wa.name}</SelectItem>)}
+                      </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fieldOfficerId">Field Officer</Label>
+                  <Select name="fieldOfficerId" defaultValue={editingSamity?.fieldOfficerId} required>
+                      <SelectTrigger><SelectValue placeholder="Select an employee"/></SelectTrigger>
+                      <SelectContent>
+                          {employees.map(emp => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}
                       </SelectContent>
                   </Select>
                 </div>

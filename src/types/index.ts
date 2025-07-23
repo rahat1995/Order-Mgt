@@ -5,6 +5,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -174,6 +175,7 @@ export interface Samity {
   code: string;
   branchId: string;
   workingAreaId: string;
+  fieldOfficerId: string; // Employee ID
   meetingDay: 'Saturday' | 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
   openingDate: string; // ISO Date string
   maxMembers: number;
