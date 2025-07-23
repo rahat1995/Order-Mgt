@@ -7,15 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronsUpDown, XCircle, PlusCircle, AlertCircle, CheckCircle2, Check } from 'lucide-react';
+import { ChevronsUpDown, XCircle, PlusCircle, AlertCircle, CheckCircle2, Check, FilePenLine, Banknote, Landmark, BookCopy } from 'lucide-react';
 import type { VoucherType, VoucherTransaction, LedgerAccount } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 type TransactionRow = Omit<VoucherTransaction, 'isDebit' | 'amount'> & {
     debit: number;
@@ -29,7 +30,10 @@ export function VoucherEntryClient() {
     const [voucherType, setVoucherType] = useState<VoucherType>('Payment');
     const [voucherDate, setVoucherDate] = useState(new Date().toISOString().split('T')[0]);
     const [narration, setNarration] = useState('');
-    const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+    const [transactions, setTransactions] = useState<TransactionRow[]>([
+        { id: uuidv4(), ledgerId: '', debit: 0, credit: 0, narration: '' },
+        { id: uuidv4(), ledgerId: '', debit: 0, credit: 0, narration: '' }
+    ]);
 
     useEffect(() => {
         resetForm();
@@ -56,7 +60,10 @@ export function VoucherEntryClient() {
     const resetForm = () => {
         setVoucherDate(new Date().toISOString().split('T')[0]);
         setNarration('');
-        setTransactions([]);
+        setTransactions([
+            { id: uuidv4(), ledgerId: '', debit: 0, credit: 0, narration: '' },
+            { id: uuidv4(), ledgerId: '', debit: 0, credit: 0, narration: '' }
+        ]);
     };
 
     const addRow = () => {
@@ -110,6 +117,13 @@ export function VoucherEntryClient() {
 
     if (!isLoaded) return <div>Loading...</div>;
 
+    const voucherTypeIcons = {
+        'Payment': Banknote,
+        'Receipt': Landmark,
+        'Contra': BookCopy,
+        'Journal': FilePenLine
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -118,17 +132,20 @@ export function VoucherEntryClient() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="voucherType">Voucher Type</Label>
-                        <Select name="voucherType" value={voucherType} onValueChange={(v) => setVoucherType(v as VoucherType)}>
-                            <SelectTrigger><SelectValue/></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Payment">Payment</SelectItem>
-                                <SelectItem value="Receipt">Receipt</SelectItem>
-                                <SelectItem value="Contra">Contra</SelectItem>
-                                <SelectItem value="Journal">Journal</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="space-y-2 md:col-span-2">
+                        <Label>Voucher Type</Label>
+                         <Tabs value={voucherType} onValueChange={(v) => setVoucherType(v as VoucherType)} className="w-full">
+                            <TabsList className="grid w-full grid-cols-4">
+                                {(Object.keys(voucherTypeIcons) as VoucherType[]).map(type => {
+                                    const Icon = voucherTypeIcons[type];
+                                    return (
+                                        <TabsTrigger key={type} value={type}>
+                                            <Icon className="mr-2 h-4 w-4"/> {type}
+                                        </TabsTrigger>
+                                    );
+                                })}
+                            </TabsList>
+                        </Tabs>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="voucherDate">Date</Label>
