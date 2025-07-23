@@ -4,6 +4,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -95,6 +96,11 @@ export interface AccountingSettings {
   openingDate: string; // ISO date
   cashLedgerIds?: string[];
   bankLedgerIds?: string[];
+  voucherApprovalLevels?: {
+    preparedBy?: string; // Designation ID
+    reviewedBy?: string; // Designation ID
+    approvedBy?: string; // Designation ID
+  }
 }
 
 export interface MemberMandatoryFields {

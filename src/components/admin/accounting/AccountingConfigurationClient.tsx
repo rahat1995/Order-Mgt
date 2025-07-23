@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Check, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function MultiSelectCombobox({
   title,
@@ -83,6 +85,7 @@ function MultiSelectCombobox({
 
 export function AccountingConfigurationClient() {
   const { settings, setAccountingSettings, updateAllLedgerOpeningBalances, isLoaded } = useSettings();
+  const { designations } = settings;
   
   const [accountingConfig, setAccountingConfig] = useState<AccountingSettings>(settings.accountingSettings);
   
@@ -109,6 +112,16 @@ export function AccountingConfigurationClient() {
 
   const handleCashBankConfigChange = (field: 'cashLedgerIds' | 'bankLedgerIds', value: string[]) => {
     setAccountingConfig(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleApprovalLevelChange = (level: 'preparedBy' | 'reviewedBy' | 'approvedBy', value: string) => {
+    setAccountingConfig(prev => ({
+      ...prev,
+      voucherApprovalLevels: {
+        ...prev.voucherApprovalLevels,
+        [level]: value,
+      }
+    }));
   };
 
   const handleBalanceChange = (ledgerId: string, type: 'debit' | 'credit', value: string) => {
@@ -214,6 +227,43 @@ export function AccountingConfigurationClient() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Voucher Approval Workflow</CardTitle>
+          <CardDescription>Set up a 3-layer approval system for vouchers based on employee designation.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+                <Label>Prepared By</Label>
+                <Select value={accountingConfig.voucherApprovalLevels?.preparedBy || ''} onValueChange={(v) => handleApprovalLevelChange('preparedBy', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select Designation" /></SelectTrigger>
+                    <SelectContent>
+                        {designations.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label>Reviewed By</Label>
+                <Select value={accountingConfig.voucherApprovalLevels?.reviewedBy || ''} onValueChange={(v) => handleApprovalLevelChange('reviewedBy', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select Designation" /></SelectTrigger>
+                    <SelectContent>
+                        {designations.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div className="space-y-2">
+                <Label>Approved By</Label>
+                <Select value={accountingConfig.voucherApprovalLevels?.approvedBy || ''} onValueChange={(v) => handleApprovalLevelChange('approvedBy', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select Designation" /></SelectTrigger>
+                    <SelectContent>
+                        {designations.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -6,6 +7,7 @@ import type { AccountingVoucher, LedgerAccount, OrganizationInfo } from '@/types
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { amountToWords } from '@/lib/amountInWords';
 import { Package } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
 
 interface VoucherPrintProps {
   voucher: AccountingVoucher;
@@ -23,6 +25,13 @@ const formatDate = (isoString: string) => {
 };
 
 export const VoucherPrint = ({ voucher, organization, ledgerAccounts }: VoucherPrintProps) => {
+  const { settings } = useSettings();
+  const { designations } = settings;
+  const { voucherApprovalLevels } = settings.accountingSettings;
+
+  const preparedBy = designations.find(d => d.id === voucherApprovalLevels?.preparedBy)?.name || 'Prepared By';
+  const reviewedBy = designations.find(d => d.id === voucherApprovalLevels?.reviewedBy)?.name || 'Reviewed By';
+  const approvedBy = designations.find(d => d.id === voucherApprovalLevels?.approvedBy)?.name || 'Approved By';
 
   const getLedgerName = (ledgerId: string): string => {
     return ledgerAccounts.find(l => l.id === ledgerId)?.name || 'Unknown Ledger';
@@ -106,9 +115,9 @@ export const VoucherPrint = ({ voucher, organization, ledgerAccounts }: VoucherP
       </section>
       
       <footer className="mt-auto pt-16 grid grid-cols-3 gap-8 text-center text-xs">
-        <div><div className="border-t-2 border-gray-400 pt-2"><p>Prepared By</p></div></div>
-        <div><div className="border-t-2 border-gray-400 pt-2"><p>Reviewed By</p></div></div>
-        <div><div className="border-t-2 border-gray-400 pt-2"><p>Approved By</p></div></div>
+        <div><div className="border-t-2 border-gray-400 pt-2"><p>{preparedBy}</p></div></div>
+        <div><div className="border-t-2 border-gray-400 pt-2"><p>{reviewedBy}</p></div></div>
+        <div><div className="border-t-2 border-gray-400 pt-2"><p>{approvedBy}</p></div></div>
       </footer>
     </div>
   );
