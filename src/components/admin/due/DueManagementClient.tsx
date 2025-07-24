@@ -145,11 +145,18 @@ export function DueManagementClient() {
   const handleBarcodeScan = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const orderNumber = formData.get('barcode') as string;
+    const scannedCode = (formData.get('barcode') as string).trim();
     
-    if (!orderNumber) return;
+    if (!scannedCode) return;
 
-    const order = orders.find(o => o.orderNumber === orderNumber.trim());
+    // First, try to find by Order Number (for POS sales)
+    let order = orders.find(o => o.orderNumber === scannedCode);
+    
+    // If not found, try to find by Service Job ID (for service invoices)
+    if (!order) {
+        order = orders.find(o => o.serviceJobId === scannedCode);
+    }
+    
     if (order && order.customerId) {
         setSelectedCustomerId(order.customerId);
         router.push(`/admin/modules/dueSell?customerId=${order.customerId}`, { scroll: false });

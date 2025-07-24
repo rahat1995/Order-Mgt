@@ -125,7 +125,7 @@ export const ServiceInvoice = ({ job, order, customer, organization, issueType, 
                  </div>
                  <p className="text-xs text-gray-500 mt-1">Scan to track status</p>
                  <div className="mt-2">
-                    <Barcode value={job.jobNumber} height={40} width={1.5} fontSize={12} />
+                    <Barcode value={job.id} height={40} width={1.5} fontSize={12} />
                  </div>
             </div>
         </div>
