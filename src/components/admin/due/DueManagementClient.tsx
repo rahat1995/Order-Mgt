@@ -25,7 +25,7 @@ type Transaction = {
 
 export function DueManagementClient() {
   const { settings, addCollection, isLoaded } = useSettings();
-  const { customers, orders, collections, organization } = settings;
+  const { customers, orders, collections, organization, serviceJobs } = settings;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -152,9 +152,12 @@ export function DueManagementClient() {
     // First, try to find by Order Number (for POS sales)
     let order = orders.find(o => o.orderNumber === scannedCode);
     
-    // If not found, try to find by Service Job ID (for service invoices)
+    // If not found, try to find by Service Job Number
     if (!order) {
-        order = orders.find(o => o.serviceJobId === scannedCode);
+        const job = serviceJobs.find(j => j.jobNumber === scannedCode);
+        if (job && job.orderId) {
+            order = orders.find(o => o.id === job.orderId);
+        }
     }
     
     if (order && order.customerId) {
