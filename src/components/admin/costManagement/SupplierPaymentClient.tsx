@@ -129,7 +129,7 @@ export function SupplierPaymentClient() {
 
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
-    router.replace(`/admin/modules/costManagement/payments?supplierId=${supplierId}`, { scroll: false });
+    router.push(`/admin/modules/costManagement/payments?supplierId=${supplierId}`, { shallow: true });
   }
 
   if (!isLoaded) {

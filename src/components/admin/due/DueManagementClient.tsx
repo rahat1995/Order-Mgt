@@ -162,7 +162,7 @@ export function DueManagementClient() {
     
     if (order && order.customerId) {
         setSelectedCustomerId(order.customerId);
-        router.push(`/admin/modules/dueSell?customerId=${order.customerId}`, { scroll: false });
+        router.push(`/admin/modules/dueSell?customerId=${order.customerId}`, { shallow: true });
         setTimeout(() => {
           collectionAmountInputRef.current?.focus();
         }, 100);
@@ -218,7 +218,7 @@ export function DueManagementClient() {
                             onSelect={() => {
                             setSelectedCustomerId(customer.id);
                             setPopoverOpen(false);
-                            router.push(`/admin/modules/dueSell?customerId=${customer.id}`, { scroll: false });
+                            router.push(`/admin/modules/dueSell?customerId=${customer.id}`, { shallow: true });
                             }}
                         >
                             {customer.name} - {customer.mobile}
