@@ -94,7 +94,7 @@ export const JobCard = ({ job, customer, organization, issueType, serviceType }:
                         </div>
                     </div>
                     <div>
-                         <Barcode value={job.id} height={60} width={2} fontSize={16} />
+                         <Barcode value={job.jobNumber} height={60} width={2} fontSize={16} />
                     </div>
                 </div>
             </main>
