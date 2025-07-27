@@ -1,22 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 'use client';
 
 import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields } from '@/types';
@@ -679,7 +661,41 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   // Collection Management
   const addCollection = (collectionData: { customerId: string, amount: number, notes?: string }) => {
     const newCollection: Collection = { ...collectionData, id: uuidv4(), date: new Date().toISOString() };
-    setSettings(prev => ({ ...prev, collections: [...prev.collections, newCollection] }));
+    setSettings(prev => {
+        let updatedServiceJobs = [...prev.serviceJobs];
+
+        const customerOrders = prev.orders.filter(o => o.customerId === collectionData.customerId);
+        const customerCollections = prev.collections.filter(c => c.customerId === collectionData.customerId);
+        const totalBilled = customerOrders.reduce((acc, order) => acc + order.total, 0);
+        const totalPaidBefore = customerCollections.reduce((acc, c) => acc + c.amount, 0) + customerOrders.reduce((acc, order) => acc + (order.amountTendered || 0), 0);
+        const newTotalPaid = totalPaidBefore + collectionData.amount;
+        
+        // If the new payment clears the balance, update service jobs.
+        if (newTotalPaid >= totalBilled) {
+            const jobsToUpdate = prev.serviceJobs.filter(sj => 
+                sj.customerId === collectionData.customerId &&
+                sj.status !== 'Delivered' &&
+                sj.status !== 'Cancelled'
+            );
+
+            const jobIdsToUpdate = jobsToUpdate.map(j => j.id);
+
+            updatedServiceJobs = prev.serviceJobs.map(sj => {
+                if (jobIdsToUpdate.includes(sj.id)) {
+                    const newHistoryEntry = { status: 'Delivered', timestamp: new Date().toISOString() };
+                    const currentHistory = Array.isArray(sj.statusHistory) ? sj.statusHistory : [];
+                    return { ...sj, status: 'Delivered', statusHistory: [...currentHistory, newHistoryEntry] };
+                }
+                return sj;
+            });
+        }
+        
+        return {
+            ...prev,
+            collections: [...prev.collections, newCollection],
+            serviceJobs: updatedServiceJobs,
+        };
+    });
   };
 
   // Service Job Management
