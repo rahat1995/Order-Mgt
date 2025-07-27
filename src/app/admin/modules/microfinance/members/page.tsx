@@ -1,6 +1,6 @@
 
 
-import { CustomerManagementClient } from "@/components/admin/pos/CustomerManagementClient";
+import { MemberManagementClient } from "@/components/admin/microfinance/MemberManagementClient";
 import { Users } from "lucide-react";
 
 export default function MemberManagementPage() {
@@ -14,7 +14,7 @@ export default function MemberManagementPage() {
         Add, view, and manage your microfinance members. Assign them to a group and manage their information.
       </p>
       <div className="h-[1px] w-full bg-border" />
-      <CustomerManagementClient />
+      <MemberManagementClient />
     </div>
   );
 }
