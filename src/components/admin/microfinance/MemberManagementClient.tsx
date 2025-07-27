@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import type { Customer, MemberMandatoryFields } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, name: string, defaultValue?: string, hint: string }) => (
     <div className="space-y-2">
@@ -27,6 +29,8 @@ const RequiredLabel = ({ label, isRequired }: { label: string; isRequired: boole
     </Label>
 );
 
+const relationshipOptions = ["Husband", "Father", "Wife", "Son", "Sister", "Brother", "Uncle", "Grand Father"];
+
 const steps = [
     { id: 1, name: 'Personal Info' },
     { id: 2, name: 'Address Info' },
@@ -36,13 +40,14 @@ const steps = [
 
 export function MemberManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
-  const { samityTerm, samities, branches, microfinanceSettings } = settings;
+  const { samityTerm, samities, branches, microfinanceSettings, workingAreas } = settings;
   const { memberMandatoryFields } = microfinanceSettings;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [step, setStep] = useState(1);
   const formRef = React.useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState<Partial<Customer>>({});
+  const [usePresentAsPermanent, setUsePresentAsPermanent] = useState(false);
 
 
   const handleOpenDialog = (customer: Customer | null) => {
@@ -57,26 +62,46 @@ export function MemberManagementClient() {
     setFormData({});
     setDialogOpen(false);
   };
+  
+  const captureFormData = () => {
+     if (formRef.current) {
+      const currentFormData = new FormData(formRef.current);
+      const data: any = {};
+      currentFormData.forEach((value, key) => {
+        data[key] = value;
+      });
+       setFormData(prev => ({...prev, ...data}));
+    }
+  };
 
   const handleNextStep = () => {
-    if (formRef.current) {
-      const currentFormData = new FormData(formRef.current);
-      currentFormData.forEach((value, key) => {
-        setFormData(prev => ({...prev, [key]: value}));
-      });
-    }
+    captureFormData();
     setStep(prev => Math.min(prev + 1, steps.length));
   };
 
   const handleBackStep = () => {
-     if (formRef.current) {
-      const currentFormData = new FormData(formRef.current);
-      currentFormData.forEach((value, key) => {
-        setFormData(prev => ({...prev, [key]: value}));
-      });
-    }
+    captureFormData();
     setStep(prev => Math.max(prev - 1, 1));
   }
+  
+  useEffect(() => {
+    if (formData.samityId) {
+        const samity = samities.find(s => s.id === formData.samityId);
+        if (samity) {
+            const workingArea = workingAreas.find(wa => wa.id === samity.workingAreaId);
+            if (workingArea) {
+                setFormData(prev => ({...prev, presentAddress: workingArea.name}));
+            }
+        }
+    }
+  }, [formData.samityId, samities, workingAreas]);
+  
+   useEffect(() => {
+    if (usePresentAsPermanent) {
+      setFormData(prev => ({ ...prev, permanentAddress: prev.presentAddress }));
+    }
+  }, [usePresentAsPermanent, formData.presentAddress]);
+
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,6 +113,11 @@ export function MemberManagementClient() {
 
     const samityId = combinedData.samityId;
     const branchId = samities.find(s => s.id === samityId)?.branchId;
+    
+    if (combinedData.mobile && combinedData.mobile.length !== 14) {
+        alert("Mobile number must be 14 digits including the country code.");
+        return;
+    }
 
     const customerData: Omit<Customer, 'id' | 'code'> & { code?: string } = {
         name: combinedData.name as string,
@@ -99,6 +129,7 @@ export function MemberManagementClient() {
         admissionDate: combinedData.admissionDate as string,
         fatherName: combinedData.fatherName as string,
         spouseName: combinedData.spouseName as string,
+        spouseRelation: combinedData.spouseRelation as string,
         motherName: combinedData.motherName as string,
         presentAddress: combinedData.presentAddress as string,
         permanentAddress: combinedData.permanentAddress as string,
@@ -220,7 +251,7 @@ export function MemberManagementClient() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <RequiredLabel label={samityTerm} isRequired={true} />
-                                <Select name="samityId" defaultValue={formData?.samityId} required>
+                                <Select name="samityId" defaultValue={formData?.samityId} onValueChange={(v) => setFormData(p => ({...p, samityId: v}))} required>
                                 <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
@@ -238,7 +269,7 @@ export function MemberManagementClient() {
                                 <RequiredLabel label="Full Name" isRequired={true} />
                                 <Input id="name" name="name" defaultValue={formData?.name} required />
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <RequiredLabel label="Father's Name" isRequired={!!memberMandatoryFields?.fatherName} />
                                 <Input id="fatherName" name="fatherName" defaultValue={formData?.fatherName} required={!!memberMandatoryFields?.fatherName} />
                             </div>
@@ -246,9 +277,18 @@ export function MemberManagementClient() {
                                 <RequiredLabel label="Mother's Name" isRequired={!!memberMandatoryFields?.motherName} />
                                 <Input id="motherName" name="motherName" defaultValue={formData?.motherName} required={!!memberMandatoryFields?.motherName} />
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <RequiredLabel label="Spouse's Name" isRequired={!!memberMandatoryFields?.spouseName} />
                                 <Input id="spouseName" name="spouseName" defaultValue={formData?.spouseName} required={!!memberMandatoryFields?.spouseName} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Relation with Spouse</Label>
+                                 <Select name="spouseRelation" defaultValue={formData.spouseRelation}>
+                                    <SelectTrigger><SelectValue placeholder="Select relation..."/></SelectTrigger>
+                                    <SelectContent>
+                                        {relationshipOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Date of Birth" isRequired={!!memberMandatoryFields?.dob} />
@@ -260,7 +300,10 @@ export function MemberManagementClient() {
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Mobile Number" isRequired={true} />
-                                <Input id="mobile" name="mobile" defaultValue={formData?.mobile} required />
+                                <div className="flex items-center">
+                                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm">+880</span>
+                                    <Input id="mobile" name="mobile" defaultValue={formData?.mobile?.replace('+880', '')} onChange={e => setFormData(p => ({...p, mobile: `+880${e.target.value}`}))} required pattern="\d{10}" title="Must be 10 digits after the country code." className="rounded-l-none" />
+                                </div>
                             </div>
                              <div className="space-y-2">
                                 <RequiredLabel label="NID / Birth Certificate No." isRequired={!!memberMandatoryFields?.nidOrBirthCert} />
@@ -277,11 +320,15 @@ export function MemberManagementClient() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <RequiredLabel label="Present Address" isRequired={!!memberMandatoryFields?.presentAddress} />
-                            <Textarea id="presentAddress" name="presentAddress" defaultValue={formData?.presentAddress} required={!!memberMandatoryFields?.presentAddress} />
+                            <Textarea id="presentAddress" name="presentAddress" value={formData?.presentAddress || ''} onChange={(e) => setFormData(p=>({...p, presentAddress: e.target.value}))} required={!!memberMandatoryFields?.presentAddress} />
                         </div>
                         <div className="space-y-2">
                             <RequiredLabel label="Permanent Address" isRequired={!!memberMandatoryFields?.permanentAddress} />
-                            <Textarea id="permanentAddress" name="permanentAddress" defaultValue={formData?.permanentAddress} required={!!memberMandatoryFields?.permanentAddress}/>
+                             <div className="flex items-center space-x-2 pb-2">
+                                <Checkbox id="sameAsPresent" checked={usePresentAsPermanent} onCheckedChange={(checked) => setUsePresentAsPermanent(Boolean(checked))} />
+                                <Label htmlFor="sameAsPresent" className="font-normal">Same as Present Address</Label>
+                            </div>
+                            <Textarea id="permanentAddress" name="permanentAddress" value={formData?.permanentAddress || ''} onChange={(e) => setFormData(p=>({...p, permanentAddress: e.target.value}))} required={!!memberMandatoryFields?.permanentAddress}/>
                         </div>
                     </div>
                 )}
@@ -293,7 +340,12 @@ export function MemberManagementClient() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="nomineeRelation">Relation with Nominee</Label>
-                            <Input id="nomineeRelation" name="nomineeRelation" defaultValue={formData?.nomineeRelation} />
+                             <Select name="nomineeRelation" defaultValue={formData.nomineeRelation}>
+                                <SelectTrigger><SelectValue placeholder="Select relation..."/></SelectTrigger>
+                                <SelectContent>
+                                    {relationshipOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 )}

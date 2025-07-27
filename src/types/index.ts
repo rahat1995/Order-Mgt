@@ -7,6 +7,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -197,6 +198,7 @@ export interface Customer {
   admissionDate?: string;
   fatherName?: string;
   spouseName?: string;
+  spouseRelation?: string;
   motherName?: string;
   presentAddress?: string;
   permanentAddress?: string;
