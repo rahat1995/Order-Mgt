@@ -162,7 +162,6 @@ export function DueManagementClient() {
     
     if (order && order.customerId) {
         setSelectedCustomerId(order.customerId);
-        router.push(`/admin/modules/dueSell?customerId=${order.customerId}`, { shallow: true });
         setTimeout(() => {
           collectionAmountInputRef.current?.focus();
         }, 100);
@@ -216,9 +215,8 @@ export function DueManagementClient() {
                             key={customer.id}
                             value={`${customer.name} ${customer.mobile}`}
                             onSelect={() => {
-                            setSelectedCustomerId(customer.id);
-                            setPopoverOpen(false);
-                            router.push(`/admin/modules/dueSell?customerId=${customer.id}`, { shallow: true });
+                                setSelectedCustomerId(customer.id);
+                                setPopoverOpen(false);
                             }}
                         >
                             {customer.name} - {customer.mobile}
