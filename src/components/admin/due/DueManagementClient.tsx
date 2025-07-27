@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -105,6 +106,14 @@ export function DueManagementClient() {
 
     return { selectedCustomer: customer, totalDue: due, transactionHistory: history };
   }, [selectedCustomerId, customers, orders, collections]);
+  
+  useEffect(() => {
+    if (totalDue > 0) {
+      setCollectionAmount(totalDue.toFixed(2));
+    } else {
+      setCollectionAmount('');
+    }
+  }, [totalDue]);
 
   const handleCollectionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,10 +158,8 @@ export function DueManagementClient() {
     
     if (!scannedCode) return;
 
-    // First, try to find by Order Number (for POS sales)
     let order = orders.find(o => o.orderNumber === scannedCode);
     
-    // If not found, try to find by Service Job Number
     if (!order) {
         const job = serviceJobs.find(j => j.jobNumber === scannedCode);
         if (job && job.orderId) {
