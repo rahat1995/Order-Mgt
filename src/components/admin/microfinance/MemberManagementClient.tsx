@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, View } from 'lucide-react';
-import type { Customer, MemberMandatoryFields } from '@/types';
+import type { Customer, MemberMandatoryFields, SavingsProduct } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -50,8 +50,8 @@ const steps = [
 
 export function MemberManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
-  const { customers, samityTerm, samities, branches, microfinanceSettings, workingAreas, savingsProducts } = settings;
-  const { memberMandatoryFields, primarySavingsProductId } = microfinanceSettings;
+  const { customers, samities, branches, microfinanceSettings, workingAreas, savingsProducts } = settings;
+  const { samityTerm, memberMandatoryFields, primarySavingsProductId } = microfinanceSettings;
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -428,5 +428,3 @@ export function MemberManagementClient() {
     </>
   );
 }
-
-```
