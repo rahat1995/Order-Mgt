@@ -8,6 +8,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -687,6 +688,15 @@ export interface SavingsProduct {
     fdr_prematureWithdrawalInterestRate?: number;
 }
 
+export interface SavingsAccount {
+    id: string;
+    memberId: string;
+    savingsProductId: string;
+    accountNumber: string;
+    openingDate: string; // ISO Date
+    balance: number;
+    status: 'active' | 'dormant' | 'closed';
+}
 
 export interface AppSettings {
   organization: OrganizationInfo;
@@ -712,6 +722,7 @@ export interface AppSettings {
   loanProducts: LoanProduct[];
   savingsProductTypes: SavingsProductType[];
   savingsProducts: SavingsProduct[];
+  savingsAccounts: SavingsAccount[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];
@@ -781,5 +792,8 @@ export interface AppSettings {
   };
   lastMemberSerials: {
       [samityId: string]: number;
+  };
+  lastSavingsAccountSerials: {
+      [productId: string]: number;
   };
 }

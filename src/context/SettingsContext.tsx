@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -98,6 +98,7 @@ const defaultSettings: AppSettings = {
     { id: 'fdr', name: 'FDR', code: 'FDR' },
   ],
   savingsProducts: [],
+  savingsAccounts: [],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -160,6 +161,7 @@ const defaultSettings: AppSettings = {
   lastVoucherNumbers: {},
   lastSamitySerials: {},
   lastMemberSerials: {},
+  lastSavingsAccountSerials: {},
 };
 
 type ChallanItemBlueprint = { 
@@ -221,6 +223,7 @@ interface SettingsContextType {
   addSavingsProduct: (product: Omit<SavingsProduct, 'id'>) => void;
   updateSavingsProduct: (product: SavingsProduct) => void;
   deleteSavingsProduct: (productId: string) => void;
+  addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status'>) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -404,6 +407,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         loanProducts: storedSettings.loanProducts || defaultSettings.loanProducts,
         savingsProductTypes: storedSettings.savingsProductTypes?.length ? storedSettings.savingsProductTypes : defaultSettings.savingsProductTypes,
         savingsProducts: storedSettings.savingsProducts || defaultSettings.savingsProducts,
+        savingsAccounts: storedSettings.savingsAccounts || defaultSettings.savingsAccounts,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
@@ -450,6 +454,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         lastVoucherNumbers: storedSettings.lastVoucherNumbers || defaultSettings.lastVoucherNumbers,
         lastSamitySerials: storedSettings.lastSamitySerials || defaultSettings.lastSamitySerials,
         lastMemberSerials: storedSettings.lastMemberSerials || defaultSettings.lastMemberSerials,
+        lastSavingsAccountSerials: storedSettings.lastSavingsAccountSerials || defaultSettings.lastSavingsAccountSerials,
       };
       setSettingsState(mergedSettings);
     } else {
@@ -599,6 +604,39 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       setSettings(prev => ({ ...prev, orders: prev.orders.filter(o => o.id !== orderId) }));
     }
   };
+  
+  const addSavingsAccount = (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status'>) => {
+    setSettings(prev => {
+        const product = prev.savingsProducts.find(p => p.id === account.savingsProductId);
+        if (!product) return prev;
+
+        const lastSerial = prev.lastSavingsAccountSerials?.[product.id] || 0;
+        const newSerial = lastSerial + 1;
+        
+        const member = prev.customers.find(c => c.id === account.memberId);
+        if (!member) return prev;
+
+        const accountNumber = `${product.code}-${member.code}-${String(newSerial).padStart(4, '0')}`;
+        
+        const newAccount: SavingsAccount = {
+            ...account,
+            id: uuidv4(),
+            accountNumber,
+            openingDate: new Date().toISOString(),
+            balance: 0,
+            status: 'active'
+        };
+
+        return {
+            ...prev,
+            savingsAccounts: [...prev.savingsAccounts, newAccount],
+            lastSavingsAccountSerials: {
+                ...prev.lastSavingsAccountSerials,
+                [product.id]: newSerial,
+            },
+        };
+    });
+  }
 
   // Customer Management
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
@@ -622,10 +660,41 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
         newCustomerWithCode = { ...customer, id: uuidv4(), code: memberCode };
         
+        // Auto-create primary savings account
+        const primarySavingsProductId = prev.microfinanceSettings.primarySavingsProductId;
+        let newSavingsAccounts = prev.savingsAccounts;
+        let newLastSavingsAccountSerials = prev.lastSavingsAccountSerials;
+
+        if (primarySavingsProductId) {
+             const product = prev.savingsProducts.find(p => p.id === primarySavingsProductId);
+             if (product) {
+                const lastSerial = prev.lastSavingsAccountSerials?.[product.id] || 0;
+                const newSerial = lastSerial + 1;
+                const accountNumber = `${product.code}-${memberCode}-${String(newSerial).padStart(4, '0')}`;
+                
+                const newAccount: SavingsAccount = {
+                    id: uuidv4(),
+                    memberId: newCustomerWithCode.id,
+                    savingsProductId: primarySavingsProductId,
+                    accountNumber,
+                    openingDate: new Date().toISOString(),
+                    balance: 0,
+                    status: 'active'
+                };
+                newSavingsAccounts = [...prev.savingsAccounts, newAccount];
+                newLastSavingsAccountSerials = {
+                  ...prev.lastSavingsAccountSerials,
+                  [product.id]: newSerial,
+                }
+             }
+        }
+
         return { 
             ...prev, 
             customers: [...prev.customers, newCustomerWithCode],
             lastMemberSerials: updatedSerials,
+            savingsAccounts: newSavingsAccounts,
+            lastSavingsAccountSerials: newLastSavingsAccountSerials
         };
     });
 
@@ -1186,6 +1255,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSamity, updateSamity, deleteSamity,
     addLoanProduct, updateLoanProduct, deleteLoanProduct,
     addSavingsProduct, updateSavingsProduct, deleteSavingsProduct,
+    addSavingsAccount,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
