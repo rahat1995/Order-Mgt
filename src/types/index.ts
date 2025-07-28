@@ -9,6 +9,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -656,6 +657,7 @@ export interface SavingsProduct {
     
     // Regular Savings fields
     depositFrequency?: DpsPaymentFrequency;
+    rs_recoverableAmount?: number;
     isProvisionApplicable?: boolean;
     interestProvisionFrequency?: SavingsInterestFrequency;
     interestDisbursementFrequency?: SavingsInterestFrequency;
@@ -696,6 +698,7 @@ export interface SavingsAccount {
     openingDate: string; // ISO Date
     balance: number;
     status: 'active' | 'dormant' | 'closed';
+    recoverableAmount?: number;
 }
 
 export interface AppSettings {

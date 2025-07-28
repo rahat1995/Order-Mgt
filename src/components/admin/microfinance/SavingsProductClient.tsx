@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -92,6 +91,7 @@ export function SavingsProductClient() {
       interestCalculationMethod: formData.get('interestCalculationMethod') as SavingsInterestCalculationMethod,
       canWithdrawInterest: (formData.get('canWithdrawInterest') as string) === 'on',
       isInterestEditableOnDisbursement: (formData.get('isInterestEditableOnDisbursement') as string) === 'on',
+      rs_recoverableAmount: parseFloat(formData.get('rs_recoverableAmount') as string),
 
       // DPS fields
       dps_paymentFrequency: formData.get('dps_paymentFrequency') as DpsPaymentFrequency,
@@ -254,6 +254,10 @@ export function SavingsProductClient() {
                                 <SelectItem value="opening-closing-average">Month Opening-Closing Average</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="rs_recoverableAmount">Default Recoverable Amount</Label>
+                            <Input id="rs_recoverableAmount" name="rs_recoverableAmount" type="number" step="0.01" defaultValue={editingProduct?.rs_recoverableAmount} placeholder="e.g., 100 for weekly"/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="interestProvisionFrequency">Interest Provision Period</Label>

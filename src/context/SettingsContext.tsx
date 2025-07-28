@@ -679,7 +679,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                     accountNumber,
                     openingDate: new Date().toISOString(),
                     balance: 0,
-                    status: 'active'
+                    status: 'active',
+                    recoverableAmount: product.rs_recoverableAmount,
                 };
                 newSavingsAccounts = [...prev.savingsAccounts, newAccount];
                 newLastSavingsAccountSerials = {
