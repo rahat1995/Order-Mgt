@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
@@ -17,7 +18,6 @@ import { CustomerReceipt } from './print/CustomerReceipt';
 import { KitchenTicket } from './print/KitchenTicket';
 import { cn } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
 
 type AppliedDiscount = {
     type: 'loyal' | 'voucher' | 'manual';
@@ -48,11 +48,9 @@ export function OrderEntryClient() {
   const [selectedVariant, setSelectedVariant] = useState<MenuItemVariant | undefined>(undefined);
   const [selectedAddOns, setSelectedAddOns] = useState<MenuItemAddOn[]>([]);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
-  const [animatingItem, setAnimatingItem] = useState<{src: string; x: number; y: number} | null>(null);
   
   const receiptRef = useRef<HTMLDivElement>(null);
   const kitchenTicketRef = useRef<HTMLDivElement>(null);
-  const cartPanelRef = useRef<HTMLDivElement>(null);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -226,14 +224,7 @@ export function OrderEntryClient() {
     }
   };
 
-  const handleItemClick = (item: MenuItem, event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setAnimatingItem({
-        src: item.image,
-        x: rect.left,
-        y: rect.top
-    });
-
+  const handleItemClick = (item: MenuItem) => {
     if (posSettings.advancedItemOptions && ((item.variants?.length || 0) > 0 || (item.addOns?.length || 0) > 0)) {
       setSelectedItem(item);
       setSelectedVariant(item.variants?.length > 0 ? item.variants[0] : undefined);
@@ -483,34 +474,6 @@ export function OrderEntryClient() {
 
   return (
     <>
-      <AnimatePresence>
-        {animatingItem && cartPanelRef.current && (
-          <motion.img
-            src={animatingItem.src}
-            initial={{ 
-              x: animatingItem.x, 
-              y: animatingItem.y, 
-              width: '100px', 
-              height: '75px', 
-              opacity: 0.8, 
-              position: 'fixed', 
-              zIndex: 100, 
-              borderRadius: '0.5rem' 
-            }}
-            animate={{
-              x: cartPanelRef.current.getBoundingClientRect().x + 20,
-              y: cartPanelRef.current.getBoundingClientRect().y + 20,
-              width: '20px',
-              height: '15px',
-              opacity: 0,
-            }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-            onAnimationComplete={() => setAnimatingItem(null)}
-            className="object-cover"
-          />
-        )}
-      </AnimatePresence>
-
       <div className="print:hidden">
         <div style={{ display: 'none' }}>
             {lastOrder && (
@@ -544,7 +507,7 @@ export function OrderEntryClient() {
                 <TabsContent key={category.id} value={category.id} className="flex-grow overflow-y-auto">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-1">
                     {filteredMenuItems.filter(item => item.categoryId === category.id).map(item => (
-                       <MenuItemCard key={item.id} item={item} onClick={(e) => handleItemClick(item, e)} />
+                       <MenuItemCard key={item.id} item={item} onClick={() => handleItemClick(item)} />
                     ))}
                     </div>
                 </TabsContent>
@@ -555,7 +518,7 @@ export function OrderEntryClient() {
                 <CardContent className="p-2">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-1">
                         {filteredMenuItems.map(item => (
-                             <MenuItemCard key={item.id} item={item} onClick={(e) => handleItemClick(item, e)} />
+                             <MenuItemCard key={item.id} item={item} onClick={() => handleItemClick(item)} />
                         ))}
                     </div>
                 </CardContent>
@@ -563,7 +526,7 @@ export function OrderEntryClient() {
          )}
         </div>
 
-        <div ref={cartPanelRef} className="lg:col-span-1">
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold">{editingOrder ? `Editing Order #${editingOrder.orderNumber}` : 'Current Order'}</h2>
