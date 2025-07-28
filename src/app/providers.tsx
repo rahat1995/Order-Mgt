@@ -1,9 +1,8 @@
+
 'use client';
 
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
-import { PageTransitionProvider } from '@/components/common/PageTransitionProvider';
 import React, { useEffect } from 'react';
-import { cn } from '@/lib/utils';
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const { settings, isLoaded } = useSettings();
@@ -23,7 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SettingsProvider>
       <ThemeWrapper>
-        <PageTransitionProvider>{children}</PageTransitionProvider>
+        {children}
       </ThemeWrapper>
     </SettingsProvider>
   );
