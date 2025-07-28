@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount } from '@/types';
@@ -206,7 +207,7 @@ interface SettingsContextType {
   updateOrder: (order: Order) => void;
   deleteOrder: (orderId: string) => void;
   // Customer
-  addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  addCustomer: (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number }) => Customer;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (customerId: string) => void;
   // Customer Group
@@ -639,7 +640,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   }
 
   // Customer Management
-  const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
+  const addCustomer = (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number }): Customer => {
     let newCustomerWithCode: Customer;
 
     setSettings(prev => {
@@ -650,15 +651,16 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             const samity = prev.samities.find(s => s.id === customer.samityId);
             if (samity) {
                 const branchCode = prev.branches.find(b => b.id === samity.branchId)?.code || 'XX';
-                const samityCode = samity.code.split('-').pop() || '0000';
+                const samityCodePart = samity.code.split('-').pop() || '0000';
                 const lastSerial = prev.lastMemberSerials?.[customer.samityId] || 0;
                 const newSerial = lastSerial + 1;
-                memberCode = `${branchCode}-${samityCode}-${String(newSerial).padStart(3, '0')}`;
+                memberCode = `${branchCode}-${samityCodePart}-${String(newSerial).padStart(3, '0')}`;
                 updatedSerials[customer.samityId] = newSerial;
             }
         }
 
-        newCustomerWithCode = { ...customer, id: uuidv4(), code: memberCode };
+        const { primarySavingsRecoverableAmount, ...customerData } = customer;
+        newCustomerWithCode = { ...customerData, id: uuidv4(), code: memberCode };
         
         // Auto-create primary savings account
         const primarySavingsProductId = prev.microfinanceSettings.primarySavingsProductId;
@@ -680,7 +682,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                     openingDate: new Date().toISOString(),
                     balance: 0,
                     status: 'active',
-                    recoverableAmount: product.rs_recoverableAmount,
+                    recoverableAmount: primarySavingsRecoverableAmount ?? product.rs_recoverableAmount,
                 };
                 newSavingsAccounts = [...prev.savingsAccounts, newAccount];
                 newLastSavingsAccountSerials = {

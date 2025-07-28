@@ -52,7 +52,7 @@ const steps = [
 
 export function MemberManagementClient() {
   const { settings, addCustomer, updateCustomer, deleteCustomer, isLoaded } = useSettings();
-  const { customers, samities, branches, microfinanceSettings, workingAreas, savingsProducts } = settings;
+  const { customers, samities, branches, microfinanceSettings, workingAreas, savingsProducts, lastMemberSerials } = settings;
   const { samityTerm, memberMandatoryFields, primarySavingsProductId } = microfinanceSettings;
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,13 +63,19 @@ export function MemberManagementClient() {
   const formRef = React.useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState<Partial<Customer>>({});
   const [usePresentAsPermanent, setUsePresentAsPermanent] = useState(false);
+  const [generatedMemberCode, setGeneratedMemberCode] = useState('');
+  const [isMobileValid, setIsMobileValid] = useState(true);
+  const [primarySavingsRecoverableAmount, setPrimarySavingsRecoverableAmount] = useState<number | string>('');
 
 
   const handleOpenDialog = (customer: Customer | null) => {
     setEditingCustomer(customer);
-    setFormData(customer || {});
+    setFormData(customer || { mobile: '+880'});
     setUsePresentAsPermanent(false);
     setStep(1);
+    setGeneratedMemberCode(customer?.code || '');
+    setIsMobileValid(true);
+    setPrimarySavingsRecoverableAmount('');
     setDialogOpen(true);
   };
 
@@ -100,23 +106,48 @@ export function MemberManagementClient() {
     setStep(prev => Math.max(prev - 1, 1));
   }
   
-  useEffect(() => {
-    if (formData.samityId) {
-        const samity = samities.find(s => s.id === formData.samityId);
-        if (samity) {
-            const workingArea = workingAreas.find(wa => wa.id === samity.workingAreaId);
-            if (workingArea) {
-                setFormData(prev => ({...prev, presentAddress: workingArea.name}));
-            }
+  const handleSamityChange = (samityId: string) => {
+    setFormData(p => ({...p, samityId}));
+    if (editingCustomer) return; // Don't regenerate code for existing members
+
+    const samity = samities.find(s => s.id === samityId);
+    if(samity) {
+        const branchCode = branches.find(b => b.id === samity.branchId)?.code || 'XX';
+        const samityCodePart = samity.code.split('-').pop() || '0000';
+        const lastSerial = lastMemberSerials?.[samityId] || 0;
+        const newSerial = lastSerial + 1;
+        setGeneratedMemberCode(`${branchCode}-${samityCodePart}-${String(newSerial).padStart(3, '0')}`);
+        
+        // Auto-fill address
+        const workingArea = workingAreas.find(wa => wa.id === samity.workingAreaId);
+        if (workingArea) {
+            setFormData(prev => ({...prev, presentAddress: workingArea.name}));
         }
+    } else {
+        setGeneratedMemberCode('');
     }
-  }, [formData.samityId, samities, workingAreas]);
+  };
+
+  const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData(p => ({...p, mobile: value}));
+      setIsMobileValid(/^\+880\d{10}$/.test(value));
+  }
   
    useEffect(() => {
     if (usePresentAsPermanent) {
       setFormData(prev => ({ ...prev, permanentAddress: prev.presentAddress }));
     }
   }, [usePresentAsPermanent, formData.presentAddress]);
+
+   const primarySavingsProduct = savingsProducts.find(p => p.id === primarySavingsProductId);
+   const regularSavingsTypeId = settings.savingsProductTypes.find(t => t.code === 'RS')?.id;
+   
+   useEffect(() => {
+    if (step === 5 && primarySavingsProduct && primarySavingsProduct.savingsProductTypeId === regularSavingsTypeId) {
+        setPrimarySavingsRecoverableAmount(primarySavingsProduct.rs_recoverableAmount || '');
+    }
+   }, [step, primarySavingsProduct, regularSavingsTypeId]);
 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -131,12 +162,12 @@ export function MemberManagementClient() {
     const branchId = samities.find(s => s.id === samityId)?.branchId;
     
     const mobile = combinedData.mobile as string;
-    if (mobile && !/^\+880\d{10}$/.test(mobile)) {
+    if (!isMobileValid) {
         alert("Mobile number must be 14 digits including the country code (e.g., +8801712345678).");
         return;
     }
 
-    const customerData: Omit<Customer, 'id' | 'code'> & { code?: string } = {
+    const customerData: Omit<Customer, 'id' | 'code'> & { code?: string, primarySavingsRecoverableAmount?: number } = {
         name: combinedData.name as string,
         mobile: mobile,
         email: combinedData.email as string,
@@ -157,6 +188,7 @@ export function MemberManagementClient() {
         nidPhoto: combinedData.nidPhoto as string,
         guarantorPhoto: combinedData.guarantorPhoto as string,
         guarantorNidPhoto: combinedData.guarantorNidPhoto as string,
+        primarySavingsRecoverableAmount: typeof primarySavingsRecoverableAmount === 'string' ? parseFloat(primarySavingsRecoverableAmount) : primarySavingsRecoverableAmount,
     };
     
     if (branchId) {
@@ -270,8 +302,6 @@ export function MemberManagementClient() {
     return <div>Loading members...</div>;
   }
   
-  const primarySavingsProduct = savingsProducts.find(p => p.id === primarySavingsProductId);
-
   return (
     <>
       <Card>
@@ -371,7 +401,7 @@ export function MemberManagementClient() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <RequiredLabel label={samityTerm} isRequired={true} />
-                                <Select name="samityId" defaultValue={formData?.samityId} onValueChange={(v) => setFormData(p => ({...p, samityId: v}))} required>
+                                <Select name="samityId" defaultValue={formData?.samityId} onValueChange={handleSamityChange} required>
                                 <SelectTrigger><SelectValue placeholder={`Select a ${samityTerm}`} /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
@@ -383,7 +413,7 @@ export function MemberManagementClient() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Member Code</Label>
-                                <Input value={editingCustomer?.code || "Auto-generated"} readOnly disabled/>
+                                <Input value={generatedMemberCode || "Auto-generated"} readOnly disabled/>
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Full Name" isRequired={true} />
@@ -412,7 +442,7 @@ export function MemberManagementClient() {
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Date of Birth" isRequired={!!memberMandatoryFields?.dob} />
-                                <Input id="dob" name="dob" type="date" defaultValue={formData?.dob} required={!!memberMandatoryFields?.dob} />
+                                <Input id="dob" name="dob" type="text" placeholder="DD/MM/YYYY" defaultValue={formData?.dob} required={!!memberMandatoryFields?.dob} />
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Admission Date" isRequired={true} />
@@ -420,7 +450,9 @@ export function MemberManagementClient() {
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Mobile Number" isRequired={true} />
-                                <Input id="mobile" name="mobile" defaultValue={formData?.mobile || '+880'} onChange={e => setFormData(p => ({...p, mobile: e.target.value}))} required pattern="^\+880\d{10}$" title="Must be in format +8801... (14 digits total)" placeholder="+8801..."/>
+                                <Input id="mobile" name="mobile" value={formData?.mobile || '+880'} onChange={handleMobileChange} required pattern="^\+880\d{10}$" title="Must be in format +8801... (14 digits total)" placeholder="+8801..."/>
+                                {!isMobileValid && <p className="text-xs text-destructive">❌ Invalid format. Must be +880 followed by 10 digits.</p>}
+                                {isMobileValid && formData.mobile && formData.mobile.length === 14 && <p className="text-xs text-green-600">✅ Valid</p>}
                             </div>
                              <div className="space-y-2">
                                 <RequiredLabel label="NID / Birth Certificate No." isRequired={!!memberMandatoryFields?.nidOrBirthCert} />
@@ -478,11 +510,27 @@ export function MemberManagementClient() {
                     <div className="text-center p-8 border rounded-lg bg-green-50 border-green-200">
                         <h3 className="text-xl font-bold text-green-800">Primary Savings Account</h3>
                         {primarySavingsProduct ? (
-                            <div className="mt-4 text-green-700">
-                                <p>Upon saving, the following savings account will be automatically created for this member:</p>
-                                <p className="mt-2 text-lg font-semibold">{primarySavingsProduct.name}</p>
-                                <p className="text-sm">Type: {settings.savingsProductTypes.find(t => t.id === primarySavingsProduct.savingsProductTypeId)?.name}</p>
-                                <p className="text-sm">Interest Rate: {primarySavingsProduct.interestRate}%</p>
+                            <div className="mt-4 text-green-700 space-y-4">
+                                <div>
+                                    <p>Upon saving, the following savings account will be automatically created for this member:</p>
+                                    <p className="mt-2 text-lg font-semibold">{primarySavingsProduct.name}</p>
+                                    <p className="text-sm">Type: {settings.savingsProductTypes.find(t => t.id === primarySavingsProduct.savingsProductTypeId)?.name}</p>
+                                    <p className="text-sm">Interest Rate: {primarySavingsProduct.interestRate}%</p>
+                                </div>
+                                {primarySavingsProduct.savingsProductTypeId === regularSavingsTypeId && (
+                                    <div className="space-y-2 max-w-sm mx-auto">
+                                        <Label htmlFor="primarySavingsRecoverableAmount">Recoverable Amount (per deposit)</Label>
+                                        <Input
+                                            id="primarySavingsRecoverableAmount"
+                                            name="primarySavingsRecoverableAmount"
+                                            type="number"
+                                            step="0.01"
+                                            value={primarySavingsRecoverableAmount}
+                                            onChange={(e) => setPrimarySavingsRecoverableAmount(e.target.value)}
+                                            placeholder="Enter recoverable amount"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="mt-4 text-orange-700">
