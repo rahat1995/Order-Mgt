@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, View } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, View, Download, Upload } from 'lucide-react';
 import type { Customer, MemberMandatoryFields, SavingsProduct } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import * as XLSX from 'xlsx';
 
 
 const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, name: string, defaultValue?: string, hint: string }) => (
@@ -175,6 +177,95 @@ export function MemberManagementClient() {
     handleCloseDialog();
   };
 
+  const handleDownloadFormat = () => {
+    const headers = ["samityCode", "name", "mobile", "admissionDate", "fatherName", "motherName", "spouseName", "spouseRelation", "dob", "nidOrBirthCert", "presentAddress", "permanentAddress", "nomineeName", "nomineeRelation", "email"];
+    const exampleData = [
+      { 
+        samityCode: "HO-0001",
+        name: "Jane Doe",
+        mobile: "+8801700000000",
+        admissionDate: "2024-01-15",
+        fatherName: "John Doe Sr.",
+        motherName: "Mary Doe",
+        spouseName: "John Doe Jr.",
+        spouseRelation: "Husband",
+        dob: "1990-05-20",
+        nidOrBirthCert: "1234567890123",
+        presentAddress: "123 Main St, Anytown",
+        permanentAddress: "123 Main St, Anytown",
+        nomineeName: "John Doe Jr.",
+        nomineeRelation: "Husband",
+        email: "jane.doe@example.com"
+      },
+    ];
+    const ws = XLSX.utils.json_to_sheet(exampleData, { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Members");
+    XLSX.writeFile(wb, "member_import_format.xlsx");
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+        let itemsAdded = 0;
+        let errors: string[] = [];
+
+        json.forEach((row, index) => {
+            const { samityCode, name, mobile, admissionDate, fatherName, motherName, spouseName, spouseRelation, dob, nidOrBirthCert, presentAddress, permanentAddress, nomineeName, nomineeRelation, email } = row;
+            
+            if (!samityCode || !name || !mobile) {
+                errors.push(`Row ${index + 2}: Missing required fields (samityCode, name, mobile).`);
+                return;
+            }
+
+            const samity = samities.find(s => s.code === samityCode);
+            if (!samity) {
+                errors.push(`Row ${index + 2}: Samity with code "${samityCode}" not found.`);
+                return;
+            }
+
+            addCustomer({
+                name,
+                mobile: String(mobile),
+                admissionDate: admissionDate ? new Date(admissionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                samityId: samity.id,
+                fatherName,
+                motherName,
+                spouseName,
+                spouseRelation,
+                dob: dob ? new Date(dob).toISOString().split('T')[0] : undefined,
+                nidOrBirthCert: nidOrBirthCert ? String(nidOrBirthCert) : undefined,
+                presentAddress,
+                permanentAddress,
+                nomineeName,
+                nomineeRelation,
+                email,
+            });
+            itemsAdded++;
+        });
+
+        alert(`${itemsAdded} new members added successfully.${errors.length > 0 ? `\n\nErrors:\n${errors.join('\n')}` : ''}`);
+
+      } catch (error) {
+        console.error("Error processing file:", error);
+        alert("Failed to process the uploaded file. Please ensure it is a valid Excel file.");
+      } finally {
+        event.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   if (!isLoaded) {
     return <div>Loading members...</div>;
   }
@@ -187,10 +278,21 @@ export function MemberManagementClient() {
           <CardHeader>
              <div className="flex justify-between items-center">
                 <CardTitle>Member List</CardTitle>
-                <Button onClick={() => handleOpenDialog(null)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Member
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleDownloadFormat} variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" /> Download Format
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                        <Label className="cursor-pointer">
+                            <Upload className="mr-2 h-4 w-4" /> Upload Members
+                            <Input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
+                        </Label>
+                    </Button>
+                    <Button onClick={() => handleOpenDialog(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New Member
+                    </Button>
+                </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -318,7 +420,7 @@ export function MemberManagementClient() {
                             </div>
                             <div className="space-y-2">
                                 <RequiredLabel label="Mobile Number" isRequired={true} />
-                                <Input id="mobile" name="mobile" defaultValue={formData?.mobile} onChange={e => setFormData(p => ({...p, mobile: e.target.value}))} required pattern="^\+880\d{10}$" title="Must be in format +8801... (14 digits total)" placeholder="+8801..."/>
+                                <Input id="mobile" name="mobile" defaultValue={formData?.mobile || '+880'} onChange={e => setFormData(p => ({...p, mobile: e.target.value}))} required pattern="^\+880\d{10}$" title="Must be in format +8801... (14 digits total)" placeholder="+8801..."/>
                             </div>
                              <div className="space-y-2">
                                 <RequiredLabel label="NID / Birth Certificate No." isRequired={!!memberMandatoryFields?.nidOrBirthCert} />
