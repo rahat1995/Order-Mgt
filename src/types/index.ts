@@ -11,6 +11,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -685,6 +686,8 @@ export interface SavingsProduct {
     ots_provisionType?: OtsProvisionType;
     ots_interestCalculationMethod?: 'daily_balance';
     ots_interestDisbursementMethod?: MaturityPayoutMethod;
+    ots_allowPrincipalDeposit?: boolean;
+    ots_allowPrincipalWithdrawal?: boolean;
     // FDR fields
     fdr_payoutRules?: FdrPayoutRule[];
     fdr_maturityPayout?: MaturityPayoutMethod;

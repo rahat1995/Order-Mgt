@@ -108,6 +108,8 @@ export function SavingsProductClient() {
       ots_provisionType: formData.get('ots_provisionType') as OtsProvisionType,
       ots_interestCalculationMethod: 'daily_balance',
       ots_interestDisbursementMethod: formData.get('ots_interestDisbursementMethod') as MaturityPayoutMethod,
+      ots_allowPrincipalDeposit: (formData.get('ots_allowPrincipalDeposit') as string) === 'on',
+      ots_allowPrincipalWithdrawal: (formData.get('ots_allowPrincipalWithdrawal') as string) === 'on',
       // FDR fields
       fdr_payoutRules: fdrPayoutRules,
       fdr_maturityPayout: formData.get('fdr_maturityPayout') as MaturityPayoutMethod,
@@ -410,6 +412,14 @@ export function SavingsProductClient() {
                                     {maturityPayoutOptions.map(opt => <SelectItem key={opt} value={opt} className="capitalize">{opt.replace('_', ' ')}</SelectItem>)}
                                 </SelectContent>
                             </Select>
+                        </div>
+                         <div className="flex items-center space-x-2 pt-2">
+                            <Switch id="ots_allowPrincipalDeposit" name="ots_allowPrincipalDeposit" defaultChecked={editingProduct?.ots_allowPrincipalDeposit} />
+                            <Label htmlFor="ots_allowPrincipalDeposit">Allow Principal Deposit After Opening</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Switch id="ots_allowPrincipalWithdrawal" name="ots_allowPrincipalWithdrawal" defaultChecked={editingProduct?.ots_allowPrincipalWithdrawal} />
+                            <Label htmlFor="ots_allowPrincipalWithdrawal">Allow Principal Withdrawal</Label>
                         </div>
                      </div>
                   </div>
