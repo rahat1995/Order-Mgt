@@ -1,20 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -710,6 +694,7 @@ export interface SavingsAccount {
     balance: number;
     status: 'active' | 'dormant' | 'closed';
     recoverableAmount?: number;
+    closingDate?: string; // ISO Date
 }
 
 export interface SavingsTransaction {

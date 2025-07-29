@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowDownToDot, ArrowUpFromDot, Landmark, ChevronsUpDown, Check } from 'lucide-react';
+import { ArrowDownToDot, ArrowUpFromDot, Landmark, ChevronsUpDown, Check, Ban } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -18,16 +19,23 @@ import type { SavingsAccount, Customer } from '@/types';
 const AccountSelector = ({
     value,
     onValueChange,
+    filter,
 }: {
     value: string;
     onValueChange: (accountId: string) => void;
+    filter?: (account: SavingsAccount) => boolean;
 }) => {
     const { settings } = useSettings();
     const { savingsAccounts, customers, savingsProducts } = settings;
     const [open, setOpen] = useState(false);
 
     const accountOptions = useMemo(() => {
-        return savingsAccounts.map(account => {
+        let accounts = savingsAccounts;
+        if (filter) {
+            accounts = accounts.filter(filter);
+        }
+
+        return accounts.map(account => {
             const member = customers.find(c => c.id === account.memberId);
             const product = savingsProducts.find(p => p.id === account.savingsProductId);
             return {
@@ -39,7 +47,7 @@ const AccountSelector = ({
                 searchValue: `${member?.name} ${member?.code} ${account.accountNumber} ${product?.name} ${member?.mobile}`.toLowerCase(),
             };
         });
-    }, [savingsAccounts, customers, savingsProducts]);
+    }, [savingsAccounts, customers, savingsProducts, filter]);
     
     const selectedAccountDisplay = useMemo(() => {
         if (!value) return "Select an account...";
@@ -150,7 +158,11 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Member Savings Account</Label>
-                        <AccountSelector value={selectedAccountId} onValueChange={setSelectedAccountId} />
+                        <AccountSelector 
+                            value={selectedAccountId} 
+                            onValueChange={setSelectedAccountId} 
+                            filter={(account) => account.status !== 'closed'}
+                        />
                     </div>
                     {selectedAccount && (
                         <div className="p-3 border rounded-lg bg-muted/50 space-y-2 text-sm">
@@ -189,6 +201,64 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
     );
 };
 
+const SavingsClosingForm = () => {
+    const { settings, closeSavingsAccount } = useSettings();
+    const { savingsAccounts } = settings;
+    const [selectedAccountId, setSelectedAccountId] = useState('');
+    const [notes, setNotes] = useState('');
+    
+    const selectedAccount = useMemo(() => {
+        return savingsAccounts.find(acc => acc.id === selectedAccountId);
+    }, [selectedAccountId, savingsAccounts]);
+
+    const handleClose = () => {
+        if (!selectedAccountId) {
+            alert('Please select an account to close.');
+            return;
+        }
+        if (confirm(`Are you sure you want to close this account? The remaining balance of ৳${selectedAccount?.balance.toFixed(2)} will be withdrawn.`)) {
+            closeSavingsAccount(selectedAccountId, notes);
+            alert('Account closed successfully.');
+            setSelectedAccountId('');
+            setNotes('');
+        }
+    }
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Close Savings Account</CardTitle>
+                <CardDescription>Close a member's savings account and withdraw the final balance.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Member Savings Account to Close</Label>
+                    <AccountSelector 
+                        value={selectedAccountId} 
+                        onValueChange={setSelectedAccountId} 
+                        filter={(account) => account.status !== 'closed'}
+                    />
+                </div>
+                {selectedAccount && (
+                    <div className="p-3 border rounded-lg bg-yellow-50 border-yellow-200 space-y-2 text-sm">
+                        <div className="flex justify-between font-bold text-base text-yellow-800">
+                            <span>Final Balance to Withdraw:</span>
+                            <span>৳{selectedAccount.balance.toFixed(2)}</span>
+                        </div>
+                    </div>
+                )}
+                 <div className="space-y-2">
+                    <Label htmlFor="close_notes">Closing Notes (Optional)</Label>
+                    <Input id="close_notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} placeholder="e.g., Member requested closure."/>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button variant="destructive" onClick={handleClose} disabled={!selectedAccountId}>Permanently Close Account</Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 const SavingsInterestPaymentForm = () => {
     return (
         <Card>
@@ -210,7 +280,7 @@ const SavingsInterestPaymentForm = () => {
 export function SavingsTransactionClient() {
   return (
     <Tabs defaultValue="deposit" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="deposit">
           <ArrowDownToDot className="mr-2 h-4 w-4" /> Deposit
         </TabsTrigger>
@@ -219,6 +289,9 @@ export function SavingsTransactionClient() {
         </TabsTrigger>
         <TabsTrigger value="interest-payment">
             <Landmark className="mr-2 h-4 w-4" /> Interest Payment
+        </TabsTrigger>
+        <TabsTrigger value="closing">
+            <Ban className="mr-2 h-4 w-4" /> Account Closing
         </TabsTrigger>
       </TabsList>
       <TabsContent value="deposit" className="mt-4">
@@ -229,6 +302,9 @@ export function SavingsTransactionClient() {
       </TabsContent>
        <TabsContent value="interest-payment" className="mt-4">
         <SavingsInterestPaymentForm />
+      </TabsContent>
+       <TabsContent value="closing" className="mt-4">
+        <SavingsClosingForm />
       </TabsContent>
     </Tabs>
   );

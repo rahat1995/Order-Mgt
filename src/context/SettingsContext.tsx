@@ -230,6 +230,7 @@ interface SettingsContextType {
   deleteSavingsProduct: (productId: string) => void;
   addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => void;
   addSavingsTransaction: (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => void;
+  closeSavingsAccount: (accountId: string, notes?: string) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -648,6 +649,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
   const addSavingsTransaction = (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => {
     setSettings(prev => {
+        const accountToUpdate = prev.savingsAccounts.find(acc => acc.id === transaction.savingsAccountId);
+        if (accountToUpdate?.status === 'closed') {
+            alert('This account is closed and cannot accept transactions.');
+            return prev;
+        }
+
         const newTransaction: SavingsTransaction = {
             ...transaction,
             id: uuidv4(),
@@ -669,6 +676,48 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             savingsTransactions: [...prev.savingsTransactions, newTransaction],
             savingsAccounts: updatedAccounts,
         };
+    });
+  };
+
+  const closeSavingsAccount = (accountId: string, notes?: string) => {
+    setSettings(prev => {
+      const accountToClose = prev.savingsAccounts.find(acc => acc.id === accountId);
+      if (!accountToClose || accountToClose.status === 'closed') {
+        return prev;
+      }
+      
+      const newSettings = {...prev};
+      let newTransactions = [...prev.savingsTransactions];
+
+      if (accountToClose.balance > 0) {
+        const closingWithdrawal: SavingsTransaction = {
+          id: uuidv4(),
+          savingsAccountId: accountId,
+          type: 'withdrawal',
+          amount: accountToClose.balance,
+          date: new Date().toISOString(),
+          notes: notes || 'Account closing withdrawal.',
+        };
+        newTransactions.push(closingWithdrawal);
+      }
+
+      const updatedAccounts = prev.savingsAccounts.map(acc => {
+        if (acc.id === accountId) {
+          return {
+            ...acc,
+            status: 'closed' as 'closed',
+            balance: 0,
+            closingDate: new Date().toISOString(),
+          }
+        }
+        return acc;
+      });
+
+      return {
+        ...newSettings,
+        savingsAccounts: updatedAccounts,
+        savingsTransactions: newTransactions
+      }
     });
   };
 
@@ -1343,6 +1392,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSavingsProduct, updateSavingsProduct, deleteSavingsProduct,
     addSavingsAccount,
     addSavingsTransaction,
+    closeSavingsAccount,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
