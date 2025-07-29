@@ -12,6 +12,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -124,6 +125,9 @@ export interface MicrofinanceSettings {
   samityTerm: 'Samity' | 'Group' | 'Center';
   primarySavingsProductId?: string;
   memberMandatoryFields?: MemberMandatoryFields;
+  admissionFee?: number;
+  passbookFee?: number;
+  kycFee?: number;
 }
 
 export interface MenuCategory {
@@ -248,7 +252,7 @@ export interface Order {
     customerMobile?: string;
     status: 'pending' | 'completed' | 'cancelled';
     paymentStatus: 'pending' | 'paid';
-    orderType: 'dine-in' | 'takeaway' | 'delivery';
+    orderType: 'dine-in' | 'takeaway' | 'delivery' | 'fee';
     subtotal: number;
     voucherCode?: string;
     discountAmount: number;
@@ -700,6 +704,7 @@ export interface SavingsAccount {
     savingsProductId: string;
     accountNumber: string;
     openingDate: string; // ISO Date
+    openingDeposit: number;
     balance: number;
     status: 'active' | 'dormant' | 'closed';
     recoverableAmount?: number;

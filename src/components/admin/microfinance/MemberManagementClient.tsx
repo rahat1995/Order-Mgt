@@ -66,6 +66,7 @@ export function MemberManagementClient() {
   const [generatedMemberCode, setGeneratedMemberCode] = useState('');
   const [isMobileValid, setIsMobileValid] = useState(true);
   const [primarySavingsRecoverableAmount, setPrimarySavingsRecoverableAmount] = useState<number | string>('');
+  const [initialDeposit, setInitialDeposit] = useState<number | string>('');
 
 
   const handleOpenDialog = (customer: Customer | null) => {
@@ -76,6 +77,7 @@ export function MemberManagementClient() {
     setGeneratedMemberCode(customer?.code || '');
     setIsMobileValid(true);
     setPrimarySavingsRecoverableAmount('');
+    setInitialDeposit('');
     setDialogOpen(true);
   };
 
@@ -167,7 +169,7 @@ export function MemberManagementClient() {
         return;
     }
 
-    const customerData: Omit<Customer, 'id' | 'code'> & { code?: string, primarySavingsRecoverableAmount?: number } = {
+    const customerData: Omit<Customer, 'id' | 'code'> & { code?: string, primarySavingsRecoverableAmount?: number, initialDeposit?: number } = {
         name: combinedData.name as string,
         mobile: mobile,
         email: combinedData.email as string,
@@ -189,6 +191,7 @@ export function MemberManagementClient() {
         guarantorPhoto: combinedData.guarantorPhoto as string,
         guarantorNidPhoto: combinedData.guarantorNidPhoto as string,
         primarySavingsRecoverableAmount: typeof primarySavingsRecoverableAmount === 'string' ? parseFloat(primarySavingsRecoverableAmount) : primarySavingsRecoverableAmount,
+        initialDeposit: typeof initialDeposit === 'string' ? parseFloat(initialDeposit) : initialDeposit,
     };
     
     if (branchId) {
@@ -531,6 +534,18 @@ export function MemberManagementClient() {
                                         />
                                     </div>
                                 )}
+                                <div className="space-y-2 max-w-sm mx-auto border-t pt-4">
+                                    <Label htmlFor="initialDeposit">Opening Deposit Amount</Label>
+                                    <Input
+                                        id="initialDeposit"
+                                        name="initialDeposit"
+                                        type="number"
+                                        step="0.01"
+                                        value={initialDeposit}
+                                        onChange={(e) => setInitialDeposit(e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
                         ) : (
                             <div className="mt-4 text-orange-700">

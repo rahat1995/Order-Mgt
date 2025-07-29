@@ -77,7 +77,10 @@ const defaultSettings: AppSettings = {
         nidOrBirthCert: false,
         presentAddress: false,
         permanentAddress: false,
-    }
+    },
+    admissionFee: 0,
+    passbookFee: 0,
+    kycFee: 0,
   },
   branches: [
     { id: 'default-ho', name: 'Head Office', code: 'HO', startDate: new Date().toISOString().split('T')[0] },
@@ -207,7 +210,7 @@ interface SettingsContextType {
   updateOrder: (order: Order) => void;
   deleteOrder: (orderId: string) => void;
   // Customer
-  addCustomer: (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number }) => Customer;
+  addCustomer: (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number, initialDeposit?: number }) => Customer;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (customerId: string) => void;
   // Customer Group
@@ -224,7 +227,7 @@ interface SettingsContextType {
   addSavingsProduct: (product: Omit<SavingsProduct, 'id'>) => void;
   updateSavingsProduct: (product: SavingsProduct) => void;
   deleteSavingsProduct: (productId: string) => void;
-  addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status'>) => void;
+  addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -606,7 +609,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     }
   };
   
-  const addSavingsAccount = (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status'>) => {
+  const addSavingsAccount = (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => {
     setSettings(prev => {
         const product = prev.savingsProducts.find(p => p.id === account.savingsProductId);
         if (!product) return prev;
@@ -625,7 +628,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             accountNumber,
             openingDate: new Date().toISOString(),
             balance: 0,
-            status: 'active'
+            status: 'active',
+            openingDeposit: 0,
         };
 
         return {
@@ -640,7 +644,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
   }
 
   // Customer Management
-  const addCustomer = (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number }): Customer => {
+  const addCustomer = (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number, initialDeposit?: number }): Customer => {
     let newCustomerWithCode: Customer;
 
     setSettings(prev => {
@@ -659,9 +663,44 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             }
         }
 
-        const { primarySavingsRecoverableAmount, ...customerData } = customer;
+        const { primarySavingsRecoverableAmount, initialDeposit, ...customerData } = customer;
         newCustomerWithCode = { ...customerData, id: uuidv4(), code: memberCode };
         
+        let newOrders = prev.orders;
+        let newCollections = prev.collections;
+        
+        // Auto-create admission fee order
+        const { admissionFee = 0, passbookFee = 0, kycFee = 0 } = prev.microfinanceSettings;
+        const totalFees = admissionFee + passbookFee + kycFee;
+        if (totalFees > 0) {
+            const feeItems: OrderItem[] = [];
+            if (admissionFee > 0) feeItems.push({ id: uuidv4(), itemId: 'admission-fee', name: 'Admission Fee', basePrice: admissionFee, unitPrice: admissionFee, quantity: 1, subtotal: admissionFee, description:'' });
+            if (passbookFee > 0) feeItems.push({ id: uuidv4(), itemId: 'passbook-fee', name: 'Passbook Fee', basePrice: passbookFee, unitPrice: passbookFee, quantity: 1, subtotal: passbookFee, description:'' });
+            if (kycFee > 0) feeItems.push({ id: uuidv4(), itemId: 'kyc-fee', name: 'KYC Fee', basePrice: kycFee, unitPrice: kycFee, quantity: 1, subtotal: kycFee, description:'' });
+            
+            const today = new Date(), yyyy = today.getFullYear(), mm = String(today.getMonth() + 1).padStart(2, '0'), dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`, todayFormatted = `${dd}${mm}${yyyy}`;
+            let newSerial = prev.lastOrderNumberForDate.date === todayStr ? prev.lastOrderNumberForDate.serial + 1 : 1;
+            const newOrderNumber = `${todayFormatted}-${String(newSerial).padStart(4, '0')}`;
+
+            const feeOrder: Order = {
+                id: uuidv4(),
+                orderNumber: newOrderNumber,
+                items: feeItems,
+                customerId: newCustomerWithCode.id,
+                customerName: newCustomerWithCode.name,
+                customerMobile: newCustomerWithCode.mobile,
+                status: 'completed',
+                paymentStatus: 'pending',
+                orderType: 'fee',
+                subtotal: totalFees,
+                discountAmount: 0,
+                total: totalFees,
+                createdAt: new Date().toISOString(),
+            };
+            newOrders = [...prev.orders, feeOrder];
+        }
+
         // Auto-create primary savings account
         const primarySavingsProductId = prev.microfinanceSettings.primarySavingsProductId;
         let newSavingsAccounts = prev.savingsAccounts;
@@ -680,7 +719,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                     savingsProductId: primarySavingsProductId,
                     accountNumber,
                     openingDate: new Date().toISOString(),
-                    balance: 0,
+                    openingDeposit: initialDeposit || 0,
+                    balance: initialDeposit || 0,
                     status: 'active',
                     recoverableAmount: primarySavingsRecoverableAmount ?? product.rs_recoverableAmount,
                 };
@@ -691,10 +731,24 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                 }
              }
         }
+        
+        // If there was an initial deposit, record it as a collection
+        if (initialDeposit && initialDeposit > 0) {
+            const newCollection: Collection = {
+                id: uuidv4(),
+                customerId: newCustomerWithCode.id,
+                amount: initialDeposit,
+                date: new Date().toISOString(),
+                notes: 'Initial deposit upon admission.',
+            };
+            newCollections = [...prev.collections, newCollection];
+        }
 
         return { 
             ...prev, 
             customers: [...prev.customers, newCustomerWithCode],
+            orders: newOrders,
+            collections: newCollections,
             lastMemberSerials: updatedSerials,
             savingsAccounts: newSavingsAccounts,
             lastSavingsAccountSerials: newLastSavingsAccountSerials
