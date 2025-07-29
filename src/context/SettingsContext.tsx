@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount, SavingsTransaction } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -103,6 +103,7 @@ const defaultSettings: AppSettings = {
   ],
   savingsProducts: [],
   savingsAccounts: [],
+  savingsTransactions: [],
   vouchers: [],
   collections: [],
   serviceIssues: [],
@@ -228,6 +229,7 @@ interface SettingsContextType {
   updateSavingsProduct: (product: SavingsProduct) => void;
   deleteSavingsProduct: (productId: string) => void;
   addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => void;
+  addSavingsTransaction: (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -412,6 +414,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         savingsProductTypes: storedSettings.savingsProductTypes?.length ? storedSettings.savingsProductTypes : defaultSettings.savingsProductTypes,
         savingsProducts: storedSettings.savingsProducts || defaultSettings.savingsProducts,
         savingsAccounts: storedSettings.savingsAccounts || defaultSettings.savingsAccounts,
+        savingsTransactions: storedSettings.savingsTransactions || defaultSettings.savingsTransactions,
         vouchers: storedSettings.vouchers || defaultSettings.vouchers,
         collections: storedSettings.collections || defaultSettings.collections,
         serviceIssues: storedSettings.serviceIssues || defaultSettings.serviceIssues,
@@ -642,6 +645,32 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         };
     });
   }
+
+  const addSavingsTransaction = (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => {
+    setSettings(prev => {
+        const newTransaction: SavingsTransaction = {
+            ...transaction,
+            id: uuidv4(),
+            date: new Date().toISOString(),
+        };
+
+        const updatedAccounts = prev.savingsAccounts.map(account => {
+            if (account.id === transaction.savingsAccountId) {
+                const newBalance = transaction.type === 'deposit'
+                    ? account.balance + transaction.amount
+                    : account.balance - transaction.amount;
+                return { ...account, balance: newBalance };
+            }
+            return account;
+        });
+
+        return {
+            ...prev,
+            savingsTransactions: [...prev.savingsTransactions, newTransaction],
+            savingsAccounts: updatedAccounts,
+        };
+    });
+  };
 
   // Customer Management
   const addCustomer = (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number, initialDeposit?: number }): Customer => {
@@ -1313,6 +1342,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addLoanProduct, updateLoanProduct, deleteLoanProduct,
     addSavingsProduct, updateSavingsProduct, deleteSavingsProduct,
     addSavingsAccount,
+    addSavingsTransaction,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,

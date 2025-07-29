@@ -14,6 +14,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -711,6 +712,15 @@ export interface SavingsAccount {
     recoverableAmount?: number;
 }
 
+export interface SavingsTransaction {
+    id: string;
+    savingsAccountId: string;
+    type: 'deposit' | 'withdrawal';
+    amount: number;
+    date: string; // ISO Date
+    notes?: string;
+}
+
 export interface AppSettings {
   organization: OrganizationInfo;
   theme: Theme;
@@ -736,6 +746,7 @@ export interface AppSettings {
   savingsProductTypes: SavingsProductType[];
   savingsProducts: SavingsProduct[];
   savingsAccounts: SavingsAccount[];
+  savingsTransactions: SavingsTransaction[];
   serviceIssues: ServiceIssue[];
   serviceTypes: ServiceType[];
   serviceItemCategories: ServiceItemCategory[];
