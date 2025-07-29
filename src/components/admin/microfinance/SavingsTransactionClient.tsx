@@ -34,8 +34,9 @@ const AccountSelector = ({
                 ...account,
                 memberName: member?.name || 'Unknown Member',
                 memberCode: member?.code || 'N/A',
+                memberMobile: member?.mobile || '',
                 productName: product?.name || 'Unknown Product',
-                searchValue: `${member?.name} ${member?.code} ${account.accountNumber} ${product?.name}`.toLowerCase(),
+                searchValue: `${member?.name} ${member?.code} ${account.accountNumber} ${product?.name} ${member?.mobile}`.toLowerCase(),
             };
         });
     }, [savingsAccounts, customers, savingsProducts]);
@@ -57,7 +58,7 @@ const AccountSelector = ({
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                 <Command>
-                    <CommandInput placeholder="Search by name, code, account no..." />
+                    <CommandInput placeholder="Search by name, code, mobile, account no..." />
                     <CommandList>
                         <CommandEmpty>No account found.</CommandEmpty>
                         <CommandGroup>
@@ -73,7 +74,7 @@ const AccountSelector = ({
                                     <Check className={cn("mr-2 h-4 w-4", value === account.id ? "opacity-100" : "opacity-0")} />
                                     <div>
                                         <p>{account.memberName} ({account.productName})</p>
-                                        <p className="text-xs text-muted-foreground">{account.accountNumber}</p>
+                                        <p className="text-xs text-muted-foreground">{account.memberMobile} | {account.accountNumber}</p>
                                     </div>
                                 </CommandItem>
                             ))}
@@ -88,12 +89,30 @@ const AccountSelector = ({
 
 const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
     const { settings, addSavingsTransaction } = useSettings();
-    const { savingsAccounts } = settings;
+    const { savingsAccounts, savingsTransactions } = settings;
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
 
-    const selectedAccount = useMemo(() => savingsAccounts.find(acc => acc.id === selectedAccountId), [selectedAccountId, savingsAccounts]);
+    const { selectedAccount, cumulativeDeposit, cumulativeWithdrawal } = useMemo(() => {
+        const account = savingsAccounts.find(acc => acc.id === selectedAccountId);
+        if (!account) return { selectedAccount: null, cumulativeDeposit: 0, cumulativeWithdrawal: 0 };
+        
+        let totalDeposit = account.openingDeposit;
+        let totalWithdrawal = 0;
+        
+        savingsTransactions.forEach(tx => {
+            if (tx.savingsAccountId === selectedAccountId) {
+                if (tx.type === 'deposit') {
+                    totalDeposit += tx.amount;
+                } else {
+                    totalWithdrawal += tx.amount;
+                }
+            }
+        });
+        
+        return { selectedAccount: account, cumulativeDeposit: totalDeposit, cumulativeWithdrawal: totalWithdrawal };
+    }, [selectedAccountId, savingsAccounts, savingsTransactions]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -134,8 +153,21 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                         <AccountSelector value={selectedAccountId} onValueChange={setSelectedAccountId} />
                     </div>
                     {selectedAccount && (
-                        <div className="p-2 bg-muted text-muted-foreground rounded-md text-sm">
-                            Current Balance: <span className="font-bold text-foreground">৳{selectedAccount.balance.toFixed(2)}</span>
+                        <div className="p-3 border rounded-lg bg-muted/50 space-y-2 text-sm">
+                            <div className="flex justify-between font-bold text-base">
+                                <span>Current Balance:</span>
+                                <span>৳{selectedAccount.balance.toFixed(2)}</span>
+                            </div>
+                             <div className="border-t pt-2 space-y-1 text-muted-foreground">
+                                <div className="flex justify-between">
+                                    <span>Total Deposits:</span>
+                                    <span className="text-green-600 font-medium">৳{cumulativeDeposit.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Total Withdrawals:</span>
+                                    <span className="text-red-600 font-medium">৳{cumulativeWithdrawal.toFixed(2)}</span>
+                                </div>
+                             </div>
                         </div>
                     )}
                     <div className="grid grid-cols-2 gap-4">
