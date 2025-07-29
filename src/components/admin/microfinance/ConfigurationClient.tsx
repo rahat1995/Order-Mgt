@@ -118,27 +118,6 @@ function MicrofinanceConfigurationForm() {
             </CardContent>
         </Card>
         
-        <Card>
-            <CardHeader>
-                <CardTitle>Member Admission Fees</CardTitle>
-                <CardDescription>Set the fees that are automatically charged to a member's ledger upon admission.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="admissionFee">Admission Fee</Label>
-                    <Input id="admissionFee" type="number" value={formData.admissionFee || ''} onChange={handleInputChange} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="passbookFee">Passbook Fee</Label>
-                    <Input id="passbookFee" type="number" value={formData.passbookFee || ''} onChange={handleInputChange} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="kycFee">KYC Fee</Label>
-                    <Input id="kycFee" type="number" value={formData.kycFee || ''} onChange={handleInputChange} />
-                </div>
-            </CardContent>
-        </Card>
-
          <Card>
             <CardHeader>
                 <CardTitle>Mandatory Fields Configuration</CardTitle>
