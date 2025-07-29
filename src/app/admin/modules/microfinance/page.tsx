@@ -56,9 +56,9 @@ const microfinanceSubModules = [
   {
     href: '/admin/modules/microfinance/collections',
     icon: Receipt,
-    title: 'Collections',
-    description: 'Record loan repayments and savings deposits.',
-    enabled: false,
+    title: 'Savings Transactions',
+    description: 'Record deposits, withdrawals, and interest payments.',
+    enabled: true,
   },
   {
     href: '/admin/modules/microfinance/reports',

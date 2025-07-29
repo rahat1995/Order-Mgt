@@ -51,7 +51,9 @@ import {
   UserCheck,
   Banknote,
   ListChecks,
-  Wallet
+  Wallet,
+  ArrowDownToDot,
+  ArrowUpFromDot,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -128,6 +130,7 @@ const moduleLinks = [
         { href: '/admin/modules/microfinance/savings-product-types', label: 'Savings Types', icon: ListChecks },
         { href: '/admin/modules/microfinance/savings-products', label: 'Savings Products', icon: ClipboardList },
         { href: '/admin/modules/microfinance/savings-accounts', label: 'Savings Accounts', icon: Wallet },
+        { href: '/admin/modules/microfinance/collections', label: 'Savings Transactions', icon: Receipt },
         { href: '/admin/modules/microfinance/guarantor', label: 'Guarantor', icon: UserCheck },
         { href: '/admin/modules/microfinance/cash-collateral', label: 'Cash Collateral', icon: Banknote },
         { href: '/admin/modules/microfinance/configuration', label: 'Configuration', icon: Cog },
