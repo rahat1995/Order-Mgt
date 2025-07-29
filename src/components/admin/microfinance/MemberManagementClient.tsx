@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { PlusCircle, Edit, Trash2, View, Download, Upload } from 'lucide-react';
-import type { Customer, MemberMandatoryFields, SavingsProduct } from '@/types';
+import { PlusCircle, Edit, Trash2, View, Download, Upload, User, Home, Heart, Camera, Wallet, Check } from 'lucide-react';
+import type { Customer, SavingsProduct } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import * as XLSX from 'xlsx';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 
 const PhotoUploadField = ({ label, name, defaultValue, hint }: { label: string, name: string, defaultValue?: string, hint: string }) => (
@@ -39,15 +40,137 @@ const DetailItem = ({ label, value }: { label: string, value?: string | number |
     </div>
 );
 
+const MemberReview = ({ formData, samityTerm }: { formData: Partial<Customer>, samityTerm: string }) => {
+    const { settings } = useSettings();
+    const samity = settings.samities.find(s => s.id === formData.samityId);
+    
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-4">
+                    <img src={formData.photo || 'https://placehold.co/400x400.png'} alt="Member Photo" className="h-20 w-20 rounded-full object-cover" data-ai-hint="person" />
+                    <div>
+                        <CardTitle className="text-2xl">{formData.name}</CardTitle>
+                        <CardDescription>Review all information before creating the member.</CardDescription>
+                    </div>
+                </CardHeader>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <DetailItem label={samityTerm} value={samity?.name} />
+                        <DetailItem label="Father's Name" value={formData.fatherName} />
+                        <DetailItem label="Mother's Name" value={formData.motherName} />
+                        <DetailItem label="Spouse's Name" value={formData.spouseName} />
+                        <DetailItem label="Relation with Spouse" value={formData.spouseRelation} />
+                        <DetailItem label="Date of Birth" value={formData.dob} />
+                        <DetailItem label="Admission Date" value={formData.admissionDate} />
+                        <DetailItem label="Mobile Number" value={formData.mobile} />
+                        <DetailItem label="NID/Birth Cert." value={formData.nidOrBirthCert} />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg">Address Information</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <DetailItem label="Present Address" value={formData.presentAddress} />
+                        <DetailItem label="Permanent Address" value={formData.permanentAddress} />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg">Nominee Information</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <DetailItem label="Nominee's Name" value={formData.nomineeName} />
+                        <DetailItem label="Relation" value={formData.nomineeRelation} />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><CardTitle className="text-lg">Savings Account</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <DetailItem label="Recoverable Amount" value={`৳${formData.primarySavingsRecoverableAmount || 'N/A'}`} />
+                        <DetailItem label="Initial Deposit" value={`৳${formData.initialDeposit || 0}`} />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
+const MemberProfileView = ({ customer }: { customer: Customer }) => {
+    const { settings } = useSettings();
+    const { samities, branches, microfinanceSettings } = settings;
+    const { samityTerm } = microfinanceSettings;
+
+    if (!customer) return null;
+
+    const samity = samities.find(s => s.id === customer.samityId);
+    const branch = samity ? branches.find(b => b.id === samity.branchId) : null;
+
+    return (
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                 <div className="flex items-start gap-6">
+                    <img src={customer.photo || 'https://placehold.co/400x400.png'} alt={customer.name} className="h-28 w-28 rounded-lg object-cover border-2 border-primary" data-ai-hint="person" />
+                    <div className="pt-2">
+                        <DialogTitle className="text-3xl font-bold">{customer.name}</DialogTitle>
+                        <DialogDescription className="text-base text-muted-foreground">
+                            Member Code: <span className="font-mono text-foreground">{customer.code || 'N/A'}</span>
+                        </DialogDescription>
+                        {samity && (
+                             <p className="text-sm mt-1">{samityTerm}: <span className="font-semibold">{samity.name}</span></p>
+                        )}
+                         {branch && (
+                             <p className="text-sm text-muted-foreground">{branch.name}</p>
+                        )}
+                    </div>
+                </div>
+            </DialogHeader>
+            <Tabs defaultValue="personal" className="w-full mt-4">
+                <TabsList>
+                    <TabsTrigger value="personal">Personal</TabsTrigger>
+                    <TabsTrigger value="address">Address</TabsTrigger>
+                    <TabsTrigger value="nominee">Nominee</TabsTrigger>
+                </TabsList>
+                <TabsContent value="personal" className="pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2">
+                        <DetailItem label="Mobile" value={customer?.mobile} />
+                        <DetailItem label="Admission Date" value={customer?.admissionDate ? new Date(customer.admissionDate).toLocaleDateString() : ''} />
+                        <DetailItem label="Date of Birth" value={customer?.dob ? new Date(customer.dob).toLocaleDateString() : ''} />
+                        <DetailItem label="Father's Name" value={customer?.fatherName} />
+                        <DetailItem label="Mother's Name" value={customer?.motherName} />
+                        <DetailItem label="Spouse's Name" value={customer?.spouseName} />
+                        <DetailItem label="Spouse Relation" value={customer?.spouseRelation} />
+                        <DetailItem label="NID/Birth Cert" value={customer?.nidOrBirthCert} />
+                    </div>
+                </TabsContent>
+                <TabsContent value="address" className="pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <DetailItem label="Present Address" value={customer?.presentAddress} />
+                        <DetailItem label="Permanent Address" value={customer?.permanentAddress} />
+                    </div>
+                </TabsContent>
+                <TabsContent value="nominee" className="pt-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Nominee Name" value={customer?.nomineeName} />
+                        <DetailItem label="Relation" value={customer?.nomineeRelation} />
+                     </div>
+                </TabsContent>
+            </Tabs>
+        </DialogContent>
+    )
+}
+
 
 const relationshipOptions = ["Husband", "Father", "Wife", "Son", "Sister", "Brother", "Uncle", "Grand Father"];
 
 const steps = [
-    { id: 1, name: 'Personal Info' },
-    { id: 2, name: 'Address Info' },
-    { id: 3, name: 'Nominee Info' },
-    { id: 4, name: 'Photo Uploads' },
-    { id: 5, name: 'Savings Account' },
+    { id: 1, name: 'Personal Info', icon: User },
+    { id: 2, name: 'Address Info', icon: Home },
+    { id: 3, name: 'Nominee Info', icon: Heart },
+    { id: 4, name: 'Photo Uploads', icon: Camera },
+    { id: 5, name: 'Savings Account', icon: Wallet },
+    { id: 6, name: 'Review & Save', icon: Check },
 ];
 
 export function MemberManagementClient() {
@@ -380,18 +503,18 @@ export function MemberManagementClient() {
                 <nav className="flex items-center justify-center space-x-2">
                 {steps.map((s, index) => (
                     <React.Fragment key={s.id}>
-                    <div className="flex flex-col items-center space-y-1 text-center">
+                    <div className="flex flex-col items-center space-y-1 text-center cursor-pointer" onClick={() => setStep(s.id)}>
                         <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                             step === s.id ? 'border-primary bg-primary text-primary-foreground' : step > s.id ? 'border-green-500 bg-green-500 text-white' : 'border-border bg-muted'
                         }`}
                         >
-                        {step > s.id ? '✔' : s.id}
+                        {step > s.id ? <Check className="h-5 w-5"/> : <s.icon className="h-4 w-4"/>}
                         </div>
                         <p className={`text-xs w-20 ${step >= s.id ? 'text-foreground' : 'text-muted-foreground'}`}>{s.name}</p>
                     </div>
                     {index < steps.length - 1 && (
-                        <div className={`flex-1 h-0.5 ${step > s.id ? 'bg-primary' : 'bg-border'}`} />
+                        <div className={`flex-1 h-0.5 ${step > s.id + 1 ? 'bg-primary' : 'bg-border'}`} />
                     )}
                     </React.Fragment>
                 ))}
@@ -555,6 +678,9 @@ export function MemberManagementClient() {
                         )}
                     </div>
                 )}
+                {step === 6 && (
+                    <MemberReview formData={formData} samityTerm={samityTerm} />
+                )}
             </div>
             <DialogFooter className="mt-4 pt-4 border-t flex-shrink-0">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>Cancel</Button>
@@ -567,28 +693,7 @@ export function MemberManagementClient() {
       </Dialog>
       
       <Dialog open={!!viewingCustomer} onOpenChange={() => setViewingCustomer(null)}>
-        <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>{viewingCustomer?.name}</DialogTitle>
-                <DialogDescription>Member Code: {viewingCustomer?.code || 'N/A'}</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2 py-4 max-h-[60vh] overflow-y-auto">
-                <DetailItem label="Mobile" value={viewingCustomer?.mobile} />
-                <DetailItem label="Admission Date" value={viewingCustomer?.admissionDate ? new Date(viewingCustomer.admissionDate).toLocaleDateString() : ''} />
-                <DetailItem label="Date of Birth" value={viewingCustomer?.dob ? new Date(viewingCustomer.dob).toLocaleDateString() : ''} />
-                <DetailItem label="Father's Name" value={viewingCustomer?.fatherName} />
-                <DetailItem label="Mother's Name" value={viewingCustomer?.motherName} />
-                <DetailItem label="Spouse's Name" value={viewingCustomer?.spouseName} />
-                <DetailItem label="Spouse Relation" value={viewingCustomer?.spouseRelation} />
-                <DetailItem label="NID/Birth Cert" value={viewingCustomer?.nidOrBirthCert} />
-                <div className="col-span-full">
-                    <DetailItem label="Present Address" value={viewingCustomer?.presentAddress} />
-                </div>
-                 <div className="col-span-full">
-                    <DetailItem label="Permanent Address" value={viewingCustomer?.permanentAddress} />
-                </div>
-            </div>
-        </DialogContent>
+        <MemberProfileView customer={viewingCustomer!} />
       </Dialog>
     </>
   );
