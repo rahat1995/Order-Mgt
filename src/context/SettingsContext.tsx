@@ -229,8 +229,8 @@ interface SettingsContextType {
   updateSavingsProduct: (product: SavingsProduct) => void;
   deleteSavingsProduct: (productId: string) => void;
   addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => void;
-  addSavingsTransaction: (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => void;
-  closeSavingsAccount: (accountId: string, notes?: string) => void;
+  addSavingsTransaction: (transaction: Omit<SavingsTransaction, 'id'>) => void;
+  closeSavingsAccount: (accountId: string, closingDate: string, notes?: string) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -647,7 +647,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     });
   }
 
-  const addSavingsTransaction = (transaction: Omit<SavingsTransaction, 'id' | 'date'>) => {
+  const addSavingsTransaction = (transaction: Omit<SavingsTransaction, 'id'>) => {
     setSettings(prev => {
         const accountToUpdate = prev.savingsAccounts.find(acc => acc.id === transaction.savingsAccountId);
         if (accountToUpdate?.status === 'closed') {
@@ -658,12 +658,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         const newTransaction: SavingsTransaction = {
             ...transaction,
             id: uuidv4(),
-            date: new Date().toISOString(),
         };
 
         const updatedAccounts = prev.savingsAccounts.map(account => {
             if (account.id === transaction.savingsAccountId) {
-                const newBalance = transaction.type === 'deposit'
+                const newBalance = (transaction.type === 'deposit' || transaction.type === 'interest')
                     ? account.balance + transaction.amount
                     : account.balance - transaction.amount;
                 return { ...account, balance: newBalance };
@@ -679,7 +678,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     });
   };
 
-  const closeSavingsAccount = (accountId: string, notes?: string) => {
+  const closeSavingsAccount = (accountId: string, closingDate: string, notes?: string) => {
     setSettings(prev => {
       const accountToClose = prev.savingsAccounts.find(acc => acc.id === accountId);
       if (!accountToClose || accountToClose.status === 'closed') {
@@ -695,7 +694,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
           savingsAccountId: accountId,
           type: 'withdrawal',
           amount: accountToClose.balance,
-          date: new Date().toISOString(),
+          date: closingDate,
           notes: notes || 'Account closing withdrawal.',
         };
         newTransactions.push(closingWithdrawal);
@@ -707,7 +706,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             ...acc,
             status: 'closed' as 'closed',
             balance: 0,
-            closingDate: new Date().toISOString(),
+            closingDate: closingDate,
           }
         }
         return acc;
@@ -810,16 +809,24 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
              }
         }
         
-        // If there was an initial deposit, record it as a collection
-        if (initialDeposit && initialDeposit > 0) {
-            const newCollection: Collection = {
+        // If there was an initial deposit, record it as a savings transaction
+        const firstAccount = newSavingsAccounts.find(a => a.memberId === newCustomerWithCode.id);
+        if (initialDeposit && initialDeposit > 0 && firstAccount) {
+            const newTransaction: SavingsTransaction = {
                 id: uuidv4(),
-                customerId: newCustomerWithCode.id,
+                savingsAccountId: firstAccount.id,
                 amount: initialDeposit,
                 date: new Date().toISOString(),
+                type: 'deposit',
                 notes: 'Initial deposit upon admission.',
             };
-            newCollections = [...prev.collections, newCollection];
+            newCollections = [...prev.collections, {
+              id: uuidv4(),
+              customerId: newCustomerWithCode.id,
+              amount: initialDeposit,
+              date: new Date().toISOString(),
+              notes: 'Initial savings deposit'
+            }];
         }
 
         return { 

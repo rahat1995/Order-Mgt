@@ -100,6 +100,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
     const { savingsAccounts, savingsTransactions } = settings;
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [amount, setAmount] = useState('');
+    const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState('');
 
     const { selectedAccount, cumulativeDeposit, cumulativeWithdrawal } = useMemo(() => {
@@ -111,7 +112,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         
         savingsTransactions.forEach(tx => {
             if (tx.savingsAccountId === selectedAccountId) {
-                if (tx.type === 'deposit') {
+                if (tx.type === 'deposit' || tx.type === 'interest') {
                     totalDeposit += tx.amount;
                 } else {
                     totalWithdrawal += tx.amount;
@@ -139,12 +140,14 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
             savingsAccountId: selectedAccountId,
             type,
             amount: numAmount,
+            date: transactionDate,
             notes,
         });
 
         alert(`${type.charAt(0).toUpperCase() + type.slice(1)} of ৳${numAmount.toFixed(2)} successful!`);
         setSelectedAccountId('');
         setAmount('');
+        setTransactionDate(new Date().toISOString().split('T')[0]);
         setNotes('');
     };
 
@@ -182,16 +185,20 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                              </div>
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div className="space-y-2">
                             <Label htmlFor="amount">Amount</Label>
                             <Input id="amount" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required disabled={!selectedAccountId} />
                          </div>
                          <div className="space-y-2">
-                            <Label htmlFor="notes">Notes (Optional)</Label>
-                            <Input id="notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} />
+                            <Label htmlFor="transactionDate">Transaction Date</Label>
+                            <Input id="transactionDate" type="date" value={transactionDate} onChange={e => setTransactionDate(e.target.value)} required disabled={!selectedAccountId} />
                          </div>
                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="notes">Notes (Optional)</Label>
+                        <Input id="notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} />
+                     </div>
                 </CardContent>
                 <CardFooter>
                     <Button type="submit" disabled={!selectedAccountId}>Submit {type === 'deposit' ? 'Deposit' : 'Withdrawal'}</Button>
@@ -205,6 +212,7 @@ const SavingsClosingForm = () => {
     const { settings, closeSavingsAccount } = useSettings();
     const { savingsAccounts } = settings;
     const [selectedAccountId, setSelectedAccountId] = useState('');
+    const [closingDate, setClosingDate] = useState(new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState('');
     
     const selectedAccount = useMemo(() => {
@@ -217,7 +225,7 @@ const SavingsClosingForm = () => {
             return;
         }
         if (confirm(`Are you sure you want to close this account? The remaining balance of ৳${selectedAccount?.balance.toFixed(2)} will be withdrawn.`)) {
-            closeSavingsAccount(selectedAccountId, notes);
+            closeSavingsAccount(selectedAccountId, closingDate, notes);
             alert('Account closed successfully.');
             setSelectedAccountId('');
             setNotes('');
@@ -247,10 +255,16 @@ const SavingsClosingForm = () => {
                         </div>
                     </div>
                 )}
-                 <div className="space-y-2">
-                    <Label htmlFor="close_notes">Closing Notes (Optional)</Label>
-                    <Input id="close_notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} placeholder="e.g., Member requested closure."/>
-                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="closingDate">Closing Date</Label>
+                        <Input id="closingDate" type="date" value={closingDate} onChange={e => setClosingDate(e.target.value)} required disabled={!selectedAccountId} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="close_notes">Closing Notes (Optional)</Label>
+                        <Input id="close_notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} placeholder="e.g., Member requested closure."/>
+                    </div>
+                 </div>
             </CardContent>
             <CardFooter>
                 <Button variant="destructive" onClick={handleClose} disabled={!selectedAccountId}>Permanently Close Account</Button>

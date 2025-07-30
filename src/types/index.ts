@@ -1,4 +1,5 @@
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -700,7 +701,7 @@ export interface SavingsAccount {
 export interface SavingsTransaction {
     id: string;
     savingsAccountId: string;
-    type: 'deposit' | 'withdrawal';
+    type: 'deposit' | 'withdrawal' | 'interest';
     amount: number;
     date: string; // ISO Date
     notes?: string;
@@ -766,7 +767,7 @@ export interface AppSettings {
   divisions: Division[];
   districts: District[];
   upozillas: Upozilla[];
-  unions: Union[];
+  unions: Village[];
   villages: Village[];
   workingAreas: WorkingArea[];
   // Accounting
