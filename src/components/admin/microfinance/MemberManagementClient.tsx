@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, View, Download, Upload, User, Home, Heart, Camera, Wallet, Check } from 'lucide-react';
-import type { Customer, SavingsProduct } from '@/types';
+import type { Customer, SavingsProduct, SavingsAccount, SavingsTransaction } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -99,16 +99,42 @@ const MemberReview = ({ formData, samityTerm }: { formData: Partial<Customer>, s
 
 const MemberProfileView = ({ customer }: { customer: Customer }) => {
     const { settings } = useSettings();
-    const { samities, branches, microfinanceSettings } = settings;
+    const { samities, branches, microfinanceSettings, savingsAccounts, savingsProductTypes, savingsProducts, savingsTransactions } = settings;
     const { samityTerm } = microfinanceSettings;
+    const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
     if (!customer) return null;
 
     const samity = samities.find(s => s.id === customer.samityId);
     const branch = samity ? branches.find(b => b.id === samity.branchId) : null;
+    const memberAccounts = savingsAccounts.filter(acc => acc.memberId === customer.id);
+
+    const statement = React.useMemo(() => {
+        if (!selectedAccountId) return [];
+        
+        const account = memberAccounts.find(acc => acc.id === selectedAccountId);
+        if (!account) return [];
+        
+        const transactions = savingsTransactions
+            .filter(tx => tx.savingsAccountId === selectedAccountId)
+            .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            
+        let runningBalance = 0;
+        return transactions.map(tx => {
+            const isDebit = tx.type === 'withdrawal' || tx.type === 'adjustment-out';
+            runningBalance += isDebit ? -tx.amount : tx.amount;
+            return {
+                ...tx,
+                debit: isDebit ? tx.amount : 0,
+                credit: !isDebit ? tx.amount : 0,
+                balance: runningBalance,
+            };
+        });
+    }, [selectedAccountId, memberAccounts, savingsTransactions]);
+
 
     return (
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
             <DialogHeader>
                  <div className="flex items-start gap-6">
                     <img src={customer.photo || 'https://placehold.co/400x400.png'} alt={customer.name} className="h-28 w-28 rounded-lg object-cover border-2 border-primary" data-ai-hint="person" />
@@ -126,13 +152,14 @@ const MemberProfileView = ({ customer }: { customer: Customer }) => {
                     </div>
                 </div>
             </DialogHeader>
-            <Tabs defaultValue="personal" className="w-full mt-4">
+            <Tabs defaultValue="personal" className="w-full mt-4 flex-grow flex flex-col overflow-hidden">
                 <TabsList>
                     <TabsTrigger value="personal">Personal</TabsTrigger>
                     <TabsTrigger value="address">Address</TabsTrigger>
                     <TabsTrigger value="nominee">Nominee</TabsTrigger>
+                    <TabsTrigger value="savings-accounts">Savings Accounts</TabsTrigger>
                 </TabsList>
-                <TabsContent value="personal" className="pt-4">
+                <TabsContent value="personal" className="pt-4 flex-grow overflow-y-auto">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2">
                         <DetailItem label="Mobile" value={customer?.mobile} />
                         <DetailItem label="Admission Date" value={customer?.admissionDate ? new Date(customer.admissionDate).toLocaleDateString() : ''} />
@@ -144,17 +171,70 @@ const MemberProfileView = ({ customer }: { customer: Customer }) => {
                         <DetailItem label="NID/Birth Cert" value={customer?.nidOrBirthCert} />
                     </div>
                 </TabsContent>
-                <TabsContent value="address" className="pt-4">
+                <TabsContent value="address" className="pt-4 flex-grow overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <DetailItem label="Present Address" value={customer?.presentAddress} />
                         <DetailItem label="Permanent Address" value={customer?.permanentAddress} />
                     </div>
                 </TabsContent>
-                <TabsContent value="nominee" className="pt-4">
+                <TabsContent value="nominee" className="pt-4 flex-grow overflow-y-auto">
                      <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Nominee Name" value={customer?.nomineeName} />
                         <DetailItem label="Relation" value={customer?.nomineeRelation} />
                      </div>
+                </TabsContent>
+                 <TabsContent value="savings-accounts" className="pt-4 flex-grow overflow-y-auto">
+                    <div className="space-y-4">
+                        {memberAccounts.map(acc => {
+                            const product = savingsProducts.find(p => p.id === acc.savingsProductId);
+                            return (
+                                <Card key={acc.id} className={`cursor-pointer hover:bg-muted/50 ${selectedAccountId === acc.id ? 'border-primary' : ''}`} onClick={() => setSelectedAccountId(acc.id === selectedAccountId ? null : acc.id)}>
+                                    <CardHeader className="p-4 flex flex-row justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-lg">{product?.name || 'Unknown Product'}</CardTitle>
+                                            <CardDescription>A/C: {acc.accountNumber}</CardDescription>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-bold">৳{acc.balance.toFixed(2)}</p>
+                                            <p className="text-xs text-muted-foreground">Current Balance</p>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            )
+                        })}
+
+                        {selectedAccountId && (
+                            <div className="mt-4">
+                                <h4 className="text-xl font-semibold mb-2">Transaction Statement</h4>
+                                 <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Particulars</TableHead>
+                                            <TableHead className="text-right">Debit</TableHead>
+                                            <TableHead className="text-right">Credit</TableHead>
+                                            <TableHead className="text-right">Balance</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {statement.length > 0 ? (
+                                            statement.map(tx => (
+                                                <TableRow key={tx.id}>
+                                                    <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
+                                                    <TableCell className="capitalize">{tx.notes || tx.type.replace('-', ' ')}</TableCell>
+                                                    <TableCell className="text-right">{tx.debit > 0 ? `৳${tx.debit.toFixed(2)}` : '-'}</TableCell>
+                                                    <TableCell className="text-right">{tx.credit > 0 ? `৳${tx.credit.toFixed(2)}` : '-'}</TableCell>
+                                                    <TableCell className="text-right font-medium">৳{tx.balance.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow><TableCell colSpan={5} className="text-center h-24">No transactions for this account.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </div>
                 </TabsContent>
             </Tabs>
         </DialogContent>
@@ -698,3 +778,4 @@ export function MemberManagementClient() {
     </>
   );
 }
+
