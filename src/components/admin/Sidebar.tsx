@@ -54,6 +54,7 @@ import {
   Wallet,
   ArrowDownToDot,
   ArrowUpFromDot,
+  Shuffle,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 

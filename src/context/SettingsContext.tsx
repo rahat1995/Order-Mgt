@@ -231,6 +231,7 @@ interface SettingsContextType {
   addSavingsAccount: (account: Omit<SavingsAccount, 'id' | 'accountNumber' | 'openingDate' | 'balance' | 'status' | 'openingDeposit'>) => void;
   addSavingsTransaction: (transaction: Omit<SavingsTransaction, 'id'>) => void;
   closeSavingsAccount: (accountId: string, closingDate: string, notes?: string) => void;
+  addSavingsAdjustment: (adjustment: { fromAccountId: string; toAccountId: string; amount: number; date: string; notes?: string; }) => void;
   // Voucher
   addVoucher: (voucher: Omit<Voucher, 'id'>) => void;
   updateVoucher: (voucher: Voucher) => void;
@@ -662,7 +663,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
         const updatedAccounts = prev.savingsAccounts.map(account => {
             if (account.id === transaction.savingsAccountId) {
-                const newBalance = (transaction.type === 'deposit' || transaction.type === 'interest')
+                const newBalance = (transaction.type === 'deposit' || transaction.type === 'interest' || transaction.type === 'adjustment-in')
                     ? account.balance + transaction.amount
                     : account.balance - transaction.amount;
                 return { ...account, balance: newBalance };
@@ -719,6 +720,54 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       }
     });
   };
+  
+  const addSavingsAdjustment = (adjustment: { fromAccountId: string; toAccountId: string; amount: number; date: string; notes?: string; }) => {
+    setSettings(prev => {
+      const { fromAccountId, toAccountId, amount, date, notes } = adjustment;
+      
+      const fromAccount = prev.savingsAccounts.find(acc => acc.id === fromAccountId);
+      const toAccount = prev.savingsAccounts.find(acc => acc.id === toAccountId);
+
+      if (!fromAccount || !toAccount || fromAccount.balance < amount) {
+        alert("Invalid adjustment. Check accounts and balance.");
+        return prev;
+      }
+      
+      const withdrawalTx: SavingsTransaction = {
+        id: uuidv4(),
+        savingsAccountId: fromAccountId,
+        type: 'adjustment-out',
+        amount,
+        date,
+        notes: notes || `Transfer to account ${toAccount.accountNumber}`
+      };
+      
+      const depositTx: SavingsTransaction = {
+        id: uuidv4(),
+        savingsAccountId: toAccountId,
+        type: 'adjustment-in',
+        amount,
+        date,
+        notes: notes || `Transfer from account ${fromAccount.accountNumber}`
+      };
+
+      const updatedAccounts = prev.savingsAccounts.map(acc => {
+        if (acc.id === fromAccountId) {
+          return { ...acc, balance: acc.balance - amount };
+        }
+        if (acc.id === toAccountId) {
+          return { ...acc, balance: acc.balance + amount };
+        }
+        return acc;
+      });
+
+      return {
+        ...prev,
+        savingsAccounts: updatedAccounts,
+        savingsTransactions: [...prev.savingsTransactions, withdrawalTx, depositTx],
+      };
+    });
+  };
 
   // Customer Management
   const addCustomer = (customer: Omit<Customer, 'id'> & { primarySavingsRecoverableAmount?: number, initialDeposit?: number }): Customer => {
@@ -745,6 +794,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         
         let newOrders = prev.orders;
         let newCollections = prev.collections;
+        let newSavingsTransactions = prev.savingsTransactions;
         
         // Auto-create admission fee order
         const { admissionFee = 0, passbookFee = 0, kycFee = 0 } = prev.microfinanceSettings;
@@ -806,29 +856,22 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                   ...prev.lastSavingsAccountSerials,
                   [product.id]: newSerial,
                 }
+                 
+                // If there was an initial deposit, record it as a savings transaction
+                if (initialDeposit && initialDeposit > 0) {
+                    const newTransaction: SavingsTransaction = {
+                        id: uuidv4(),
+                        savingsAccountId: newAccount.id,
+                        amount: initialDeposit,
+                        date: new Date().toISOString(),
+                        type: 'deposit',
+                        notes: 'Initial deposit upon admission.',
+                    };
+                    newSavingsTransactions = [...prev.savingsTransactions, newTransaction];
+                }
              }
         }
         
-        // If there was an initial deposit, record it as a savings transaction
-        const firstAccount = newSavingsAccounts.find(a => a.memberId === newCustomerWithCode.id);
-        if (initialDeposit && initialDeposit > 0 && firstAccount) {
-            const newTransaction: SavingsTransaction = {
-                id: uuidv4(),
-                savingsAccountId: firstAccount.id,
-                amount: initialDeposit,
-                date: new Date().toISOString(),
-                type: 'deposit',
-                notes: 'Initial deposit upon admission.',
-            };
-            newCollections = [...prev.collections, {
-              id: uuidv4(),
-              customerId: newCustomerWithCode.id,
-              amount: initialDeposit,
-              date: new Date().toISOString(),
-              notes: 'Initial savings deposit'
-            }];
-        }
-
         return { 
             ...prev, 
             customers: [...prev.customers, newCustomerWithCode],
@@ -836,6 +879,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             collections: newCollections,
             lastMemberSerials: updatedSerials,
             savingsAccounts: newSavingsAccounts,
+            savingsTransactions: newSavingsTransactions,
             lastSavingsAccountSerials: newLastSavingsAccountSerials
         };
     });
@@ -1400,6 +1444,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addSavingsAccount,
     addSavingsTransaction,
     closeSavingsAccount,
+    addSavingsAdjustment,
     addAccountingVoucher, deleteAccountingVoucher,
     addAccountType, updateAccountType, deleteAccountType,
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,

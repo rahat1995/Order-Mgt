@@ -9,21 +9,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowDownToDot, ArrowUpFromDot, Landmark, ChevronsUpDown, Check, Ban } from 'lucide-react';
+import { ArrowDownToDot, ArrowUpFromDot, Landmark, ChevronsUpDown, Check, Ban, Shuffle } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { SavingsAccount, Customer } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const AccountSelector = ({
     value,
     onValueChange,
     filter,
+    label = "Member Savings Account",
 }: {
     value: string;
     onValueChange: (accountId: string) => void;
     filter?: (account: SavingsAccount) => boolean;
+    label?: string;
 }) => {
     const { settings } = useSettings();
     const { savingsAccounts, customers, savingsProducts } = settings;
@@ -57,40 +60,43 @@ const AccountSelector = ({
     }, [value, accountOptions]);
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" className="w-full justify-between">
-                    <span className="truncate">{selectedAccountDisplay}</span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command>
-                    <CommandInput placeholder="Search by name, code, mobile, account no..." />
-                    <CommandList>
-                        <CommandEmpty>No account found.</CommandEmpty>
-                        <CommandGroup>
-                            {accountOptions.map(account => (
-                                <CommandItem
-                                    key={account.id}
-                                    value={account.searchValue}
-                                    onSelect={() => {
-                                        onValueChange(account.id);
-                                        setOpen(false);
-                                    }}
-                                >
-                                    <Check className={cn("mr-2 h-4 w-4", value === account.id ? "opacity-100" : "opacity-0")} />
-                                    <div>
-                                        <p>{account.memberName} ({account.productName})</p>
-                                        <p className="text-xs text-muted-foreground">{account.memberMobile} | {account.accountNumber}</p>
-                                    </div>
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
+        <div className="space-y-2">
+            <Label>{label}</Label>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between">
+                        <span className="truncate">{selectedAccountDisplay}</span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder="Search by name, code, mobile, account no..." />
+                        <CommandList>
+                            <CommandEmpty>No account found.</CommandEmpty>
+                            <CommandGroup>
+                                {accountOptions.map(account => (
+                                    <CommandItem
+                                        key={account.id}
+                                        value={account.searchValue}
+                                        onSelect={() => {
+                                            onValueChange(account.id);
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        <Check className={cn("mr-2 h-4 w-4", value === account.id ? "opacity-100" : "opacity-0")} />
+                                        <div>
+                                            <p>{account.memberName} ({account.productName})</p>
+                                            <p className="text-xs text-muted-foreground">{account.memberMobile} | {account.accountNumber}</p>
+                                        </div>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        </div>
     );
 };
 
@@ -132,7 +138,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         }
 
         if (type === 'withdrawal' && selectedAccount && numAmount > selectedAccount.balance) {
-            alert(`Withdrawal amount cannot exceed the current balance of ৳${selectedAccount.balance.toFixed(2)}.`);
+            alert(`Withdrawal amount cannot exceed the current balance of ৳${(selectedAccount.balance || 0).toFixed(2)}.`);
             return;
         }
 
@@ -159,14 +165,11 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Member Savings Account</Label>
-                        <AccountSelector 
-                            value={selectedAccountId} 
-                            onValueChange={setSelectedAccountId} 
-                            filter={(account) => account.status !== 'closed'}
-                        />
-                    </div>
+                    <AccountSelector 
+                        value={selectedAccountId} 
+                        onValueChange={setSelectedAccountId} 
+                        filter={(account) => account.status !== 'closed'}
+                    />
                     {selectedAccount && (
                         <div className="p-3 border rounded-lg bg-muted/50 space-y-2 text-sm">
                             <div className="flex justify-between font-bold text-base">
@@ -239,14 +242,12 @@ const SavingsClosingForm = () => {
                 <CardDescription>Close a member's savings account and withdraw the final balance.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label>Member Savings Account to Close</Label>
-                    <AccountSelector 
-                        value={selectedAccountId} 
-                        onValueChange={setSelectedAccountId} 
-                        filter={(account) => account.status !== 'closed'}
-                    />
-                </div>
+                <AccountSelector 
+                    value={selectedAccountId} 
+                    onValueChange={setSelectedAccountId} 
+                    filter={(account) => account.status !== 'closed'}
+                    label="Member Savings Account to Close"
+                />
                 {selectedAccount && (
                     <div className="p-3 border rounded-lg bg-yellow-50 border-yellow-200 space-y-2 text-sm">
                         <div className="flex justify-between font-bold text-base text-yellow-800">
@@ -273,6 +274,125 @@ const SavingsClosingForm = () => {
     )
 }
 
+const SavingsAdjustmentForm = () => {
+    const { settings, addSavingsAdjustment } = useSettings();
+    const { customers, savingsAccounts, savingsProductTypes } = settings;
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
+    const [fromAccountId, setFromAccountId] = useState('');
+    const [toAccountId, setToAccountId] = useState('');
+    const [amount, setAmount] = useState('');
+    const [notes, setNotes] = useState('');
+    const [adjustmentDate, setAdjustmentDate] = useState(new Date().toISOString().split('T')[0]);
+
+    const rsTypeId = savingsProductTypes.find(t => t.code === 'RS')?.id;
+    const dpsTypeId = savingsProductTypes.find(t => t.code === 'DPS')?.id;
+
+    const { fromAccounts, toAccounts, fromAccountBalance } = useMemo(() => {
+        if (!selectedCustomerId) return { fromAccounts: [], toAccounts: [], fromAccountBalance: 0 };
+        const memberAccounts = savingsAccounts.filter(acc => acc.memberId === selectedCustomerId && acc.status === 'active');
+        
+        const f = memberAccounts.filter(acc => acc.savingsProductId && settings.savingsProducts.find(p => p.id === acc.savingsProductId)?.savingsProductTypeId === rsTypeId);
+        const t = memberAccounts.filter(acc => {
+            const product = settings.savingsProducts.find(p => p.id === acc.savingsProductId);
+            return product && (product.savingsProductTypeId === rsTypeId || product.savingsProductTypeId === dpsTypeId);
+        }).filter(acc => acc.id !== fromAccountId);
+
+        const balance = fromAccountId ? memberAccounts.find(acc => acc.id === fromAccountId)?.balance || 0 : 0;
+        
+        return { fromAccounts: f, toAccounts: t, fromAccountBalance: balance };
+    }, [selectedCustomerId, fromAccountId, savingsAccounts, settings.savingsProducts, rsTypeId, dpsTypeId]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const numAmount = parseFloat(amount);
+        if (!fromAccountId || !toAccountId || isNaN(numAmount) || numAmount <= 0) {
+            alert('Please select valid accounts and enter a transfer amount.');
+            return;
+        }
+        if (numAmount > fromAccountBalance) {
+            alert(`Transfer amount cannot exceed the source account balance of ৳${fromAccountBalance.toFixed(2)}.`);
+            return;
+        }
+
+        addSavingsAdjustment({ fromAccountId, toAccountId, amount: numAmount, date: adjustmentDate, notes });
+        alert('Adjustment successful!');
+        setFromAccountId('');
+        setToAccountId('');
+        setAmount('');
+        setNotes('');
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Savings Adjustment</CardTitle>
+                <CardDescription>Transfer balance between two savings accounts of the same member.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Select Member</Label>
+                        <Select onValueChange={v => {setSelectedCustomerId(v); setFromAccountId(''); setToAccountId('');}}>
+                            <SelectTrigger><SelectValue placeholder="Select a member..." /></SelectTrigger>
+                            <SelectContent>
+                                {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {selectedCustomerId && (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Transfer From (Source)</Label>
+                                    <Select value={fromAccountId} onValueChange={setFromAccountId}>
+                                        <SelectTrigger><SelectValue placeholder="Select source account" /></SelectTrigger>
+                                        <SelectContent>
+                                            {fromAccounts.map(acc => {
+                                                const product = settings.savingsProducts.find(p => p.id === acc.savingsProductId);
+                                                return <SelectItem key={acc.id} value={acc.id}>{product?.name} (Bal: ৳{acc.balance.toFixed(2)})</SelectItem>
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Transfer To (Destination)</Label>
+                                    <Select value={toAccountId} onValueChange={setToAccountId}>
+                                        <SelectTrigger><SelectValue placeholder="Select destination account" /></SelectTrigger>
+                                        <SelectContent>
+                                            {toAccounts.map(acc => {
+                                                const product = settings.savingsProducts.find(p => p.id === acc.savingsProductId);
+                                                return <SelectItem key={acc.id} value={acc.id}>{product?.name}</SelectItem>
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="amount">Amount</Label>
+                                    <Input id="amount" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required disabled={!fromAccountId} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="adjustmentDate">Adjustment Date</Label>
+                                    <Input id="adjustmentDate" type="date" value={adjustmentDate} onChange={e => setAdjustmentDate(e.target.value)} required />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="adj_notes">Notes (Optional)</Label>
+                                <Input id="adj_notes" value={notes} onChange={e => setNotes(e.target.value)} />
+                            </div>
+                        </>
+                    )}
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" disabled={!fromAccountId || !toAccountId}>Confirm Adjustment</Button>
+                </CardFooter>
+            </form>
+        </Card>
+    );
+};
+
+
 const SavingsInterestPaymentForm = () => {
     return (
         <Card>
@@ -294,12 +414,15 @@ const SavingsInterestPaymentForm = () => {
 export function SavingsTransactionClient() {
   return (
     <Tabs defaultValue="deposit" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="deposit">
           <ArrowDownToDot className="mr-2 h-4 w-4" /> Deposit
         </TabsTrigger>
         <TabsTrigger value="withdrawal">
             <ArrowUpFromDot className="mr-2 h-4 w-4" /> Withdrawal
+        </TabsTrigger>
+        <TabsTrigger value="adjustment">
+            <Shuffle className="mr-2 h-4 w-4" /> Adjustment
         </TabsTrigger>
         <TabsTrigger value="interest-payment">
             <Landmark className="mr-2 h-4 w-4" /> Interest Payment
@@ -313,6 +436,9 @@ export function SavingsTransactionClient() {
       </TabsContent>
       <TabsContent value="withdrawal" className="mt-4">
         <SavingsForm type="withdrawal" />
+      </TabsContent>
+       <TabsContent value="adjustment" className="mt-4">
+        <SavingsAdjustmentForm />
       </TabsContent>
        <TabsContent value="interest-payment" className="mt-4">
         <SavingsInterestPaymentForm />

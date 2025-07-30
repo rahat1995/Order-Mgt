@@ -701,7 +701,7 @@ export interface SavingsAccount {
 export interface SavingsTransaction {
     id: string;
     savingsAccountId: string;
-    type: 'deposit' | 'withdrawal' | 'interest';
+    type: 'deposit' | 'withdrawal' | 'interest' | 'adjustment-in' | 'adjustment-out';
     amount: number;
     date: string; // ISO Date
     notes?: string;
