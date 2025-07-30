@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,9 +100,9 @@ const MemberReview = ({ formData, samityTerm }: { formData: Partial<Customer>, s
 const MemberProfileView = ({ customer }: { customer: Customer | null }) => {
     const { settings } = useSettings();
     const { samities, branches, microfinanceSettings, savingsAccounts, savingsProductTypes, savingsProducts, savingsTransactions } = settings;
-    const { samityTerm } = microfinanceSettings;
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
+    const { samityTerm } = microfinanceSettings;
     const samity = useMemo(() => customer ? samities.find(s => s.id === customer.samityId) : null, [customer, samities]);
     const branch = useMemo(() => samity ? branches.find(b => b.id === samity.branchId) : null, [samity, branches]);
     const memberAccounts = useMemo(() => customer ? savingsAccounts.filter(acc => acc.memberId === customer.id) : [], [customer, savingsAccounts]);
@@ -129,7 +129,7 @@ const MemberProfileView = ({ customer }: { customer: Customer | null }) => {
             };
         });
     }, [selectedAccountId, customer, memberAccounts, savingsTransactions]);
-
+    
     if (!customer) {
         return (
             <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
