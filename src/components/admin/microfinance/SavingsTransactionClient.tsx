@@ -107,7 +107,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         const account = savingsAccounts.find(acc => acc.id === selectedAccountId);
         if (!account) return { selectedAccount: null, cumulativeDeposit: 0, cumulativeWithdrawal: 0 };
         
-        let totalDeposit = account.openingDeposit;
+        let totalDeposit = account.openingDeposit || 0;
         let totalWithdrawal = 0;
         
         savingsTransactions.forEach(tx => {
@@ -171,16 +171,16 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                         <div className="p-3 border rounded-lg bg-muted/50 space-y-2 text-sm">
                             <div className="flex justify-between font-bold text-base">
                                 <span>Current Balance:</span>
-                                <span>৳{selectedAccount.balance.toFixed(2)}</span>
+                                <span>৳{(selectedAccount.balance || 0).toFixed(2)}</span>
                             </div>
                              <div className="border-t pt-2 space-y-1 text-muted-foreground">
                                 <div className="flex justify-between">
                                     <span>Total Deposits:</span>
-                                    <span className="text-green-600 font-medium">৳{cumulativeDeposit.toFixed(2)}</span>
+                                    <span className="text-green-600 font-medium">৳{(cumulativeDeposit || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Total Withdrawals:</span>
-                                    <span className="text-red-600 font-medium">৳{cumulativeWithdrawal.toFixed(2)}</span>
+                                    <span className="text-red-600 font-medium">৳{(cumulativeWithdrawal || 0).toFixed(2)}</span>
                                 </div>
                              </div>
                         </div>
@@ -224,7 +224,7 @@ const SavingsClosingForm = () => {
             alert('Please select an account to close.');
             return;
         }
-        if (confirm(`Are you sure you want to close this account? The remaining balance of ৳${selectedAccount?.balance.toFixed(2)} will be withdrawn.`)) {
+        if (confirm(`Are you sure you want to close this account? The remaining balance of ৳${(selectedAccount?.balance || 0).toFixed(2)} will be withdrawn.`)) {
             closeSavingsAccount(selectedAccountId, closingDate, notes);
             alert('Account closed successfully.');
             setSelectedAccountId('');
@@ -251,7 +251,7 @@ const SavingsClosingForm = () => {
                     <div className="p-3 border rounded-lg bg-yellow-50 border-yellow-200 space-y-2 text-sm">
                         <div className="flex justify-between font-bold text-base text-yellow-800">
                             <span>Final Balance to Withdraw:</span>
-                            <span>৳{selectedAccount.balance.toFixed(2)}</span>
+                            <span>৳{(selectedAccount.balance || 0).toFixed(2)}</span>
                         </div>
                     </div>
                 )}
