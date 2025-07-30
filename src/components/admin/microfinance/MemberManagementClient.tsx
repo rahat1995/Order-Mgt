@@ -97,20 +97,18 @@ const MemberReview = ({ formData, samityTerm }: { formData: Partial<Customer>, s
     )
 }
 
-const MemberProfileView = ({ customer }: { customer: Customer }) => {
+const MemberProfileView = ({ customer }: { customer: Customer | null }) => {
     const { settings } = useSettings();
     const { samities, branches, microfinanceSettings, savingsAccounts, savingsProductTypes, savingsProducts, savingsTransactions } = settings;
     const { samityTerm } = microfinanceSettings;
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
-    if (!customer) return null;
-
-    const samity = samities.find(s => s.id === customer.samityId);
-    const branch = samity ? branches.find(b => b.id === samity.branchId) : null;
-    const memberAccounts = savingsAccounts.filter(acc => acc.memberId === customer.id);
+    const samity = useMemo(() => customer ? samities.find(s => s.id === customer.samityId) : null, [customer, samities]);
+    const branch = useMemo(() => samity ? branches.find(b => b.id === samity.branchId) : null, [samity, branches]);
+    const memberAccounts = useMemo(() => customer ? savingsAccounts.filter(acc => acc.memberId === customer.id) : [], [customer, savingsAccounts]);
 
     const statement = React.useMemo(() => {
-        if (!selectedAccountId) return [];
+        if (!selectedAccountId || !customer) return [];
         
         const account = memberAccounts.find(acc => acc.id === selectedAccountId);
         if (!account) return [];
@@ -130,9 +128,18 @@ const MemberProfileView = ({ customer }: { customer: Customer }) => {
                 balance: runningBalance,
             };
         });
-    }, [selectedAccountId, memberAccounts, savingsTransactions]);
+    }, [selectedAccountId, customer, memberAccounts, savingsTransactions]);
 
-
+    if (!customer) {
+        return (
+            <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Loading...</DialogTitle>
+                </DialogHeader>
+            </DialogContent>
+        );
+    }
+    
     return (
         <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
             <DialogHeader>
@@ -773,9 +780,8 @@ export function MemberManagementClient() {
       </Dialog>
       
       <Dialog open={!!viewingCustomer} onOpenChange={() => setViewingCustomer(null)}>
-        <MemberProfileView customer={viewingCustomer!} />
+        <MemberProfileView customer={viewingCustomer} />
       </Dialog>
     </>
   );
 }
-
