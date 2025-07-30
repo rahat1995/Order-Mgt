@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { SavingsAccount, Customer } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 
 const AccountSelector = ({
@@ -103,6 +103,7 @@ const AccountSelector = ({
 
 const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
     const { settings, addSavingsTransaction } = useSettings();
+    const router = useRouter();
     const { savingsAccounts, savingsTransactions } = settings;
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [amount, setAmount] = useState('');
@@ -118,9 +119,9 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         
         savingsTransactions.forEach(tx => {
             if (tx.savingsAccountId === selectedAccountId) {
-                if (tx.type === 'deposit' || tx.type === 'interest') {
+                if (tx.type === 'deposit' || tx.type === 'interest' || tx.type === 'adjustment-in') {
                     totalDeposit += tx.amount;
-                } else {
+                } else if (tx.type === 'withdrawal' || tx.type === 'adjustment-out') {
                     totalWithdrawal += tx.amount;
                 }
             }
@@ -129,17 +130,23 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         return { selectedAccount: account, cumulativeDeposit: totalDeposit, cumulativeWithdrawal: totalWithdrawal };
     }, [selectedAccountId, savingsAccounts, savingsTransactions]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleFormReset = () => {
+        setSelectedAccountId('');
+        setAmount('');
+        setTransactionDate(new Date().toISOString().split('T')[0]);
+        setNotes('');
+    }
+
+    const handleSubmit = (redirect: boolean) => {
         const numAmount = parseFloat(amount);
         if (!selectedAccountId || isNaN(numAmount) || numAmount <= 0) {
             alert('Please select an account and enter a valid amount.');
-            return;
+            return false;
         }
 
         if (type === 'withdrawal' && selectedAccount && numAmount > selectedAccount.balance) {
             alert(`Withdrawal amount cannot exceed the current balance of ৳${(selectedAccount.balance || 0).toFixed(2)}.`);
-            return;
+            return false;
         }
 
         addSavingsTransaction({
@@ -151,11 +158,30 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
         });
 
         alert(`${type.charAt(0).toUpperCase() + type.slice(1)} of ৳${numAmount.toFixed(2)} successful!`);
-        setSelectedAccountId('');
-        setAmount('');
-        setTransactionDate(new Date().toISOString().split('T')[0]);
-        setNotes('');
+        
+        if (redirect) {
+            router.push('/admin/modules/microfinance/savings-accounts');
+        } else {
+            handleFormReset();
+        }
+        return true;
     };
+    
+    const onFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSubmit(true);
+    }
+    
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit(true);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedAccountId, amount, transactionDate, notes]);
 
     return (
         <Card>
@@ -163,7 +189,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                 <CardTitle>Record Savings {type === 'deposit' ? 'Deposit' : 'Withdrawal'}</CardTitle>
                 <CardDescription>Select a member's savings account to {type} funds.</CardDescription>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={onFormSubmit}>
                 <CardContent className="space-y-4">
                     <AccountSelector 
                         value={selectedAccountId} 
@@ -203,8 +229,9 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
                         <Input id="notes" value={notes} onChange={e => setNotes(e.target.value)} disabled={!selectedAccountId} />
                      </div>
                 </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={!selectedAccountId}>Submit {type === 'deposit' ? 'Deposit' : 'Withdrawal'}</Button>
+                <CardFooter className="gap-2">
+                    <Button type="submit" disabled={!selectedAccountId}>Submit &amp; View Accounts (Ctrl+Enter)</Button>
+                    <Button type="button" variant="secondary" onClick={() => handleSubmit(false)} disabled={!selectedAccountId}>Submit &amp; Add Another</Button>
                 </CardFooter>
             </form>
         </Card>
@@ -213,6 +240,7 @@ const SavingsForm = ({ type }: { type: 'deposit' | 'withdrawal' }) => {
 
 const SavingsClosingForm = () => {
     const { settings, closeSavingsAccount } = useSettings();
+    const router = useRouter();
     const { savingsAccounts } = settings;
     const [selectedAccountId, setSelectedAccountId] = useState('');
     const [closingDate, setClosingDate] = useState(new Date().toISOString().split('T')[0]);
@@ -222,7 +250,7 @@ const SavingsClosingForm = () => {
         return savingsAccounts.find(acc => acc.id === selectedAccountId);
     }, [selectedAccountId, savingsAccounts]);
 
-    const handleClose = () => {
+    const handleClose = (redirect: boolean) => {
         if (!selectedAccountId) {
             alert('Please select an account to close.');
             return;
@@ -230,10 +258,25 @@ const SavingsClosingForm = () => {
         if (confirm(`Are you sure you want to close this account? The remaining balance of ৳${(selectedAccount?.balance || 0).toFixed(2)} will be withdrawn.`)) {
             closeSavingsAccount(selectedAccountId, closingDate, notes);
             alert('Account closed successfully.');
-            setSelectedAccountId('');
-            setNotes('');
+            if(redirect) {
+                router.push('/admin/modules/microfinance/savings-accounts');
+            } else {
+                setSelectedAccountId('');
+                setNotes('');
+            }
         }
     }
+    
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleClose(true);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedAccountId, closingDate, notes]);
     
     return (
         <Card>
@@ -267,8 +310,9 @@ const SavingsClosingForm = () => {
                     </div>
                  </div>
             </CardContent>
-            <CardFooter>
-                <Button variant="destructive" onClick={handleClose} disabled={!selectedAccountId}>Permanently Close Account</Button>
+            <CardFooter className="gap-2">
+                <Button variant="destructive" onClick={() => handleClose(true)} disabled={!selectedAccountId}>Close &amp; View Accounts (Ctrl+Enter)</Button>
+                <Button variant="destructive" onClick={() => handleClose(false)} disabled={!selectedAccountId}>Close &amp; Add Another</Button>
             </CardFooter>
         </Card>
     )
@@ -276,6 +320,7 @@ const SavingsClosingForm = () => {
 
 const SavingsAdjustmentForm = () => {
     const { settings, addSavingsAdjustment } = useSettings();
+    const router = useRouter();
     const { customers, savingsAccounts, savingsProductTypes } = settings;
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [fromAccountId, setFromAccountId] = useState('');
@@ -302,8 +347,7 @@ const SavingsAdjustmentForm = () => {
         return { fromAccounts: f, toAccounts: t, fromAccountBalance: balance };
     }, [selectedCustomerId, fromAccountId, savingsAccounts, settings.savingsProducts, rsTypeId, dpsTypeId]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = (redirect: boolean) => {
         const numAmount = parseFloat(amount);
         if (!fromAccountId || !toAccountId || isNaN(numAmount) || numAmount <= 0) {
             alert('Please select valid accounts and enter a transfer amount.');
@@ -316,11 +360,27 @@ const SavingsAdjustmentForm = () => {
 
         addSavingsAdjustment({ fromAccountId, toAccountId, amount: numAmount, date: adjustmentDate, notes });
         alert('Adjustment successful!');
-        setFromAccountId('');
-        setToAccountId('');
-        setAmount('');
-        setNotes('');
+        if(redirect) {
+             router.push('/admin/modules/microfinance/savings-accounts');
+        } else {
+            setFromAccountId('');
+            setToAccountId('');
+            setAmount('');
+            setNotes('');
+        }
     };
+    
+     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit(true);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [fromAccountId, toAccountId, amount, adjustmentDate, notes]);
+
 
     return (
         <Card>
@@ -328,7 +388,7 @@ const SavingsAdjustmentForm = () => {
                 <CardTitle>Savings Adjustment</CardTitle>
                 <CardDescription>Transfer balance between two savings accounts of the same member.</CardDescription>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(true); }}>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Select Member</Label>
@@ -384,8 +444,9 @@ const SavingsAdjustmentForm = () => {
                         </>
                     )}
                 </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={!fromAccountId || !toAccountId}>Confirm Adjustment</Button>
+                <CardFooter className="gap-2">
+                    <Button type="submit" disabled={!fromAccountId || !toAccountId}>Confirm &amp; View Accounts (Ctrl+Enter)</Button>
+                    <Button type="button" variant="secondary" onClick={() => handleSubmit(false)} disabled={!fromAccountId || !toAccountId}>Confirm &amp; Add Another</Button>
                 </CardFooter>
             </form>
         </Card>
@@ -412,23 +473,41 @@ const SavingsInterestPaymentForm = () => {
 
 
 export function SavingsTransactionClient() {
+  const [activeTab, setActiveTab] = useState('deposit');
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (!e.altKey) return;
+
+        const key = parseInt(e.key, 10);
+        if (key >= 1 && key <= 5) {
+            e.preventDefault();
+            const tabs = ['deposit', 'withdrawal', 'adjustment', 'interest-payment', 'closing'];
+            setActiveTab(tabs[key - 1]);
+        }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <Tabs defaultValue="deposit" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="deposit">
-          <ArrowDownToDot className="mr-2 h-4 w-4" /> Deposit
+          <ArrowDownToDot className="mr-2 h-4 w-4" /> Deposit (Alt+1)
         </TabsTrigger>
         <TabsTrigger value="withdrawal">
-            <ArrowUpFromDot className="mr-2 h-4 w-4" /> Withdrawal
+            <ArrowUpFromDot className="mr-2 h-4 w-4" /> Withdrawal (Alt+2)
         </TabsTrigger>
         <TabsTrigger value="adjustment">
-            <Shuffle className="mr-2 h-4 w-4" /> Adjustment
+            <Shuffle className="mr-2 h-4 w-4" /> Adjustment (Alt+3)
         </TabsTrigger>
         <TabsTrigger value="interest-payment">
-            <Landmark className="mr-2 h-4 w-4" /> Interest Payment
+            <Landmark className="mr-2 h-4 w-4" /> Interest (Alt+4)
         </TabsTrigger>
         <TabsTrigger value="closing">
-            <Ban className="mr-2 h-4 w-4" /> Account Closing
+            <Ban className="mr-2 h-4 w-4" /> Closing (Alt+5)
         </TabsTrigger>
       </TabsList>
       <TabsContent value="deposit" className="mt-4">
