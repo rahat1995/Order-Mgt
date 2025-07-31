@@ -1,5 +1,6 @@
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -708,6 +709,39 @@ export interface SavingsTransaction {
     notes?: string;
 }
 
+// Live Audience Interaction
+export interface InteractionQuestion {
+  id: string;
+  text: string;
+  type: 'multiple-choice' | 'text';
+  options?: { id: string; text: string }[];
+  duration?: number; // in seconds
+  correctOptionId?: string;
+}
+
+export interface InteractionSession {
+  id: string;
+  name: string; // e.g., "Annual Conference Exam", "Customer Feedback Survey"
+  type: 'poll' | 'exam' | 'survey';
+  status: 'inactive' | 'active' | 'completed';
+  requireName: boolean;
+  questions: InteractionQuestion[];
+}
+
+export interface Participant {
+  id: string;
+  sessionId: string;
+  name: string;
+}
+
+export interface InteractionResponse {
+  id: string;
+  sessionId: string;
+  questionId: string;
+  participantId?: string; // only if name is required
+  answer: string; // for text or option id for multiple-choice
+}
+
 export interface AppSettings {
   organization: OrganizationInfo;
   theme: Theme;
@@ -779,6 +813,10 @@ export interface AppSettings {
   accountSubHeads: AccountSubHead[];
   ledgerAccounts: LedgerAccount[];
   accountingVouchers: AccountingVoucher[];
+  // Live Audience Interaction
+  interactionSessions?: InteractionSession[];
+  interactionResponses?: InteractionResponse[];
+  participants?: Participant[];
   
   lastOrderNumberForDate: {
     date: string; // YYYY-MM-DD

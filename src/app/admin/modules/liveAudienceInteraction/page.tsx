@@ -5,24 +5,24 @@ import { Vote, MessageSquare, ListChecks, Presentation } from 'lucide-react';
 
 const interactionSubModules = [
   {
+    href: '/admin/modules/liveAudienceInteraction/sessions',
+    icon: Presentation,
+    title: 'Interaction Sessions',
+    description: 'Create and manage polls, exams, and surveys.',
+    enabled: true,
+  },
+  {
     href: '/admin/modules/liveAudienceInteraction/polls',
     icon: ListChecks,
     title: 'Live Polls',
-    description: 'Create and manage real-time polls for your audience.',
+    description: 'Manage and display real-time poll results.',
     enabled: false,
   },
   {
     href: '/admin/modules/liveAudienceInteraction/qa',
     icon: MessageSquare,
     title: 'Audience Q&A',
-    description: 'Manage questions submitted by the audience, with upvoting.',
-    enabled: false,
-  },
-  {
-    href: '/admin/modules/liveAudienceInteraction/sessions',
-    icon: Presentation,
-    title: 'Interaction Sessions',
-    description: 'Create and manage live interaction sessions.',
+    description: 'Manage questions submitted by the audience.',
     enabled: false,
   },
 ];
