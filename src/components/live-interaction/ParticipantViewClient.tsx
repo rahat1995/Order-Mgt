@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import type { InteractionSession, Participant, InteractionQuestion } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 const participantFields = [
     { id: 'name', label: 'Participant Name', required: true },
@@ -29,13 +30,36 @@ export function ParticipantViewClient() {
     const [selectedOption, setSelectedOption] = useState<string>('');
     const [textAnswer, setTextAnswer] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [finalScore, setFinalScore] = useState<number | null>(null);
+
     useEffect(() => {
         if (isLoaded) {
             const session = settings.interactionSessions?.find(s => s.status === 'active') || null;
             setActiveSession(session);
         }
     }, [isLoaded, settings.interactionSessions]);
+
+    useEffect(() => {
+        if (activeSession?.type === 'exam' && currentQuestionIndex >= 0 && activeSession.questions[currentQuestionIndex]) {
+            const duration = activeSession.questions[currentQuestionIndex].duration;
+            if (duration) {
+                setTimeLeft(duration);
+                const timer = setInterval(() => {
+                    setTimeLeft(prevTime => {
+                        if (prevTime === null || prevTime <= 1) {
+                            clearInterval(timer);
+                            handleAnswerSubmit(true); // Auto-submit when time is up
+                            return 0;
+                        }
+                        return prevTime - 1;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }
+        }
+    }, [currentQuestionIndex, activeSession]);
+
 
     const handleJoinSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -44,16 +68,25 @@ export function ParticipantViewClient() {
         const name = formData.get('name') as string;
         if (!name) return;
 
-        const newParticipant = addParticipant({ sessionId: activeSession.id, name });
+        const participantData: Omit<Participant, 'id'> = { sessionId: activeSession.id, name: ''};
+        
+        participantFields.forEach(field => {
+            const value = formData.get(field.id) as string;
+            if(value) {
+                (participantData as any)[field.id] = value;
+            }
+        })
+        
+        const newParticipant = addParticipant(participantData);
         setParticipant(newParticipant);
     };
 
-    const handleAnswerSubmit = () => {
+    const handleAnswerSubmit = (autoSubmit = false) => {
         if (!activeSession || !participant) return;
         const currentQuestion = activeSession.questions[currentQuestionIndex];
         const answer = currentQuestion.type === 'multiple-choice' ? selectedOption : textAnswer;
 
-        if (!answer) {
+        if (!answer && !autoSubmit) {
             alert('Please provide an answer.');
             return;
         }
@@ -73,7 +106,23 @@ export function ParticipantViewClient() {
                 setSelectedOption('');
                 setTextAnswer('');
             } else {
-                // End of exam/survey
+                // End of exam/survey, calculate score if it's an exam
+                if (activeSession.type === 'exam') {
+                    const responses = settings.interactionResponses?.filter(r => r.participantId === participant.id && r.sessionId === activeSession.id) || [];
+                    let score = 0;
+                    activeSession.questions.forEach(q => {
+                        const response = responses.find(r => r.questionId === q.id);
+                        if (response && response.answer === q.correctOptionId) {
+                            score++;
+                        }
+                    });
+                     // Check final answer
+                    if (answer && answer === currentQuestion.correctOptionId) {
+                        score++;
+                    }
+
+                    setFinalScore(score);
+                }
                 setCurrentQuestionIndex(-1); // Use -1 to signify completion
             }
             setIsSubmitting(false);
@@ -121,21 +170,37 @@ export function ParticipantViewClient() {
                     <CardTitle>Thank You!</CardTitle>
                     <CardDescription>Your responses have been submitted. You may now close this window.</CardDescription>
                 </CardHeader>
+                {finalScore !== null && (
+                    <CardContent>
+                        <p className="text-lg font-semibold">Your Score:</p>
+                        <p className="text-4xl font-bold text-primary">{finalScore} / {activeSession.questions.length}</p>
+                    </CardContent>
+                )}
             </Card>
         )
     }
 
     const currentQuestion = activeSession.questions[currentQuestionIndex];
-    
+    const progressPercentage = (timeLeft !== null && currentQuestion.duration) 
+        ? (timeLeft / currentQuestion.duration) * 100 
+        : 100;
+
     // Question View
     return (
         <Card className="w-full max-w-md">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle>Question {currentQuestionIndex + 1} of {activeSession.questions.length}</CardTitle>
-                    {currentQuestion.duration && <div className="text-sm text-muted-foreground">Time: {currentQuestion.duration}s</div>}
+                    {activeSession.type === 'exam' && timeLeft !== null && (
+                        <div className="text-lg font-bold text-primary tabular-nums">
+                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                        </div>
+                    )}
                 </div>
-                <CardDescription className="text-lg text-foreground pt-2">{currentQuestion.text}</CardDescription>
+                 {activeSession.type === 'exam' && currentQuestion.duration && (
+                    <Progress value={progressPercentage} className="w-full h-2 mt-2" />
+                 )}
+                <CardDescription className="text-lg text-foreground pt-4">{currentQuestion.text}</CardDescription>
             </CardHeader>
             <CardContent>
                 {currentQuestion.type === 'multiple-choice' && (
@@ -158,7 +223,7 @@ export function ParticipantViewClient() {
                 )}
             </CardContent>
             <CardFooter>
-                <Button onClick={handleAnswerSubmit} className="w-full" disabled={isSubmitting}>
+                <Button onClick={() => handleAnswerSubmit()} className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Submitting...</> : "Submit Answer"}
                 </Button>
             </CardFooter>
