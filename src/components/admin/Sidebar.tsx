@@ -133,7 +133,7 @@ const moduleLinks = [
         { href: '/admin/modules/microfinance/savings-products', label: 'Savings Products', icon: ClipboardList },
         { href: '/admin/modules/microfinance/savings-accounts', label: 'Savings Accounts', icon: Wallet },
         { href: '/admin/modules/microfinance/collections', label: 'Savings Transactions', icon: Receipt },
-        { href: '/admin/modules/microfinance/interest', label: 'Interest Management', icon: Calculator },
+        { href: '/admin/modules/microfinance/interest', label: 'Savings Interest', icon: Calculator },
         { href: '/admin/modules/microfinance/guarantor', label: 'Guarantor', icon: UserCheck },
         { href: '/admin/modules/microfinance/cash-collateral', label: 'Cash Collateral', icon: Banknote },
         { href: '/admin/modules/microfinance/configuration', label: 'Configuration', icon: Cog },
