@@ -2,6 +2,7 @@
 
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -774,7 +775,7 @@ export interface AppSettings {
   serviceItemCategories: ServiceItemCategory[];
   serviceItems: ServiceItem[];
   serviceJobs: ServiceJob[];
-  // Simple Product management for challan
+  // Simple Product management for Challan
   productCategories: ProductCategory[];
   products: Product[];
   inventoryItems: InventoryItem[];
