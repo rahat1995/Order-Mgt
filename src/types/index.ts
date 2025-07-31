@@ -63,6 +63,7 @@ export interface ModuleSettings {
   microfinance: boolean;
   fixedAssetManagement: boolean;
   addressManagement: boolean;
+  liveAudienceInteraction: boolean;
 }
 
 export interface PosSettings {

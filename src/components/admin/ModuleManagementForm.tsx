@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList, HandCoins, Archive, MapPin } from 'lucide-react';
+import { ShoppingCart, Receipt, Wrench, FileText, Boxes, LayoutGrid, DollarSign, BookUser, Users, ShieldCheck, LineChart, UserX, Package, FileClock, ClipboardList, HandCoins, Archive, MapPin, Vote } from 'lucide-react';
 
 const modulesData = [
   { key: 'pos', label: 'POS', icon: ShoppingCart, description: 'Menu, order entry, and voucher management.' },
@@ -29,6 +29,7 @@ const modulesData = [
   { key: 'microfinance', label: 'Microfinance', icon: HandCoins, description: 'Manage members, loans, and savings.' },
   { key: 'fixedAssetManagement', label: 'Fixed Assets', icon: Archive, description: 'Manage company assets and depreciation.' },
   { key: 'addressManagement', label: 'Address Data', icon: MapPin, description: 'Manage geographical data like divisions, districts, etc.' },
+  { key: 'liveAudienceInteraction', label: 'Audience Interaction', icon: Vote, description: 'Engage with a live audience via polls and Q&A.' },
   { key: 'userAccessControl', label: 'User Access Control', icon: ShieldCheck, description: 'Define roles and permissions for users.' },
 ] as const;
 

@@ -56,6 +56,7 @@ import {
   ArrowUpFromDot,
   Shuffle,
   Calculator,
+  Vote,
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -148,6 +149,7 @@ const moduleLinks = [
       ]
     },
     { key: 'addressManagement', label: 'Address Data', icon: MapPin, href: '/admin/modules/addressManagement' },
+    { key: 'liveAudienceInteraction', label: 'Live Interaction', icon: Vote, href: '/admin/modules/liveAudienceInteraction' },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 
