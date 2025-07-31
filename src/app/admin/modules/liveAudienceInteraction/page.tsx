@@ -16,7 +16,7 @@ const interactionSubModules = [
     icon: ListChecks,
     title: 'Live Polls',
     description: 'Manage and display real-time poll results.',
-    enabled: false,
+    enabled: true,
   },
   {
     href: '/admin/modules/liveAudienceInteraction/qa',
