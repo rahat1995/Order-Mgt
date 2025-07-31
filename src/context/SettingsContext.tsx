@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount, SavingsTransaction, InteractionSession } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount, SavingsTransaction, InteractionSession, Participant, InteractionResponse } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -344,6 +345,8 @@ interface SettingsContextType {
   // Live Audience Interaction
   addInteractionSession: (session: InteractionSession) => void;
   updateInteractionSession: (session: InteractionSession) => void;
+  addParticipant: (participant: Omit<Participant, 'id'>) => Participant;
+  addInteractionResponse: (response: Omit<InteractionResponse, 'id'>) => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -1447,6 +1450,17 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         interactionSessions: (prev.interactionSessions || []).map(s => s.id === session.id ? session : s),
     }));
   }
+  
+  const addParticipant = (participant: Omit<Participant, 'id'>): Participant => {
+      const newParticipant = { ...participant, id: uuidv4() };
+      setSettings(prev => ({...prev, participants: [...(prev.participants || []), newParticipant]}));
+      return newParticipant;
+  }
+
+  const addInteractionResponse = (response: Omit<InteractionResponse, 'id'>) => {
+      const newResponse = { ...response, id: uuidv4() };
+      setSettings(prev => ({...prev, interactionResponses: [...(prev.interactionResponses || []), newResponse]}));
+  }
 
 
   const contextValue = {
@@ -1475,6 +1489,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     updateAllLedgerOpeningBalances,
     addInteractionSession,
     updateInteractionSession,
+    addParticipant,
+    addInteractionResponse,
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;

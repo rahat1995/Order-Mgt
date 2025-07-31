@@ -1,4 +1,5 @@
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -730,13 +731,14 @@ export interface Participant {
   id: string;
   sessionId: string;
   name: string;
+  // Other fields like email, phone, etc., can be added here if needed
 }
 
 export interface InteractionResponse {
   id: string;
   sessionId: string;
   questionId: string;
-  participantId?: string; // only if name is required
+  participantId: string;
   answer: string; // for text or option id for multiple-choice
 }
 

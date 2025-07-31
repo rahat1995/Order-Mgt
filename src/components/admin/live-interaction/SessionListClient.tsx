@@ -9,7 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { InteractionSession } from '@/types';
-import { BarChart, Edit, Trash2 } from 'lucide-react';
+import { BarChart, Edit, Trash2, QrCode } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import QRCode from 'react-qr-code';
+import { cn } from '@/lib/utils';
 
 export function SessionListClient() {
     const { settings, updateInteractionSession, isLoaded } = useSettings();
@@ -28,6 +31,13 @@ export function SessionListClient() {
         }
         
         updateInteractionSession({ ...session, status: newStatus });
+    };
+    
+    const getJoinUrl = () => {
+        if (typeof window !== 'undefined') {
+            return `${window.location.origin}/join`;
+        }
+        return '';
     };
 
     if (!isLoaded) {
@@ -67,10 +77,27 @@ export function SessionListClient() {
                                                 checked={session.status === 'active'}
                                                 onCheckedChange={(checked) => handleStatusChange(session, checked)}
                                             />
-                                            <label htmlFor={`status-${session.id}`} className="text-sm capitalize">{session.status}</label>
+                                            <label htmlFor={`status-${session.id}`} className={cn("text-sm capitalize", session.status === 'active' && 'font-semibold text-primary')}>{session.status}</label>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
+                                        {session.status === 'active' && (
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" size="icon" className="h-8 w-8">
+                                                        <QrCode className="h-4 w-4" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-4">
+                                                    <div className="text-center">
+                                                        <p className="mb-4 font-semibold">Scan to Join</p>
+                                                        <div className="p-2 bg-white rounded-md">
+                                                            <QRCode value={getJoinUrl()} size={128} />
+                                                        </div>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        )}
                                         <Button variant="ghost" size="icon" disabled>
                                             <BarChart className="h-4 w-4" />
                                         </Button>
