@@ -9,9 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Challan, Customer, OrganizationInfo } from '@/types';
-import { FileText, PlusCircle, Printer } from 'lucide-react';
+import { FileText, PlusCircle, Printer, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChallanPrint } from './print/ChallanPrint';
+import { ItemLabelPrint } from './print/ItemLabelPrint';
 
 const ChallanStatusBadge = ({ status }: { status: Challan['status'] }) => {
   const colorClassMap: { [key in Challan['status']]?: string } = {
@@ -35,7 +36,9 @@ export function ChallanListClient() {
   const router = useRouter();
 
   const [challanToPrint, setChallanToPrint] = useState<PrintChallanInfo | null>(null);
+  const [labelsToPrint, setLabelsToPrint] = useState<Challan['items'] | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const labelPrintRef = useRef<HTMLDivElement>(null);
   
   const printInNewWindow = (contentRef: React.RefObject<HTMLDivElement>, title: string) => {
     if (!contentRef.current) return;
@@ -61,6 +64,16 @@ export function ChallanListClient() {
     }
   }, [challanToPrint]);
   
+  useEffect(() => {
+    if (labelsToPrint && labelPrintRef.current) {
+      const timer = setTimeout(() => {
+        printInNewWindow(labelPrintRef, `Item Labels`);
+        setLabelsToPrint(null);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [labelsToPrint]);
+
   const handleReprint = (challan: Challan) => {
       const customer = customers.find(c => c.id === challan.customerId);
       if (!customer) {
@@ -69,6 +82,11 @@ export function ChallanListClient() {
       }
       setChallanToPrint({ challan, customer, organization });
   }
+
+  const handleReprintLabels = (challan: Challan) => {
+      setLabelsToPrint(challan.items);
+  }
+
 
   if (!isLoaded) {
     return <div>Loading challans...</div>;
@@ -83,6 +101,11 @@ export function ChallanListClient() {
           <div ref={printRef}>
             <ChallanPrint challan={challanToPrint.challan} customer={challanToPrint.customer} organization={challanToPrint.organization} />
           </div>
+        )}
+        {labelsToPrint && (
+            <div ref={labelPrintRef}>
+                <ItemLabelPrint items={labelsToPrint} />
+            </div>
         )}
       </div>
       <Card>
@@ -122,6 +145,9 @@ export function ChallanListClient() {
                            <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleReprint(challan)}>
                                 <Printer className="mr-2 h-4 w-4" /> Reprint
+                            </Button>
+                             <Button variant="outline" size="sm" onClick={() => handleReprintLabels(challan)}>
+                                <Tag className="mr-2 h-4 w-4" /> Print Labels
                             </Button>
                             {challan.status !== 'fully-billed' && challan.status !== 'cancelled' && (
                               <Button size="sm" onClick={() => router.push(`/admin/modules/challanAndBilling/bill/${challan.id}`)}>
