@@ -61,17 +61,10 @@ const microfinanceSubModules = [
     enabled: true,
   },
   {
-    href: '/admin/modules/microfinance/interest-provision',
+    href: '/admin/modules/microfinance/interest',
     icon: Calculator,
-    title: 'Interest Provision',
-    description: 'Calculate and provision savings interest.',
-    enabled: true,
-  },
-  {
-    href: '/admin/modules/microfinance/interest-disbursement',
-    icon: HandCoins,
-    title: 'Interest Disbursement',
-    description: 'Disburse provisioned interest to accounts.',
+    title: 'Interest Management',
+    description: 'Calculate, provision, and disburse savings interest.',
     enabled: true,
   },
   {
