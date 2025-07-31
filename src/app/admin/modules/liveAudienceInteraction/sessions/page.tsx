@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Presentation, ClipboardList, FileText } from 'lucide-react';
+import { Presentation, ClipboardList, FileText, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { SessionListClient } from '@/components/admin/live-interaction/SessionListClient';
 
 export default function InteractionSessionsPage() {
   const sessionTypes = [
@@ -22,35 +24,23 @@ export default function InteractionSessionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Presentation className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold">Interaction Sessions</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+            <Presentation className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Interaction Sessions</h1>
+        </div>
+        <Link href="/admin/modules/liveAudienceInteraction/exam/create" passHref>
+          <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Create New Session
+          </Button>
+        </Link>
       </div>
       <p className="text-muted-foreground">
-        Choose the type of interaction you want to create.
+        Manage all your live audience interaction sessions. Activate a session to make it available for participants.
       </p>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sessionTypes.map((session) => (
-          <Card
-            key={session.type}
-            className={`hover:shadow-lg transition-shadow ${!session.enabled ? 'bg-muted/50 cursor-not-allowed' : ''}`}
-          >
-            <Link href={session.enabled ? session.href : '#'} passHref>
-              <div className="h-full flex flex-col justify-between p-6">
-                <div className="flex items-center gap-4">
-                  <session.icon className="h-8 w-8 text-primary" />
-                  <CardTitle className="text-2xl">{session.type}</CardTitle>
-                </div>
-                <p className="text-sm text-muted-foreground mt-4">
-                  {session.description}
-                   {!session.enabled && <span className="text-xs block text-primary/70">(Coming soon)</span>}
-                </p>
-              </div>
-            </Link>
-          </Card>
-        ))}
-      </div>
+      <SessionListClient />
+
     </div>
   );
 }

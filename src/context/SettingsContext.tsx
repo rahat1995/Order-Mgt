@@ -343,6 +343,7 @@ interface SettingsContextType {
   updateAllLedgerOpeningBalances: (balances: Record<string, number>) => void;
   // Live Audience Interaction
   addInteractionSession: (session: InteractionSession) => void;
+  updateInteractionSession: (session: InteractionSession) => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -1439,6 +1440,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       interactionSessions: [...(prev.interactionSessions || []), session],
     }));
   };
+  
+  const updateInteractionSession = (session: InteractionSession) => {
+    setSettings(prev => ({
+        ...prev,
+        interactionSessions: (prev.interactionSessions || []).map(s => s.id === session.id ? session : s),
+    }));
+  }
 
 
   const contextValue = {
@@ -1466,6 +1474,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     clearChartOfAccounts,
     updateAllLedgerOpeningBalances,
     addInteractionSession,
+    updateInteractionSession,
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
