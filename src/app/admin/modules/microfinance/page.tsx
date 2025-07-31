@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog, UserCheck, Banknote, ListChecks } from 'lucide-react';
+import { HandCoins, Users, Package, ClipboardList, Receipt, LineChart, Cog, UserCheck, Banknote, ListChecks, Calculator } from 'lucide-react';
 
 const microfinanceSubModules = [
   {
@@ -58,6 +58,20 @@ const microfinanceSubModules = [
     icon: Receipt,
     title: 'Savings Transactions',
     description: 'Record deposits, withdrawals, and interest payments.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/microfinance/interest-provision',
+    icon: Calculator,
+    title: 'Interest Provision',
+    description: 'Calculate and provision savings interest.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/microfinance/interest-disbursement',
+    icon: HandCoins,
+    title: 'Interest Disbursement',
+    description: 'Disburse provisioned interest to accounts.',
     enabled: true,
   },
   {

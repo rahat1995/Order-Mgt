@@ -453,25 +453,6 @@ const SavingsAdjustmentForm = () => {
     );
 };
 
-
-const SavingsInterestPaymentForm = () => {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Process Interest Payment</CardTitle>
-                <CardDescription>Pay out calculated interest to a member's account.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">Interest payment form will be here.</p>
-            </CardContent>
-             <CardFooter>
-                <Button>Pay Interest</Button>
-            </CardFooter>
-        </Card>
-    );
-}
-
-
 export function SavingsTransactionClient() {
   const [activeTab, setActiveTab] = useState('deposit');
   
@@ -480,9 +461,9 @@ export function SavingsTransactionClient() {
         if (!e.altKey) return;
 
         const key = parseInt(e.key, 10);
-        if (key >= 1 && key <= 5) {
+        if (key >= 1 && key <= 4) { // Updated to 4
             e.preventDefault();
-            const tabs = ['deposit', 'withdrawal', 'adjustment', 'interest-payment', 'closing'];
+            const tabs = ['deposit', 'withdrawal', 'adjustment', 'closing'];
             setActiveTab(tabs[key - 1]);
         }
     };
@@ -493,7 +474,7 @@ export function SavingsTransactionClient() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="deposit">
           <ArrowDownToDot className="mr-2 h-4 w-4" /> Deposit (Alt+1)
         </TabsTrigger>
@@ -503,11 +484,8 @@ export function SavingsTransactionClient() {
         <TabsTrigger value="adjustment">
             <Shuffle className="mr-2 h-4 w-4" /> Adjustment (Alt+3)
         </TabsTrigger>
-        <TabsTrigger value="interest-payment">
-            <Landmark className="mr-2 h-4 w-4" /> Interest (Alt+4)
-        </TabsTrigger>
         <TabsTrigger value="closing">
-            <Ban className="mr-2 h-4 w-4" /> Closing (Alt+5)
+            <Ban className="mr-2 h-4 w-4" /> Closing (Alt+4)
         </TabsTrigger>
       </TabsList>
       <TabsContent value="deposit" className="mt-4">
@@ -518,9 +496,6 @@ export function SavingsTransactionClient() {
       </TabsContent>
        <TabsContent value="adjustment" className="mt-4">
         <SavingsAdjustmentForm />
-      </TabsContent>
-       <TabsContent value="interest-payment" className="mt-4">
-        <SavingsInterestPaymentForm />
       </TabsContent>
        <TabsContent value="closing" className="mt-4">
         <SavingsClosingForm />
