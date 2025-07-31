@@ -2,15 +2,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useSettings } from '@/context/SettingsContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { User, FileQuestion, Settings, Check, XCircle, Trash2, Plus, Download, Upload } from 'lucide-react';
+import { Settings, FileQuestion, Check, Trash2, Plus, Download, Upload, XCircle, Clock } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { InteractionQuestion } from '@/types';
+import type { InteractionQuestion, InteractionSession } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 
@@ -18,7 +19,7 @@ import * as XLSX from 'xlsx';
 const STEPS = [
     { id: 1, name: 'Basic Info', icon: Settings },
     { id: 2, name: 'Questions', icon: FileQuestion },
-    { id: 3, name: 'Review', icon: Check },
+    { id: 3, name: 'Review & Save', icon: Check },
 ];
 
 const participantFields = [
@@ -32,34 +33,24 @@ const participantFields = [
 
 
 export function CreateExamClient() {
+    const { addInteractionSession } = useSettings();
     const [step, setStep] = useState(1);
     const [examName, setExamName] = useState('');
     const [requiredFields, setRequiredFields] = useState<Record<string, boolean>>({
-        name: true,
-        participantId: false,
-        organization: false,
-        mobile: false,
-        email: false,
-        location: false,
+        name: true, participantId: false, organization: false, mobile: false, email: false, location: false,
     });
     const [questions, setQuestions] = useState<InteractionQuestion[]>([]);
     
     const handleFieldToggle = (fieldId: string) => {
-        setRequiredFields(prev => ({
-            ...prev,
-            [fieldId]: !prev[fieldId],
-        }));
+        setRequiredFields(prev => ({ ...prev, [fieldId]: !prev[fieldId] }));
     };
     
     // Question management functions
     const addQuestion = () => {
         setQuestions(prev => [...prev, {
-            id: uuidv4(),
-            text: '',
-            type: 'multiple-choice',
+            id: uuidv4(), text: '', type: 'multiple-choice',
             options: [{ id: uuidv4(), text: ''}, { id: uuidv4(), text: '' }],
-            duration: 30,
-            correctOptionId: undefined,
+            duration: 30, correctOptionId: undefined,
         }]);
     };
     
@@ -94,7 +85,6 @@ export function CreateExamClient() {
             if (q.id === questionId) {
                 const updatedOptions = q.options?.filter(opt => opt.id !== optionId);
                 const updatedQuestion = { ...q, options: updatedOptions };
-                // If the removed option was the correct one, unset it
                 if (q.correctOptionId === optionId) {
                     updatedQuestion.correctOptionId = undefined;
                 }
@@ -175,6 +165,32 @@ export function CreateExamClient() {
           }
         };
         reader.readAsArrayBuffer(file);
+    };
+
+    const handleSave = () => {
+        if (!examName) {
+            alert('Exam Name is required.');
+            setStep(1);
+            return;
+        }
+        if (questions.length === 0) {
+            alert('At least one question is required.');
+            setStep(2);
+            return;
+        }
+
+        const newSession: InteractionSession = {
+            id: uuidv4(),
+            name: examName,
+            type: 'exam',
+            status: 'inactive',
+            requiredParticipantFields: requiredFields,
+            questions: questions,
+        };
+
+        addInteractionSession(newSession);
+        alert('Exam session created successfully!');
+        // Ideally, redirect to session management page
     };
 
     const nextStep = () => setStep(s => Math.min(s + 1, STEPS.length));
@@ -302,10 +318,48 @@ export function CreateExamClient() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Step 3: Review & Save</CardTitle>
-                        <CardDescription>Review all the settings and questions before saving the exam. This feature is coming soon.</CardDescription>
+                        <CardDescription>Review all the settings and questions before saving the exam.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-center text-muted-foreground p-8">Review details will be available here.</p>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Exam Name</h4>
+                            <p className="text-muted-foreground">{examName || 'Not set'}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Required Participant Fields</h4>
+                            <ul className="list-disc list-inside text-muted-foreground">
+                                {Object.entries(requiredFields)
+                                    .filter(([, isRequired]) => isRequired)
+                                    .map(([fieldId]) => (
+                                        <li key={fieldId}>{participantFields.find(f => f.id === fieldId)?.label}</li>
+                                    ))
+                                }
+                            </ul>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Questions ({questions.length})</h4>
+                            <div className="space-y-4 max-h-96 overflow-y-auto pr-4">
+                                {questions.map((q, index) => (
+                                    <div key={q.id} className="border p-4 rounded-lg">
+                                        <div className="flex justify-between items-start">
+                                            <p className="font-medium">{index + 1}. {q.text}</p>
+                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                <Clock className="h-4 w-4" />
+                                                <span>{q.duration}s</span>
+                                            </div>
+                                        </div>
+                                        <ul className="list-disc list-inside pl-2 mt-2 text-sm space-y-1">
+                                            {(q.options || []).map(opt => (
+                                                <li key={opt.id} className={cn(q.correctOptionId === opt.id && "font-bold text-primary")}>
+                                                    {opt.text}
+                                                    {q.correctOptionId === opt.id && <span className="ml-2 text-xs">(Correct Answer)</span>}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             )}
@@ -315,7 +369,7 @@ export function CreateExamClient() {
                 {step < STEPS.length ? (
                     <Button onClick={nextStep}>Next</Button>
                 ) : (
-                    <Button>Save Exam</Button>
+                    <Button onClick={handleSave}>Save Exam</Button>
                 )}
             </div>
         </div>

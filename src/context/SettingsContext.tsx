@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount, SavingsTransaction } from '@/types';
+import type { AppSettings, OrganizationInfo, ModuleSettings, MenuCategory, MenuItem, Order, Table, Customer, Voucher, Collection, CustomerGroup, PosSettings, ServiceIssue, ServiceType, ServiceItem, ServiceItemCategory, ServiceJob, ServiceJobSettings, ProductCategory, Product, InventoryItem, Challan, ChallanItem, ChallanSettings, Brand, Model, Supplier, InventoryProduct, Floor, Reservation, ExpenseCategory, SupplierBill, SupplierPayment, Attribute, AttributeValue, Theme, Designation, Employee, RawMaterial, BillItem, AccountType, AccountGroup, AccountSubGroup, AccountHead, AccountSubHead, LedgerAccount, AccountingSettings, AccountingVoucher, VoucherType, FixedAsset, AssetLocation, AssetCategory, Samity, MicrofinanceSettings, Division, District, Upozilla, Union, Village, WorkingArea, LoanProduct, Branch, SavingsProductType, SavingsProduct, FdrPayoutRule, MemberMandatoryFields, SavingsAccount, SavingsTransaction, InteractionSession } from '@/types';
 import React, { from } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -37,6 +36,7 @@ const defaultSettings: AppSettings = {
     microfinance: true,
     fixedAssetManagement: true,
     addressManagement: true,
+    liveAudienceInteraction: true,
   },
   posSettings: {
     advancedItemOptions: true,
@@ -151,6 +151,10 @@ const defaultSettings: AppSettings = {
   accountSubHeads: [],
   ledgerAccounts: [],
   accountingVouchers: [],
+  // Live Audience Interaction
+  interactionSessions: [],
+  interactionResponses: [],
+  participants: [],
   lastOrderNumberForDate: {
     date: '',
     serial: 0,
@@ -337,6 +341,8 @@ interface SettingsContextType {
   deleteLedgerAccount: (accountId: string) => void;
   clearChartOfAccounts: () => void;
   updateAllLedgerOpeningBalances: (balances: Record<string, number>) => void;
+  // Live Audience Interaction
+  addInteractionSession: (session: InteractionSession) => void;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
@@ -457,6 +463,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         accountSubHeads: storedSettings.accountSubHeads || defaultSettings.accountSubHeads,
         ledgerAccounts: storedSettings.ledgerAccounts || defaultSettings.ledgerAccounts,
         accountingVouchers: storedSettings.accountingVouchers || defaultSettings.accountingVouchers,
+        interactionSessions: storedSettings.interactionSessions || defaultSettings.interactionSessions,
+        interactionResponses: storedSettings.interactionResponses || defaultSettings.interactionResponses,
+        participants: storedSettings.participants || defaultSettings.participants,
         lastOrderNumberForDate: storedSettings.lastOrderNumberForDate || defaultSettings.lastOrderNumberForDate,
         lastServiceJobNumberForDate: storedSettings.lastServiceJobNumberForDate || defaultSettings.lastServiceJobNumberForDate,
         lastChallanNumberForDate: storedSettings.lastChallanNumberForDate || defaultSettings.lastChallanNumberForDate,
@@ -1316,7 +1325,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
       }
   };
 
-
   // Accounting
   const addAccountingVoucher = (voucher: Omit<AccountingVoucher, 'id' | 'voucherNumber'>): AccountingVoucher => {
       let newVoucher: AccountingVoucher;
@@ -1425,6 +1433,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     }));
   };
 
+  const addInteractionSession = (session: InteractionSession) => {
+    setSettings(prev => ({
+      ...prev,
+      interactionSessions: [...(prev.interactionSessions || []), session],
+    }));
+  };
+
 
   const contextValue = {
     settings, isLoaded, setOrganizationInfo, setModuleSettings, setTheme, setPosSettings, setServiceJobSettings, setChallanSettings, setAccountingSettings, setMicrofinanceSettings, addBranch, updateBranch, deleteBranch, addFloor, updateFloor, deleteFloor, addTable, updateTable, deleteTable, addReservation, deleteReservation, addMenuCategory, updateMenuCategory, deleteMenuCategory, addMenuItem, updateMenuItem, deleteMenuItem, addOrder, updateOrder, deleteOrder, addCustomer, updateCustomer, deleteCustomer, addCustomerGroup, updateCustomerGroup, deleteCustomerGroup, addVoucher, updateVoucher, deleteVoucher, addCollection, addServiceJob, updateServiceJob, addServiceIssue, updateServiceIssue, deleteServiceIssue, addServiceType, updateServiceType, deleteServiceType, addServiceItemCategory, updateServiceItemCategory, deleteServiceItemCategory, addServiceItem, updateServiceItem, deleteServiceItem, addProductCategory, updateProductCategory, deleteProductCategory, addProduct, updateProduct, deleteProduct, addChallan,
@@ -1450,6 +1465,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     addAccountGroup, updateAccountGroup, deleteAccountGroup, addAccountSubGroup, updateAccountSubGroup, deleteAccountSubGroup, addAccountHead, updateAccountHead, deleteAccountHead, addAccountSubHead, updateAccountSubHead, deleteAccountSubHead, addLedgerAccount, updateLedgerAccount, deleteLedgerAccount,
     clearChartOfAccounts,
     updateAllLedgerOpeningBalances,
+    addInteractionSession,
   };
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;

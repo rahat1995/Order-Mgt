@@ -1,8 +1,4 @@
 
-
-
-
-
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -726,7 +722,7 @@ export interface InteractionSession {
   name: string; // e.g., "Annual Conference Exam", "Customer Feedback Survey"
   type: 'poll' | 'exam' | 'survey';
   status: 'inactive' | 'active' | 'completed';
-  requireName: boolean;
+  requiredParticipantFields: Record<string, boolean>;
   questions: InteractionQuestion[];
 }
 
