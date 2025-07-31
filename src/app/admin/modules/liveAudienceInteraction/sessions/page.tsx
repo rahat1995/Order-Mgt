@@ -8,8 +8,8 @@ export default function InteractionSessionsPage() {
       type: 'Exam',
       icon: FileText,
       description: 'Create a timed exam with scored questions.',
-      href: '#', // Placeholder for now
-      enabled: false,
+      href: '/admin/modules/liveAudienceInteraction/exam/create',
+      enabled: true,
     },
     {
       type: 'Survey',
