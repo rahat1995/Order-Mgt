@@ -11,10 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Printer, XCircle } from 'lucide-react';
+import { Plus, Printer, XCircle, Tag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Customer, Product, Challan } from '@/types';
+import type { Customer, Product, Challan, ChallanItem } from '@/types';
 import { ChallanPrint } from './print/ChallanPrint';
+import { ItemLabelPrint } from './print/ItemLabelPrint';
 import { v4 as uuidv4 } from 'uuid';
 
 type NewChallanItem = {
@@ -42,9 +43,11 @@ export function CreateChallanClient() {
   
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [challanToPrint, setChallanToPrint] = useState<Challan | null>(null);
+  const [labelsToPrint, setLabelsToPrint] = useState<ChallanItem[] | null>(null);
   
   const prevCustomerCountRef = useRef(customers.length);
   const printRef = useRef<HTMLDivElement>(null);
+  const labelPrintRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (customers.length > prevCustomerCountRef.current) {
@@ -54,17 +57,6 @@ export function CreateChallanClient() {
     prevCustomerCountRef.current = customers.length;
   }, [customers]);
 
-  useEffect(() => {
-    if (challanToPrint && printRef.current) {
-      const timer = setTimeout(() => {
-        printInNewWindow(printRef, `Challan - ${challanToPrint.challanNumber}`);
-        setChallanToPrint(null);
-        router.push('/admin/modules/challanAndBilling');
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [challanToPrint, router]);
-  
   const printInNewWindow = (contentRef: React.RefObject<HTMLDivElement>, title: string) => {
     if (!contentRef.current) return;
     const printWindow = window.open('', '_blank', 'width=800,height=600');
@@ -79,6 +71,28 @@ export function CreateChallanClient() {
     setTimeout(() => { printWindow.print(); }, 500);
   };
   
+  useEffect(() => {
+    if (challanToPrint && printRef.current) {
+      const timer = setTimeout(() => {
+        printInNewWindow(printRef, `Challan - ${challanToPrint.challanNumber}`);
+        setChallanToPrint(null);
+        router.push('/admin/modules/challanAndBilling');
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [challanToPrint, router]);
+  
+  useEffect(() => {
+    if (labelsToPrint && labelPrintRef.current) {
+        const timer = setTimeout(() => {
+            printInNewWindow(labelPrintRef, `Item Labels`);
+            setLabelsToPrint(null);
+            router.push('/admin/modules/challanAndBilling');
+        }, 200);
+        return () => clearTimeout(timer);
+    }
+  }, [labelsToPrint, router]);
+
   const handleAddCustomerSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -122,14 +136,14 @@ export function CreateChallanClient() {
     setChallanItems(prev => prev.filter(item => item.tempId !== tempId));
   };
   
-  const handleSaveAndPrint = () => {
+  const handleSave = (): Challan | null => {
     if (!selectedCustomerId || challanItems.length === 0) {
       alert("Please select a customer and add at least one item.");
-      return;
+      return null;
     }
     if (challanItems.some(item => !item.serialNumber.trim())) {
       alert("Please ensure all items have a serial number before saving.");
-      return;
+      return null;
     }
 
     const itemsForContext = challanItems.map(({ tempId, ...rest }) => rest);
@@ -139,8 +153,23 @@ export function CreateChallanClient() {
         items: itemsForContext, 
         deliveryLocation 
     });
-    setChallanToPrint(newChallan);
+    return newChallan;
+  }
+  
+  const handleSaveAndPrintChallan = () => {
+      const newChallan = handleSave();
+      if(newChallan) {
+        setChallanToPrint(newChallan);
+      }
   };
+
+  const handleSaveAndPrintLabels = () => {
+    const newChallan = handleSave();
+    if(newChallan) {
+        setLabelsToPrint(newChallan.items);
+    }
+  }
+
 
   const availableProducts = useMemo(() => {
     const addedProductIds = new Set(challanItems.map(item => item.productId));
@@ -158,11 +187,16 @@ export function CreateChallanClient() {
             <ChallanPrint challan={challanToPrint} customer={customers.find(c => c.id === challanToPrint.customerId)!} organization={organization} />
           </div>
         )}
+        {labelsToPrint && (
+            <div ref={labelPrintRef}>
+                <ItemLabelPrint items={labelsToPrint} />
+            </div>
+        )}
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card className="xl:col-span-2">
             <CardHeader>
-                <CardTitle>Customer & Delivery Information</CardTitle>
+                <CardTitle>Customer &amp; Delivery Information</CardTitle>
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-6">
                 <div className="grid gap-2">
@@ -256,9 +290,12 @@ export function CreateChallanClient() {
               </TableBody>
             </Table>
           </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button type="button" onClick={handleSaveAndPrint}>
-              <Printer className="mr-2 h-4 w-4" /> Save & Print Challan
+          <CardFooter className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleSaveAndPrintLabels}>
+              <Tag className="mr-2 h-4 w-4" /> Save &amp; Print Labels
+            </Button>
+            <Button type="button" onClick={handleSaveAndPrintChallan}>
+              <Printer className="mr-2 h-4 w-4" /> Save &amp; Print Challan
             </Button>
           </CardFooter>
         </Card>
