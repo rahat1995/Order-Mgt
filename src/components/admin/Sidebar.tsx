@@ -57,6 +57,7 @@ import {
   Shuffle,
   Calculator,
   Vote,
+  BarChart
 } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -149,7 +150,11 @@ const moduleLinks = [
       ]
     },
     { key: 'addressManagement', label: 'Address Data', icon: MapPin, href: '/admin/modules/addressManagement' },
-    { key: 'liveAudienceInteraction', label: 'Live Interaction', icon: Vote, href: '/admin/modules/liveAudienceInteraction' },
+    { key: 'liveAudienceInteraction', label: 'Live Interaction', icon: Vote, href: '/admin/modules/liveAudienceInteraction',
+      subLinks: [
+        { href: '/admin/modules/liveAudienceInteraction/report', label: 'Session Reports', icon: BarChart },
+      ]
+    },
     { key: 'userAccessControl', label: 'User Access', icon: ShieldCheck, href: '/admin/modules/userAccessControl' },
 ];
 

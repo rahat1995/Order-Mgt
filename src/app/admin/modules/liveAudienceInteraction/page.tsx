@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Vote, MessageSquare, ListChecks, Presentation } from 'lucide-react';
+import { Vote, MessageSquare, ListChecks, Presentation, BarChart } from 'lucide-react';
 
 const interactionSubModules = [
   {
@@ -9,6 +9,13 @@ const interactionSubModules = [
     icon: Presentation,
     title: 'Interaction Sessions',
     description: 'Create and manage polls, exams, and surveys.',
+    enabled: true,
+  },
+  {
+    href: '/admin/modules/liveAudienceInteraction/report',
+    icon: BarChart,
+    title: 'Session Reports',
+    description: 'View detailed reports and results from past sessions.',
     enabled: true,
   },
   {
