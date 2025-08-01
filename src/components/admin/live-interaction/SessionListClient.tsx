@@ -23,8 +23,8 @@ export function SessionListClient() {
     const handleStatusChange = (session: InteractionSession, isActive: boolean) => {
         const newStatus = isActive ? 'active' : 'inactive';
         
+        // When activating a session, deactivate all others.
         if (isActive) {
-            // Deactivate all other sessions
             settings.interactionSessions?.forEach(s => {
                 if (s.id !== session.id && s.status === 'active') {
                     updateInteractionSession({ ...s, status: 'inactive' });
@@ -35,9 +35,9 @@ export function SessionListClient() {
         updateInteractionSession({ ...session, status: newStatus });
     };
     
-    const getJoinUrl = () => {
+    const getJoinUrl = (sessionId: string) => {
         if (typeof window !== 'undefined') {
-            return `${window.location.origin}/join`;
+            return `${window.location.origin}/join?sessionId=${sessionId}`;
         }
         return '';
     };
@@ -86,23 +86,21 @@ export function SessionListClient() {
                                         <Button variant="outline" size="sm" onClick={() => router.push(`/admin/modules/liveAudienceInteraction/sessions/${session.id}/host`)}>
                                             <Presentation className="mr-2 h-4 w-4" /> Host
                                         </Button>
-                                        {session.status === 'active' && (
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="h-8 w-8">
-                                                        <QrCode className="h-4 w-4" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-4">
-                                                    <div className="text-center">
-                                                        <p className="mb-4 font-semibold">Scan to Join</p>
-                                                        <div className="p-2 bg-white rounded-md">
-                                                            <QRCode value={getJoinUrl()} size={128} />
-                                                        </div>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" size="icon" className="h-8 w-8">
+                                                    <QrCode className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-4">
+                                                <div className="text-center">
+                                                    <p className="mb-4 font-semibold">Scan to Join</p>
+                                                    <div className="p-2 bg-white rounded-md">
+                                                        <QRCode value={getJoinUrl(session.id)} size={128} />
                                                     </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                        )}
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
                                         <Button variant="ghost" size="icon" disabled>
                                             <BarChart className="h-4 w-4" />
                                         </Button>

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { InteractionSession, Participant, InteractionQuestion } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useSearchParams } from 'next/navigation';
 
 const participantFields = [
     { id: 'name', label: 'Participant Name', required: true },
@@ -24,6 +25,7 @@ const participantFields = [
 
 export function ParticipantViewClient() {
     const { settings, addParticipant, addInteractionResponse, isLoaded } = useSettings();
+    const searchParams = useSearchParams();
     const [activeSession, setActiveSession] = useState<InteractionSession | null>(null);
     const [participant, setParticipant] = useState<Participant | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -35,10 +37,13 @@ export function ParticipantViewClient() {
 
     useEffect(() => {
         if (isLoaded) {
-            const session = settings.interactionSessions?.find(s => s.status === 'active') || null;
+            const sessionIdFromUrl = searchParams.get('sessionId');
+            const session = sessionIdFromUrl
+                ? settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null
+                : settings.interactionSessions?.find(s => s.status === 'active') || null;
             setActiveSession(session);
         }
-    }, [isLoaded, settings.interactionSessions]);
+    }, [isLoaded, settings.interactionSessions, searchParams]);
 
     useEffect(() => {
         if (activeSession?.type === 'exam' && currentQuestionIndex >= 0 && activeSession.questions[currentQuestionIndex]) {

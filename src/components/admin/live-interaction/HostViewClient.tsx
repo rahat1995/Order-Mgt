@@ -183,7 +183,7 @@ export function HostViewClient({ sessionId }: { sessionId: string }) {
 
     const getJoinUrl = () => {
         if (typeof window !== 'undefined') {
-            return `${window.location.origin}/join`;
+            return `${window.location.origin}/join?sessionId=${sessionId}`;
         }
         return '';
     };
