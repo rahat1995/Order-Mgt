@@ -36,39 +36,39 @@ export function ParticipantViewClient() {
     const [finalScore, setFinalScore] = useState<number | null>(null);
     const [viewState, setViewState] = useState<'joining' | 'waiting' | 'questioning' | 'finished'>('joining');
 
+    // Effect to find the session based on URL or active status
     useEffect(() => {
         if (!isLoaded) return;
         
         const findSession = () => {
             const sessionIdFromUrl = searchParams.get('sessionId');
-            let session = null;
+            let sessionToSet: InteractionSession | null = null;
             
-            // If a sessionId is in the URL, ALWAYS prioritize finding that session.
             if (sessionIdFromUrl) {
-                session = settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null;
+                sessionToSet = settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null;
             } else {
-                // Fallback for direct access to find any generally active session
-                session = settings.interactionSessions?.find(s => s.status === 'active') || null;
+                sessionToSet = settings.interactionSessions?.find(s => s.status === 'active') || null;
             }
             
-            setActiveSession(session);
-
-            // This is the key fix: if we have a session and a participant, check the session status
-            // to decide if we should move from "waiting" to "questioning"
-            if (session?.status === 'in-progress' && participant && viewState === 'waiting') {
-                setViewState('questioning');
-            }
-             if (session?.status === 'completed' && participant && viewState !== 'finished') {
-                // If the host ends the session while the participant is answering.
-                setViewState('finished');
-            }
+            setActiveSession(sessionToSet);
         };
         
         findSession();
-        const interval = setInterval(findSession, 2000);
+        const interval = setInterval(findSession, 2000); // Poll for session updates
         return () => clearInterval(interval);
 
-    }, [isLoaded, settings.interactionSessions, searchParams, participant, viewState]);
+    }, [isLoaded, settings.interactionSessions, searchParams]);
+
+    // Effect to transition view state based on session status
+    useEffect(() => {
+        if (participant && activeSession) {
+            if (activeSession.status === 'in-progress' && viewState === 'waiting') {
+                setViewState('questioning');
+            } else if (activeSession.status === 'completed' && viewState !== 'finished') {
+                setViewState('finished');
+            }
+        }
+    }, [activeSession, participant, viewState]);
 
     useEffect(() => {
         if (viewState !== 'questioning' || !activeSession || !activeSession.questions[currentQuestionIndex]) {
