@@ -42,20 +42,25 @@ export function ParticipantViewClient() {
         const findSession = () => {
             const sessionIdFromUrl = searchParams.get('sessionId');
             let session = null;
-
+            
+            // If a sessionId is in the URL, ALWAYS prioritize finding that session.
             if (sessionIdFromUrl) {
-                // If a sessionId is in the URL, ALWAYS prioritize finding that session, regardless of its status.
-                // This is the key fix for mobile devices joining via QR code.
                 session = settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null;
             } else {
-                // Fallback for direct access without a specific session ID
+                // Fallback for direct access to find any generally active session
                 session = settings.interactionSessions?.find(s => s.status === 'active') || null;
             }
             
             setActiveSession(session);
 
-            if (session?.status === 'in-progress' && participant) {
+            // This is the key fix: if we have a session and a participant, check the session status
+            // to decide if we should move from "waiting" to "questioning"
+            if (session?.status === 'in-progress' && participant && viewState === 'waiting') {
                 setViewState('questioning');
+            }
+             if (session?.status === 'completed' && participant && viewState !== 'finished') {
+                // If the host ends the session while the participant is answering.
+                setViewState('finished');
             }
         };
         
@@ -63,7 +68,7 @@ export function ParticipantViewClient() {
         const interval = setInterval(findSession, 2000);
         return () => clearInterval(interval);
 
-    }, [isLoaded, settings.interactionSessions, searchParams, participant]);
+    }, [isLoaded, settings.interactionSessions, searchParams, participant, viewState]);
 
     useEffect(() => {
         if (viewState !== 'questioning' || !activeSession || !activeSession.questions[currentQuestionIndex]) {
@@ -106,7 +111,11 @@ export function ParticipantViewClient() {
         
         const newParticipant = addParticipant(participantData);
         setParticipant(newParticipant);
-        setViewState('waiting');
+        if (activeSession.status === 'in-progress') {
+            setViewState('questioning');
+        } else {
+            setViewState('waiting');
+        }
     };
 
     const handleAnswerSubmit = (autoSubmit = false) => {
