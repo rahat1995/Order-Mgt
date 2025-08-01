@@ -38,22 +38,29 @@ export function ParticipantViewClient() {
 
     useEffect(() => {
         if (!isLoaded) return;
-
+        
         const findSession = () => {
             const sessionIdFromUrl = searchParams.get('sessionId');
-            const session = sessionIdFromUrl
-                ? settings.interactionSessions?.find(s => s.id === sessionIdFromUrl)
-                : settings.interactionSessions?.find(s => s.status === 'active');
+            let session = null;
+
+            if (sessionIdFromUrl) {
+                // If a sessionId is in the URL, ALWAYS prioritize finding that session, regardless of its status.
+                // This is the key fix for mobile devices joining via QR code.
+                session = settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null;
+            } else {
+                // Fallback for direct access without a specific session ID
+                session = settings.interactionSessions?.find(s => s.status === 'active') || null;
+            }
             
-            setActiveSession(session || null);
+            setActiveSession(session);
 
             if (session?.status === 'in-progress' && participant) {
                 setViewState('questioning');
             }
         };
-
+        
         findSession();
-        const interval = setInterval(findSession, 2000); // Poll for session state changes
+        const interval = setInterval(findSession, 2000);
         return () => clearInterval(interval);
 
     }, [isLoaded, settings.interactionSessions, searchParams, participant]);
