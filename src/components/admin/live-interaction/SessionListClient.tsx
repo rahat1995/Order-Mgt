@@ -76,10 +76,10 @@ export function SessionListClient() {
                                         <div className="flex items-center space-x-2">
                                             <Switch 
                                                 id={`status-${session.id}`} 
-                                                checked={session.status === 'active'}
+                                                checked={session.status === 'active' || session.status === 'in-progress'}
                                                 onCheckedChange={(checked) => handleStatusChange(session, checked)}
                                             />
-                                            <label htmlFor={`status-${session.id}`} className={cn("text-sm capitalize", session.status === 'active' && 'font-semibold text-primary')}>{session.status}</label>
+                                            <label htmlFor={`status-${session.id}`} className={cn("text-sm capitalize", (session.status === 'active' || session.status === 'in-progress') && 'font-semibold text-primary')}>{session.status}</label>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">

@@ -34,36 +34,51 @@ export function ParticipantViewClient() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [finalScore, setFinalScore] = useState<number | null>(null);
+    const [viewState, setViewState] = useState<'joining' | 'waiting' | 'questioning' | 'finished'>('joining');
 
     useEffect(() => {
-        if (isLoaded) {
+        if (!isLoaded) return;
+
+        const findSession = () => {
             const sessionIdFromUrl = searchParams.get('sessionId');
             const session = sessionIdFromUrl
-                ? settings.interactionSessions?.find(s => s.id === sessionIdFromUrl) || null
-                : settings.interactionSessions?.find(s => s.status === 'active') || null;
-            setActiveSession(session);
-        }
-    }, [isLoaded, settings.interactionSessions, searchParams]);
+                ? settings.interactionSessions?.find(s => s.id === sessionIdFromUrl)
+                : settings.interactionSessions?.find(s => s.status === 'active');
+            
+            setActiveSession(session || null);
+
+            if (session?.status === 'in-progress' && participant) {
+                setViewState('questioning');
+            }
+        };
+
+        findSession();
+        const interval = setInterval(findSession, 2000); // Poll for session state changes
+        return () => clearInterval(interval);
+
+    }, [isLoaded, settings.interactionSessions, searchParams, participant]);
 
     useEffect(() => {
-        if (activeSession?.type === 'exam' && currentQuestionIndex >= 0 && activeSession.questions[currentQuestionIndex]) {
-            const duration = activeSession.questions[currentQuestionIndex].duration;
-            if (duration) {
-                setTimeLeft(duration);
-                const timer = setInterval(() => {
-                    setTimeLeft(prevTime => {
-                        if (prevTime === null || prevTime <= 1) {
-                            clearInterval(timer);
-                            handleAnswerSubmit(true); // Auto-submit when time is up
-                            return 0;
-                        }
-                        return prevTime - 1;
-                    });
-                }, 1000);
-                return () => clearInterval(timer);
-            }
+        if (viewState !== 'questioning' || !activeSession || !activeSession.questions[currentQuestionIndex]) {
+            return;
         }
-    }, [currentQuestionIndex, activeSession]);
+
+        const duration = activeSession.questions[currentQuestionIndex].duration;
+        if (duration) {
+            setTimeLeft(duration);
+            const timer = setInterval(() => {
+                setTimeLeft(prevTime => {
+                    if (prevTime === null || prevTime <= 1) {
+                        clearInterval(timer);
+                        handleAnswerSubmit(true); // Auto-submit when time is up
+                        return 0;
+                    }
+                    return prevTime - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [currentQuestionIndex, activeSession, viewState]);
 
 
     const handleJoinSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -84,6 +99,7 @@ export function ParticipantViewClient() {
         
         const newParticipant = addParticipant(participantData);
         setParticipant(newParticipant);
+        setViewState('waiting');
     };
 
     const handleAnswerSubmit = (autoSubmit = false) => {
@@ -111,7 +127,6 @@ export function ParticipantViewClient() {
                 setSelectedOption('');
                 setTextAnswer('');
             } else {
-                // End of exam/survey, calculate score if it's an exam
                 if (activeSession.type === 'exam') {
                     const responses = settings.interactionResponses?.filter(r => r.participantId === participant.id && r.sessionId === activeSession.id) || [];
                     let score = 0;
@@ -121,14 +136,13 @@ export function ParticipantViewClient() {
                             score++;
                         }
                     });
-                     // Check final answer
                     if (answer && answer === currentQuestion.correctOptionId) {
                         score++;
                     }
-
                     setFinalScore(score);
                 }
-                setCurrentQuestionIndex(-1); // Use -1 to signify completion
+                setCurrentQuestionIndex(-1);
+                setViewState('finished');
             }
             setIsSubmitting(false);
         }, 500);
@@ -142,8 +156,7 @@ export function ParticipantViewClient() {
         return <Card className="w-full max-w-md text-center"><CardHeader><CardTitle>No Active Session</CardTitle><CardDescription>There is no poll, exam, or survey currently active. Please wait for the host to start a session.</CardDescription></CardHeader></Card>;
     }
     
-    // Participant Join Form
-    if (!participant) {
+    if (viewState === 'joining') {
         return (
             <Card className="w-full max-w-md">
                 <CardHeader>
@@ -166,9 +179,22 @@ export function ParticipantViewClient() {
             </Card>
         );
     }
+
+    if (viewState === 'waiting') {
+        return (
+             <Card className="w-full max-w-md text-center">
+                <CardHeader>
+                    <CardTitle>You're In!</CardTitle>
+                    <CardDescription>Waiting for the host to start the session.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+                </CardContent>
+            </Card>
+        );
+    }
     
-    // End of Session View
-    if (currentQuestionIndex === -1) {
+    if (viewState === 'finished') {
         return (
              <Card className="w-full max-w-md text-center">
                 <CardHeader>
@@ -186,11 +212,14 @@ export function ParticipantViewClient() {
     }
 
     const currentQuestion = activeSession.questions[currentQuestionIndex];
+    if (!currentQuestion) {
+        return <Card className="w-full max-w-md text-center"><CardHeader><CardTitle>Session Ended</CardTitle><CardDescription>The session has been completed by the host.</CardDescription></CardHeader></Card>;
+    }
+
     const progressPercentage = (timeLeft !== null && currentQuestion.duration) 
         ? (timeLeft / currentQuestion.duration) * 100 
         : 100;
 
-    // Question View
     return (
         <Card className="w-full max-w-md">
             <CardHeader>

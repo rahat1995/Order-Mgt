@@ -1,5 +1,6 @@
 
 
+
 export type Theme = 'slate' | 'stone';
 
 export interface Branch {
@@ -722,7 +723,7 @@ export interface InteractionSession {
   id: string;
   name: string; // e.g., "Annual Conference Exam", "Customer Feedback Survey"
   type: 'poll' | 'exam' | 'survey';
-  status: 'inactive' | 'active' | 'completed';
+  status: 'inactive' | 'active' | 'in-progress' | 'completed';
   requiredParticipantFields: Record<string, boolean>;
   questions: InteractionQuestion[];
 }
@@ -732,6 +733,7 @@ export interface Participant {
   sessionId: string;
   name: string;
   // Other fields like email, phone, etc., can be added here if needed
+  [key: string]: any; // Allow for dynamic fields
 }
 
 export interface InteractionResponse {
