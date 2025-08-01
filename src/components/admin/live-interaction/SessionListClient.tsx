@@ -9,14 +9,16 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { InteractionSession } from '@/types';
-import { BarChart, Edit, Trash2, QrCode } from 'lucide-react';
+import { BarChart, Edit, Trash2, QrCode, Presentation } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import QRCode from 'react-qr-code';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export function SessionListClient() {
     const { settings, updateInteractionSession, isLoaded } = useSettings();
     const { interactionSessions = [] } = settings;
+    const router = useRouter();
 
     const handleStatusChange = (session: InteractionSession, isActive: boolean) => {
         const newStatus = isActive ? 'active' : 'inactive';
@@ -80,7 +82,10 @@ export function SessionListClient() {
                                             <label htmlFor={`status-${session.id}`} className={cn("text-sm capitalize", session.status === 'active' && 'font-semibold text-primary')}>{session.status}</label>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right space-x-1">
+                                        <Button variant="outline" size="sm" onClick={() => router.push(`/admin/modules/liveAudienceInteraction/sessions/${session.id}/host`)}>
+                                            <Presentation className="mr-2 h-4 w-4" /> Host
+                                        </Button>
                                         {session.status === 'active' && (
                                             <Popover>
                                                 <PopoverTrigger asChild>
